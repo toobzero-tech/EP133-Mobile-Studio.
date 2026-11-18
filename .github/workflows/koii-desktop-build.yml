@@ -19,6 +19,10 @@ jobs:
       - name: Install dependencies
         working-directory: source/desktop
         run: npm install
+      - name: Install Wine for Windows packaging
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wine
       - name: Build portable EXE
         working-directory: source/desktop
         run: npm run dist
