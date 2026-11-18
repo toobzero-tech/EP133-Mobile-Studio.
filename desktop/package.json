@@ -28,7 +28,8 @@
       "target": [
         "portable"
       ],
-      "artifactName": "KOII-Studio-${version}-Windows.${ext}"
+      "artifactName": "KOII-Studio-${version}-Windows.${ext}",
+      "signAndEditExecutable": false
     }
   }
 }
