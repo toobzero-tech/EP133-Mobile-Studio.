@@ -27,8 +27,50 @@ jobs:
           from pathlib import Path
           p = Path("/tmp/koii-src/EP133_KOII_Windows_0.5.0/src/main.cpp")
           s = p.read_text()
-          if "#include <thread>" not in s:
-              s = s.replace("#include <cstdio>", "#include <cstdio>\n#include <thread>")
+          import re
+          has_thread_include = re.search(r'(?m)^\s*#include\s*[<"]thread[>"]', s)
+          if not has_thread_include:
+              s, count = re.subn(r'(?m)^\s*#include\s*<cstdio>\s*
+          old = 'statusText=CreateWindowW(L"STATIC",L"Audio engine ready",WS_CHILD|WS_VISIBLE,20,475,650,24,h,nullptr,nullptr);'
+          new = 'statusText=CreateWindowW(L"STATIC",L"Audio engine ready",WS_CHILD|WS_VISIBLE,20,475,650,24,h,nullptr,GetModuleHandleW(nullptr),nullptr);'
+          if old in s:
+              s = s.replace(old, new)
+          elif new not in s:
+              raise SystemExit("Could not locate the statusText CreateWindowW call; refusing an unsafe patch")
+          p.write_text(s)
+          PY
+      - name: Run native engine tests
+        run: |
+          cmake -S /tmp/koii-src/EP133_KOII_Windows_0.5.0 -B /tmp/koii-native -G Ninja
+          cmake --build /tmp/koii-native
+          ctest --test-dir /tmp/koii-native --output-on-failure
+      - name: Cross-compile Windows application
+        run: |
+          cmake -S /tmp/koii-src/EP133_KOII_Windows_0.5.0 -B /tmp/koii-win -G Ninja \
+            -DCMAKE_SYSTEM_NAME=Windows \
+            -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc \
+            -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ \
+            -DCMAKE_CXX_FLAGS="-pthread" \
+            -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++ -pthread" \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/koii-win --verbose
+          test -f /tmp/koii-win/EP133_KOII.exe
+      - name: Package Windows EXE
+        run: |
+          mkdir -p dist
+          cp /tmp/koii-win/EP133_KOII.exe dist/
+          cp /tmp/koii-src/EP133_KOII_Windows_0.5.0/README_RU.md dist/
+          cd dist && zip -9 ../EP133_KOII_Windows_0.5.1_Fixed_Test.zip *
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EP133-KOII-Windows-0.5.1-Fixed-Test
+          path: EP133_KOII_Windows_0.5.1_Fixed_Test.zip
+          if-no-files-found: error
+          retention-days: 14
+,
+                                 '#include <cstdio>\n#include <thread>', s, count=1)
+              if count != 1:
+                  raise SystemExit("Could not insert <thread> after the cstdio include")
           old = 'statusText=CreateWindowW(L"STATIC",L"Audio engine ready",WS_CHILD|WS_VISIBLE,20,475,650,24,h,nullptr,nullptr);'
           new = 'statusText=CreateWindowW(L"STATIC",L"Audio engine ready",WS_CHILD|WS_VISIBLE,20,475,650,24,h,nullptr,GetModuleHandleW(nullptr),nullptr);'
           if old in s:
