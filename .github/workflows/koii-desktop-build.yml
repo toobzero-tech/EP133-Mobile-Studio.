@@ -9,13 +9,15 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: source
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: desktop/package.json
       - name: Install dependencies
-        working-directory: desktop
+        working-directory: source/desktop
         run: npm install
       - name: Build portable EXE
         working-directory: desktop
@@ -24,6 +26,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: KOII-Studio-0.8.1-Windows
-          path: desktop/dist/*.exe
+          path: source/desktop/dist/*.exe
           if-no-files-found: error
           retention-days: 14
