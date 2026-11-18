@@ -15,12 +15,12 @@ jobs:
       - name: Install MinGW and CMake
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build mingw-w64 unzip
+          sudo apt-get install -y cmake ninja-build mingw-w64
       - name: Restore Windows source archive
         run: |
-          base64 -d windows-koii/source.zip.b64 > /tmp/koii.zip
+          base64 -d windows-koii/source.tar.gz.b64 > /tmp/koii.tar.gz
           mkdir -p /tmp/koii-src
-          unzip -q /tmp/koii.zip -d /tmp/koii-src
+          tar -xzf /tmp/koii.tar.gz -C /tmp/koii-src
           test -f /tmp/koii-src/EP133_KOII_Windows_0.5.0/CMakeLists.txt
       - name: Run native engine tests
         run: |
