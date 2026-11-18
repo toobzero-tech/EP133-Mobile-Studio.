@@ -27,10 +27,13 @@ jobs:
           from pathlib import Path
           p = Path("/tmp/koii-src/EP133_KOII_Windows_0.5.0/src/main.cpp")
           s = p.read_text()
-          import re
-          has_thread_include = re.search(r'(?m)^\s*#include\s*[<"]thread[>"]', s)
-          if not has_thread_include:
-              s, count = re.subn(r'(?m)^\s*#include\s*<cstdio>\s*
+          lines = s.splitlines()
+          if not any(line.strip() in ('#include <thread>', '#include "thread"') for line in lines):
+              include_index = next((i for i, line in enumerate(lines) if line.strip() == '#include <cstdio>'), None)
+              if include_index is None:
+                  raise SystemExit("Could not locate cstdio include; refusing an unsafe patch")
+              lines.insert(include_index + 1, '#include <thread>')
+              s = '\n'.join(lines) + '\n'
           old = 'statusText=CreateWindowW(L"STATIC",L"Audio engine ready",WS_CHILD|WS_VISIBLE,20,475,650,24,h,nullptr,nullptr);'
           new = 'statusText=CreateWindowW(L"STATIC",L"Audio engine ready",WS_CHILD|WS_VISIBLE,20,475,650,24,h,nullptr,GetModuleHandleW(nullptr),nullptr);'
           if old in s:
