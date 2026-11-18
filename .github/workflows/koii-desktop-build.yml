@@ -1,0 +1,29 @@
+name: KOII Studio Windows Build
+on:
+  push:
+    branches: [koii-studio-desktop-0.8.1]
+    paths: ['desktop/**', '.github/workflows/koii-desktop-build.yml']
+  workflow_dispatch:
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package.json
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm install
+      - name: Build portable EXE
+        working-directory: desktop
+        run: npm run dist
+      - name: Upload Windows EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: KOII-Studio-0.8.1-Windows
+          path: desktop/dist/*.exe
+          if-no-files-found: error
+          retention-days: 14
