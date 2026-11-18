@@ -16,12 +16,27 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build mingw-w64 xz-utils
-      - name: Restore Windows source archive
+      - name: Restore and patch Windows source
         run: |
           base64 -d windows-koii/source.tar.xz.b64 > /tmp/koii.tar.xz
           mkdir -p /tmp/koii-src
           tar -xJf /tmp/koii.tar.xz -C /tmp/koii-src
-          test -f /tmp/koii-src/EP133_KOII_Windows_0.5.0/CMakeLists.txt
+          SRC=/tmp/koii-src/EP133_KOII_Windows_0.5.0
+          test -f "$SRC/CMakeLists.txt"
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("/tmp/koii-src/EP133_KOII_Windows_0.5.0/src/main.cpp")
+          s = p.read_text()
+          if "#include <thread>" not in s:
+              s = s.replace("#include <cstdio>", "#include <cstdio>\n#include <thread>")
+          old = 'statusText=CreateWindowW(L"STATIC",L"Audio engine ready",WS_CHILD|WS_VISIBLE,20,475,650,24,h,nullptr,nullptr);'
+          new = 'statusText=CreateWindowW(L"STATIC",L"Audio engine ready",WS_CHILD|WS_VISIBLE,20,475,650,24,h,nullptr,GetModuleHandleW(nullptr),nullptr);'
+          if old in s:
+              s = s.replace(old, new)
+          elif new not in s:
+              raise SystemExit("Could not locate the statusText CreateWindowW call; refusing an unsafe patch")
+          p.write_text(s)
+          PY
       - name: Run native engine tests
         run: |
           cmake -S /tmp/koii-src/EP133_KOII_Windows_0.5.0 -B /tmp/koii-native -G Ninja
@@ -33,7 +48,8 @@ jobs:
             -DCMAKE_SYSTEM_NAME=Windows \
             -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc \
             -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ \
-            -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++" \
+            -DCMAKE_CXX_FLAGS="-pthread" \
+            -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++ -pthread" \
             -DCMAKE_BUILD_TYPE=Release
           cmake --build /tmp/koii-win --verbose
           test -f /tmp/koii-win/EP133_KOII.exe
@@ -42,10 +58,10 @@ jobs:
           mkdir -p dist
           cp /tmp/koii-win/EP133_KOII.exe dist/
           cp /tmp/koii-src/EP133_KOII_Windows_0.5.0/README_RU.md dist/
-          cd dist && zip -9 ../EP133_KOII_Windows_0.6.0_Test.zip *
+          cd dist && zip -9 ../EP133_KOII_Windows_0.5.1_Fixed_Test.zip *
       - uses: actions/upload-artifact@v4
         with:
-          name: EP133-KOII-Windows-0.6.0-Test
-          path: EP133_KOII_Windows_0.6.0_Test.zip
+          name: EP133-KOII-Windows-0.5.1-Fixed-Test
+          path: EP133_KOII_Windows_0.5.1_Fixed_Test.zip
           if-no-files-found: error
           retention-days: 14
