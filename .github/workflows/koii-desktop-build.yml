@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: desktop/package.json
+          cache-dependency-path: source/desktop/package.json
       - name: Install dependencies
         working-directory: source/desktop
         run: npm install
