@@ -1,0 +1,51 @@
+name: Build EP-133 KOII Windows
+on:
+  push:
+    paths:
+      - "windows-koii/**"
+      - ".github/workflows/build-koii-windows.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-windows:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MinGW and CMake
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build mingw-w64 unzip
+      - name: Restore Windows source archive
+        run: |
+          base64 -d windows-koii/source.zip.b64 > /tmp/koii.zip
+          mkdir -p /tmp/koii-src
+          unzip -q /tmp/koii.zip -d /tmp/koii-src
+          test -f /tmp/koii-src/EP133_KOII_Windows_0.5.0/CMakeLists.txt
+      - name: Run native engine tests
+        run: |
+          cmake -S /tmp/koii-src/EP133_KOII_Windows_0.5.0 -B /tmp/koii-native -G Ninja
+          cmake --build /tmp/koii-native
+          ctest --test-dir /tmp/koii-native --output-on-failure
+      - name: Cross-compile Windows application
+        run: |
+          cmake -S /tmp/koii-src/EP133_KOII_Windows_0.5.0 -B /tmp/koii-win -G Ninja \
+            -DCMAKE_SYSTEM_NAME=Windows \
+            -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc \
+            -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ \
+            -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++" \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/koii-win --verbose
+          test -f /tmp/koii-win/EP133_KOII.exe
+      - name: Package Windows EXE
+        run: |
+          mkdir -p dist
+          cp /tmp/koii-win/EP133_KOII.exe dist/
+          cp /tmp/koii-src/EP133_KOII_Windows_0.5.0/README_RU.md dist/
+          cd dist && zip -9 ../EP133_KOII_Windows_0.6.0_Test.zip *
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EP133-KOII-Windows-0.6.0-Test
+          path: EP133_KOII_Windows_0.6.0_Test.zip
+          if-no-files-found: error
+          retention-days: 14
