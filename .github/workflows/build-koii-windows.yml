@@ -51,8 +51,9 @@ jobs:
             -DCMAKE_SYSTEM_NAME=Windows \
             -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc-posix \
             -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++-posix \
-            -DCMAKE_CXX_FLAGS="-pthread -municode" \
+            -DCMAKE_CXX_FLAGS="-pthread" \
             -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++ -pthread -municode" \
+            -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
             -DCMAKE_BUILD_TYPE=Release
           cmake --build /tmp/koii-win --verbose
           test -f /tmp/koii-win/EP133_KOII.exe
