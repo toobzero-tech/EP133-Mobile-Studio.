@@ -31,7 +31,7 @@ b = s.index("\nvoid Engine::exportWav(", a)
 replacement = r'''void Engine::saveProject(const std::string& path) const {
  std::ofstream f(path, std::ios::binary);
  if(!f) throw std::runtime_error("Cannot create project file");
- f << "KOII_PROJECT 2\n" << std::setprecision(9)
+ f << "INFINITY_PROJECT 2\n" << std::setprecision(9)
    << tempo() << ' ' << swing() << ' ' << volume() << ' ' << pattern() << "\n";
  for(int p=0;p<kPatterns;p++) for(int d=0;d<kPads;d++) {
   for(int st=0;st<kSteps;st++) f << (step(p,d,st)?'1':'0');
@@ -44,7 +44,7 @@ void Engine::loadProject(const std::string& path) {
  std::ifstream f(path, std::ios::binary);
  if(!f) throw std::runtime_error("Cannot open project file");
  std::string magic; int version=0; f >> magic >> version;
- if(magic!="KOII_PROJECT" || (version!=1 && version!=2)) throw std::runtime_error("Unsupported project format");
+ if(!((magic=="INFINITY_PROJECT" && version==2) || (magic=="KOII_PROJECT" && version==1))) throw std::runtime_error("Unsupported project format");
  float bpm=120.f, sw=0.f, vol=.8f; int pat=0;
  if(!(f >> bpm >> sw >> vol >> pat) || !std::isfinite(bpm) || !std::isfinite(sw) || !std::isfinite(vol) || pat<0 || pat>=kPatterns)
   throw std::runtime_error("Corrupt project settings");
@@ -87,6 +87,7 @@ patch("src/main.cpp", [
     ("label(h,L\"16-STEP SEQUENCER  |  choose pad and pattern, then toggle steps\",20,325,520,20);",
      "label(h,L\"64-STEP SEQUENCER  |  4 BANKS x 16 STEPS\",20,325,420,20);for(int p=0;p<4;p++){wchar_t n[16];swprintf_s(n,L\"%d-%d\",p*16+1,p*16+16);CreateWindowW(L\"BUTTON\",n,WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,440+p*68,320,62,26,h,(HMENU)(30+p),nullptr,nullptr);}"),
     ("CreateWindowW(L\"BUTTON\",L\"IMPORT WAV TO PAD\",WS_CHILD|WS_VISIBLE,20,420,145,34,h,(HMENU)4,nullptr,nullptr);",
+     "label(h,L\"SLICE START\",20,390,90,20);sliceStartSlider=makeSlider(h,20,20,410,300,0,1000,0);label(h,L\"SLICE END\",365,390,80,20);sliceEndSlider=makeSlider(h,21,365,410,300,0,1000,1000);\n CreateWindowW(L\"BUTTON\",L\"IMPORT WAV TO PAD\",WS_CHILD|WS_VISIBLE,20,455,145,34,h,(HMENU)4,nullptr,nullptr);"),
      "label(h,L\"SLICE START\",20,405,90,20);sliceStartSlider=makeSlider(h,20,115,398,220,0,1000,0);label(h,L\"SLICE END\",365,405,80,20);sliceEndSlider=makeSlider(h,21,450,398,220,0,1000,1000);\n CreateWindowW(L\"BUTTON\",L\"IMPORT WAV TO PAD\",WS_CHILD|WS_VISIBLE,20,455,145,34,h,(HMENU)4,nullptr,nullptr);"),
     ("CreateWindowW(L\"BUTTON\",L\"SAVE PROJECT\",WS_CHILD|WS_VISIBLE,180,420,125,34,h,(HMENU)5,nullptr,nullptr);",
      "CreateWindowW(L\"BUTTON\",L\"SAVE PROJECT\",WS_CHILD|WS_VISIBLE,180,455,125,34,h,(HMENU)5,nullptr,nullptr);"),
@@ -121,10 +122,6 @@ patch("CMakeLists.txt", [
     ("target_compile_definitions(EP133_KOII PRIVATE", "target_compile_definitions(Infinity PRIVATE")
 ])
 
-patch("src/engine.cpp", [
-    ('"KOII_PROJECT 2\\n"', '"INFINITY_PROJECT 2\\n"'),
-    ('if(magic!="KOII_PROJECT" || (version!=1 && version!=2))', 'if(!((magic=="INFINITY_PROJECT" && version==2) || (magic=="KOII_PROJECT" && version==1)))')
-])
 
 patch("src/main.cpp", [
     ('L"INFINITY  |  GROOVE STATION 0.7.0"', 'L"БЕСКОНЕЧНОСТЬ ∞"'),
@@ -132,6 +129,17 @@ patch("src/main.cpp", [
     ('L"EP-133 KO II Studio 0.6.0"', 'L"Бесконечность ∞"'),
     ('L"KOII project\\0*.koii\\0All files\\0*.*\\0"', 'L"Проект Бесконечность\\0*.infinity\\0All files\\0*.*\\0"'),
     ('L"koii"', 'L"infinity"')
+])
+
+
+patch("src/wav.cpp", [
+    ("#include <fstream>", "#include <fstream>\\n#include <filesystem>"),
+    ("std::ifstream f(path,std::ios::binary);", "std::ifstream f(std::filesystem::u8path(path),std::ios::binary);")
+])
+patch("src/engine.cpp", [
+    ("#include <iomanip>", "#include <iomanip>\\n#include <filesystem>"),
+    ("std::ofstream f(path, std::ios::binary);", "std::ofstream f(std::filesystem::u8path(path), std::ios::binary);"),
+    ("std::ifstream f(path, std::ios::binary);", "std::ifstream f(std::filesystem::u8path(path), std::ios::binary);")
 ])
 
 (root / "README_RU.md").write_text("""# Бесконечность ∞
