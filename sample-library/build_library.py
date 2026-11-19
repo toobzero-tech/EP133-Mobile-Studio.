@@ -120,7 +120,7 @@ def render_generated_content():
         peak=max(max(abs(x) for x in mix),1e-9)
         write_wav(loops/f"Infinity_{feel}_Break_{bpm}BPM_4bar.wav",[x/peak*.88 for x in mix])
 
-    # Four-bar acid patterns, original synthesized oscillator + resonant-style moving filter.
+    # Original synthesized acid loops are clearly labeled as synth-generated additions.
     scale=[0,3,5,7,10,12,15]
     for bpm,root in ((118,45),(124,45),(128,43),(132,43),(138,40),(145,40)):
         bars=4; total=int(bars*4*60/bpm*RATE); mix=[0.0]*total
@@ -169,28 +169,51 @@ def main():
     fetch("https://codeload.github.com/facebookincubator/Meta-open-sound/zip/refs/heads/main",archive)
     with zipfile.ZipFile(archive) as z: z.extractall(SRC)
     repo=next(SRC.glob("Meta-open-sound-*"))
-    # Meta's CC0 instrument preview samples. Keep a compact, useful subset.
-    picks = {
-      "meta-piano": ("Piano", 16),
-      "meta-nylon-guitar": ("Guitar_Nylon", 18),
-      "meta-steel-guitar": ("Guitar_Steel", 18),
-    }
-    for ident,(folder,limit) in picks.items():
-        src=repo/"systems"/"instruments"/ident/"ogg"
-        files=sorted(src.glob("*.ogg")) if src.exists() else []
-        # Spread picks across the set instead of taking adjacent duplicate notes.
-        if files:
-            stride=max(1,len(files)//limit)
-            selected=files[::stride][:limit]
-            dest=OUT/"Instruments"/folder
-            dest.mkdir(parents=True,exist_ok=True)
-            for f in selected:
-                target=dest/(f.stem+".wav")
-                subprocess.run(["ffmpeg","-y","-loglevel","error","-i",str(f),"-ar",str(RATE),"-ac","1",str(target)],check=True)
-        lic=repo/"systems"/"instruments"/ident/"LICENSE"
-        if lic.exists(): shutil.copy2(lic,OUT/"Licenses"/(ident+"-LICENSE.txt"))
-        spec=repo/"systems"/"instruments"/ident/"README.md"
-        if spec.exists(): shutil.copy2(spec,OUT/"Instruments"/folder/"SOURCE_README.md")
+    # Full-resolution 24-bit / 48 kHz CC0 instrument recordings from Meta releases.
+    collections = [
+      ("Piano", "https://github.com/facebookincubator/Meta-open-sound/releases/download/meta-piano-v1.0.0/meta-open-sound-meta-piano-wav.zip"),
+      ("Guitar_Nylon", "https://github.com/facebookincubator/Meta-open-sound/releases/download/meta-nylon-guitar-v1.0.0/meta-open-sound-meta-nylon-guitar-wav.zip"),
+      ("Guitar_Steel", "https://github.com/facebookincubator/Meta-open-sound/releases/download/meta-steel-guitar-v1.0.0/meta-open-sound-meta-steel-guitar-wav.zip"),
+    ]
+    for folder, url in collections:
+        pack = ROOT / (folder + "-full.wav.zip")
+        fetch(url, pack)
+        extract = ROOT / (folder + "-full")
+        extract.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(pack) as z: z.extractall(extract)
+        dest = OUT / "Instruments" / folder
+        dest.mkdir(parents=True, exist_ok=True)
+        copied = 0
+        for src in extract.rglob("*"):
+            if not src.is_file(): continue
+            if src.suffix.lower() in (".wav", ".sfz", ".md", ".txt", ".json"):
+                target = dest / src.name
+                if target.exists() and src.suffix.lower() == ".wav":
+                    target = dest / (src.parent.name + "_" + src.name)
+                shutil.copy2(src, target)
+                if src.suffix.lower() == ".wav": copied += 1
+        if copied < 100: raise RuntimeError(f"{folder}: expected full multisample set, got {copied}")
+        print(f"{folder}: imported {copied} original WAV samples")
+
+    # CC0 Phazite pack includes recorded percussion, foley, effects and an original breakbeat.
+    phazite_url = "https://github.com/august-byrne/phazite-sounds/releases/download/v1/Phazite-Sounds-1.zip"
+    phazite_zip = ROOT / "phazite-sounds.zip"
+    fetch(phazite_url, phazite_zip)
+    phazite_root = ROOT / "phazite"
+    phazite_root.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(phazite_zip) as z: z.extractall(phazite_root)
+    phazite_dest = OUT / "Community_CC0" / "Phazite"
+    phazite_dest.mkdir(parents=True, exist_ok=True)
+    phazite_count = 0
+    for src in phazite_root.rglob("*"):
+        if not src.is_file(): continue
+        if src.suffix.lower() in (".flac", ".wav", ".ogg"):
+            shutil.copy2(src, phazite_dest / src.name)
+            phazite_count += 1
+        elif src.name.lower() in ("license.txt", "readme.txt", "sources.json", "sources.txt"):
+            shutil.copy2(src, phazite_dest / src.name)
+    if phazite_count < 50: raise RuntimeError(f"Phazite CC0 pack import too small: {phazite_count}")
+
     make_original_kit()
     render_generated_content()
     (OUT/"README_RU.txt").write_text(
@@ -202,7 +225,7 @@ def main():
       "Источник Meta Open Sound: https://github.com/facebookincubator/Meta-open-sound\n"
       "Проверяйте файл LICENSE в папке Licenses перед повторным распространением отдельных исходных коллекций.\n",
       encoding="utf-8")
-    zip_path=Path("Infinity_Sample_Library_Expanded_03.zip")
+    zip_path=Path("Infinity_Live_Sample_Library_04.zip")
     catalog = []
     for f in sorted(OUT.rglob("*.wav")):
         rel = str(f.relative_to(OUT)).replace("\\\\", "/")
@@ -210,8 +233,8 @@ def main():
                         "channels": 1, "bit_depth": 16,
                         "category": rel.split("/")[0],
                         "sha256": hashlib.sha256(f.read_bytes()).hexdigest()})
-    (OUT/"manifest.json").write_text(json.dumps({"name":"Infinity Expanded Sample Library 03",
-        "audio_files":len(catalog), "files":catalog}, ensure_ascii=False, indent=2), encoding="utf-8")
+    (OUT/"manifest.json").write_text(json.dumps({"name":"Infinity Live Sample Library 04",
+        "audio_files":len(catalog), "cc0_phazite_files":phazite_count, "files":catalog}, ensure_ascii=False, indent=2), encoding="utf-8")
     with zipfile.ZipFile(zip_path,"w",zipfile.ZIP_DEFLATED,compresslevel=6) as z:
         for f in OUT.rglob("*"):
             if f.is_file(): z.write(f,f.relative_to(OUT.parent))
