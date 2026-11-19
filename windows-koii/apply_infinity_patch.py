@@ -200,6 +200,9 @@ replace_once("tests/engine_tests.cpp",
     "    engine.render(buffer.data(), 1024);\n    bool nonzero",
     "    engine.render(buffer.data(), 1024);\n    engine.render(buffer.data(), 1024); // Exercise FX buffers across blocks.\n    bool nonzero")
 replace_once("README_RU.md",
+    "**БЕСКОНЕЧНОСТЬ ∞** — ранний Windows-грувбокс и сэмплер. Версия 0.8.0 сосредоточена на надёжности аудиодвижка и сохранения проектов.",
+    "**БЕСКОНЕЧНОСТЬ ∞** — Windows-грувбокс и сэмплер. Версия 0.9.0 добавляет мастер-эффекты Delay, Reverb, Saturation и Compressor.")
+replace_once("README_RU.md",
     "- Экспорт текущего микса в WAV 16-bit.\n",
     "- Экспорт текущего микса в WAV 16-bit.\n- Мастер-эффекты в реальном времени: Delay, Room/Reverb, Saturation и Compressor.\n- DSP на фиксированных буферах без выделения памяти в аудиопотоке.\n")
 print("Infinity 0.9.0 master FX patch applied.")
