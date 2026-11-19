@@ -87,7 +87,7 @@ patch("src/main.cpp", [
     ("label(h,L\"16-STEP SEQUENCER  |  choose pad and pattern, then toggle steps\",20,325,520,20);",
      "label(h,L\"64-STEP SEQUENCER  |  4 BANKS x 16 STEPS\",20,325,420,20);for(int p=0;p<4;p++){wchar_t n[16];swprintf_s(n,L\"%d-%d\",p*16+1,p*16+16);CreateWindowW(L\"BUTTON\",n,WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,440+p*68,320,62,26,h,(HMENU)(30+p),nullptr,nullptr);}"),
     ("CreateWindowW(L\"BUTTON\",L\"IMPORT WAV TO PAD\",WS_CHILD|WS_VISIBLE,20,420,145,34,h,(HMENU)4,nullptr,nullptr);",
-     "label(h,L\"SLICE START\",20,405,90,20);sliceStartSlider=makeSlider(h,20,115,398,220,0,1000,0);label(h,L\"SLICE END\",365,405,80,20);sliceEndSlider=makeSlider(h,21,450,398,220,0,1000,1000);\\n CreateWindowW(L\"BUTTON\",L\"IMPORT WAV TO PAD\",WS_CHILD|WS_VISIBLE,20,455,145,34,h,(HMENU)4,nullptr,nullptr);"),
+     "label(h,L\"SLICE START\",20,405,90,20);sliceStartSlider=makeSlider(h,20,115,398,220,0,1000,0);label(h,L\"SLICE END\",365,405,80,20);sliceEndSlider=makeSlider(h,21,450,398,220,0,1000,1000);\n CreateWindowW(L\"BUTTON\",L\"IMPORT WAV TO PAD\",WS_CHILD|WS_VISIBLE,20,455,145,34,h,(HMENU)4,nullptr,nullptr);"),
     ("CreateWindowW(L\"BUTTON\",L\"SAVE PROJECT\",WS_CHILD|WS_VISIBLE,180,420,125,34,h,(HMENU)5,nullptr,nullptr);",
      "CreateWindowW(L\"BUTTON\",L\"SAVE PROJECT\",WS_CHILD|WS_VISIBLE,180,455,125,34,h,(HMENU)5,nullptr,nullptr);"),
     ("CreateWindowW(L\"BUTTON\",L\"LOAD PROJECT\",WS_CHILD|WS_VISIBLE,320,420,125,34,h,(HMENU)6,nullptr,nullptr);",
@@ -97,7 +97,7 @@ patch("src/main.cpp", [
     ("statusText=CreateWindowW(L\"STATIC\",L\"Audio engine ready\",WS_CHILD|WS_VISIBLE,20,475,650,24,h,nullptr,GetModuleHandleW(nullptr),nullptr);",
      "statusText=CreateWindowW(L\"STATIC\",L\"Starting audio device...\",WS_CHILD|WS_VISIBLE,20,510,650,24,h,nullptr,GetModuleHandleW(nullptr),nullptr);"),
     ("if(id>=10&&id<14){engine.setPattern(id-10);syncSteps(h);wchar_t msg[64];swprintf_s(msg,L\"Selected PATTERN %d\",id-9);setStatus(msg);return 0;}",
-     "if(id>=10&&id<14){engine.setPattern(id-10);syncSteps(h);wchar_t msg[64];swprintf_s(msg,L\"Selected SCENE %c\",L'A'+id-10);setStatus(msg);return 0;}\\n  if(id>=30&&id<34){stepPage=id-30;syncSteps(h);wchar_t msg[64];swprintf_s(msg,L\"Steps %d-%d\",stepPage*16+1,stepPage*16+16);setStatus(msg);return 0;}"),
+     "if(id>=10&&id<14){engine.setPattern(id-10);syncSteps(h);wchar_t msg[64];swprintf_s(msg,L\"Selected SCENE %c\",L'A'+id-10);setStatus(msg);return 0;}\n  if(id>=30&&id<34){stepPage=id-30;syncSteps(h);wchar_t msg[64];swprintf_s(msg,L\"Steps %d-%d\",stepPage*16+1,stepPage*16+16);setStatus(msg);return 0;}"),
     ("if(id>=300&&id<316){int s=id-300;engine.setStep(engine.pattern(),selectedPad,s,SendMessageW(GetDlgItem(h,id),BM_GETCHECK,0,0)==BST_CHECKED);return 0;}",
      "if(id>=300&&id<316){int s=stepPage*16+(id-300);engine.setStep(engine.pattern(),selectedPad,s,SendMessageW(GetDlgItem(h,id),BM_GETCHECK,0,0)==BST_CHECKED);return 0;}"),
     ("760,610,nullptr", "760,590,nullptr"),
@@ -107,7 +107,7 @@ patch("src/main.cpp", [
 
 patch("tests/engine_tests.cpp", [
     ("e.setStep(0,5,7,true);assert(e.step(0,5,7));e.setStep(0,5,7,false);assert(!e.step(0,5,7));",
-     "e.setStep(0,5,7,true);assert(e.step(0,5,7));e.setStep(0,5,7,false);assert(!e.step(0,5,7));\\n e.setStep(3,11,63,true); assert(e.step(3,11,63));"),
+     "e.setStep(0,5,7,true);assert(e.step(0,5,7));e.setStep(0,5,7,false);assert(!e.step(0,5,7));\n e.setStep(3,11,63,true); assert(e.step(3,11,63));"),
     ("sampler.setStep(2,4,9,true); sampler.setTempo(133);",
      "sampler.setStep(2,4,9,true); sampler.setStep(2,4,63,true); sampler.setTempo(133);"),
     ("assert(restored.step(2,4,9)); assert(restored.pattern()==2);",
