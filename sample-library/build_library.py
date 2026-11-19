@@ -192,6 +192,11 @@ def main():
                     target = dest / (src.parent.name + "_" + src.name)
                 shutil.copy2(src, target)
                 if src.suffix.lower() == ".wav": copied += 1
+        license_id = {"Piano":"meta-piano", "Guitar_Nylon":"meta-nylon-guitar", "Guitar_Steel":"meta-steel-guitar"}[folder]
+        license_file = repo / "systems" / "instruments" / license_id / "LICENSE"
+        if license_file.exists(): shutil.copy2(license_file, dest / "LICENSE")
+        source_readme = repo / "systems" / "instruments" / license_id / "README.md"
+        if source_readme.exists(): shutil.copy2(source_readme, dest / "SOURCE_README.md")
         if copied < 100: raise RuntimeError(f"{folder}: expected full multisample set, got {copied}")
         print(f"{folder}: imported {copied} original WAV samples")
 
