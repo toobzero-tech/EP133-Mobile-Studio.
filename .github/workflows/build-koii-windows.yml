@@ -40,6 +40,17 @@ jobs:
               raise SystemExit("Could not locate the statusText CreateWindowW call; refusing an unsafe patch")
           p.write_text(s)
           PY
+      - name: Publish unpacked source for integration review
+        uses: actions/upload-artifact@v4
+        with:
+          name: infinity-windows-source-review
+          path: |
+            /tmp/koii-src/EP133_KOII_Windows_0.5.0/CMakeLists.txt
+            /tmp/koii-src/EP133_KOII_Windows_0.5.0/README_RU.md
+            /tmp/koii-src/EP133_KOII_Windows_0.5.0/src/**
+            /tmp/koii-src/EP133_KOII_Windows_0.5.0/tests/**
+          if-no-files-found: error
+          retention-days: 7
       - name: Run native engine tests
         run: |
           cmake -S /tmp/koii-src/EP133_KOII_Windows_0.5.0 -B /tmp/koii-native -G Ninja
