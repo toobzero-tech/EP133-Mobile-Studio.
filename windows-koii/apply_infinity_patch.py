@@ -88,7 +88,6 @@ patch("src/main.cpp", [
      "label(h,L\"64-STEP SEQUENCER  |  4 BANKS x 16 STEPS\",20,325,420,20);for(int p=0;p<4;p++){wchar_t n[16];swprintf_s(n,L\"%d-%d\",p*16+1,p*16+16);CreateWindowW(L\"BUTTON\",n,WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,440+p*68,320,62,26,h,(HMENU)(30+p),nullptr,nullptr);}"),
     ("CreateWindowW(L\"BUTTON\",L\"IMPORT WAV TO PAD\",WS_CHILD|WS_VISIBLE,20,420,145,34,h,(HMENU)4,nullptr,nullptr);",
      "label(h,L\"SLICE START\",20,390,90,20);sliceStartSlider=makeSlider(h,20,20,410,300,0,1000,0);label(h,L\"SLICE END\",365,390,80,20);sliceEndSlider=makeSlider(h,21,365,410,300,0,1000,1000);\n CreateWindowW(L\"BUTTON\",L\"IMPORT WAV TO PAD\",WS_CHILD|WS_VISIBLE,20,455,145,34,h,(HMENU)4,nullptr,nullptr);"),
-     "label(h,L\"SLICE START\",20,405,90,20);sliceStartSlider=makeSlider(h,20,115,398,220,0,1000,0);label(h,L\"SLICE END\",365,405,80,20);sliceEndSlider=makeSlider(h,21,450,398,220,0,1000,1000);\n CreateWindowW(L\"BUTTON\",L\"IMPORT WAV TO PAD\",WS_CHILD|WS_VISIBLE,20,455,145,34,h,(HMENU)4,nullptr,nullptr);"),
     ("CreateWindowW(L\"BUTTON\",L\"SAVE PROJECT\",WS_CHILD|WS_VISIBLE,180,420,125,34,h,(HMENU)5,nullptr,nullptr);",
      "CreateWindowW(L\"BUTTON\",L\"SAVE PROJECT\",WS_CHILD|WS_VISIBLE,180,455,125,34,h,(HMENU)5,nullptr,nullptr);"),
     ("CreateWindowW(L\"BUTTON\",L\"LOAD PROJECT\",WS_CHILD|WS_VISIBLE,320,420,125,34,h,(HMENU)6,nullptr,nullptr);",
@@ -133,11 +132,11 @@ patch("src/main.cpp", [
 
 
 patch("src/wav.cpp", [
-    ("#include <fstream>", "#include <fstream>\\n#include <filesystem>"),
+    ("#include <fstream>", "#include <fstream>\n#include <filesystem>"),
     ("std::ifstream f(path,std::ios::binary);", "std::ifstream f(std::filesystem::u8path(path),std::ios::binary);")
 ])
 patch("src/engine.cpp", [
-    ("#include <iomanip>", "#include <iomanip>\\n#include <filesystem>"),
+    ("#include <iomanip>", "#include <iomanip>\n#include <filesystem>"),
     ("std::ofstream f(path, std::ios::binary);", "std::ofstream f(std::filesystem::u8path(path), std::ios::binary);"),
     ("std::ifstream f(path, std::ios::binary);", "std::ifstream f(std::filesystem::u8path(path), std::ios::binary);")
 ])
