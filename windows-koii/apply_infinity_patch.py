@@ -60,14 +60,19 @@ for old, new in [
 ]:
     replace_once("src/main.cpp", old, new)
 
+replace_once("CMakeLists.txt", "project(Infinity_Windows VERSION 0.8.0", "project(Infinity_Windows VERSION 0.9.0")
+replace_once("README_RU.md",
+    "**БЕСКОНЕЧНОСТЬ ∞** — ранний Windows-грувбокс и сэмплер. Версия 0.8.0 сосредоточена на надёжности аудиодвижка и сохранения проектов.",
+    "**БЕСКОНЕЧНОСТЬ ∞** — Windows-грувбокс и сэмплер. Версия 0.9.0 добавляет мастер-эффекты Delay, Reverb, Saturation и Compressor.")
+
 required = {
-    "CMakeLists.txt": ["project(Infinity_Windows VERSION 0.8.0", "add_executable(Infinity WIN32"],
+    "CMakeLists.txt": ["project(Infinity_Windows VERSION 0.9.0", "add_executable(Infinity WIN32"],
     "src/engine.hpp": ["kSteps=64", "restartRequested_"],
     "src/engine.cpp": ["INFINITY_PROJECT 3", "floatToBits", "bitsToFloat", "void Engine::setPlaying(bool value)"],
     "src/sample.cpp": ["RIFF boundary", "blockAlign < minimumAlign", "rawValue"],
     "src/main.cpp": ["waveOutWrite", "WHDR_PREPARED", "audioRun.store(false", "(HMENU)(INT_PTR)(10+p)"],
     "tests/engine_tests.cpp": ["roundtrip.infinity", "lowrate.wav", "truncated.infinity"],
-    "README_RU.md": ["Встраивание аудиосемплов", "0.8.0"],
+    "README_RU.md": ["Встраивание аудиосемплов", "0.9.0"],
 }
 for relative, markers in required.items():
     path = root / relative
