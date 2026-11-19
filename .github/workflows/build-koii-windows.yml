@@ -1,4 +1,4 @@
-name: Build EP-133 KOII Windows
+name: Бесконечность ∞ — сборка Windows
 on:
   push:
     paths:
@@ -69,16 +69,16 @@ jobs:
             -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
             -DCMAKE_BUILD_TYPE=Release
           cmake --build /tmp/koii-win --verbose
-          test -f /tmp/koii-win/EP133_KOII.exe
+          test -f /tmp/koii-win/Infinity.exe
       - name: Package Windows EXE
         run: |
           mkdir -p dist
-          cp /tmp/koii-win/EP133_KOII.exe dist/Infinity.exe
+          cp /tmp/koii-win/Infinity.exe dist/Бесконечность.exe
           cp /tmp/koii-src/EP133_KOII_Windows_0.5.0/README_RU.md dist/
-          cd dist && zip -9 ../Infinity_Windows_0.7.0_Test.zip *
+          cd dist && zip -9 ../Бесконечность_∞_Windows_0.7.0_Test.zip *
       - uses: actions/upload-artifact@v4
         with:
-          name: Infinity-Windows-0.7.0-Test
-          path: Infinity_Windows_0.7.0_Test.zip
+          name: Бесконечность-∞-Windows-0.7.0-Test
+          path: Бесконечность_∞_Windows_0.7.0_Test.zip
           if-no-files-found: error
           retention-days: 14
