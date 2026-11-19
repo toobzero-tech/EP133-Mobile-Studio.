@@ -72,6 +72,96 @@ def make_original_kit():
     for i,f in enumerate((110,145,185,230),1):
         synth_snare(d/f"Perc_Tom_{i:02}.wav",f,.42)
 
+
+def render_generated_content():
+    """Create original breakbeat, acid and evolving ambient loops without third-party recordings."""
+    import array
+    loops = OUT/"Loops"
+    atmos = OUT/"Atmospheres"
+    acid = OUT/"Synth_Loops"/"Acid"
+    for d in (loops, atmos, acid): d.mkdir(parents=True, exist_ok=True)
+
+    def kick_samples(freq=48, decay=.42):
+        n=int(RATE*decay); phase=0.0; a=[]
+        for i in range(n):
+            t=i/RATE; phase += 2*math.pi*(freq+105*math.exp(-t*32))/RATE
+            a.append(math.tanh(math.sin(phase)*math.exp(-t*8)*2.1))
+        return a
+    def snare_samples(decay=.22):
+        n=int(RATE*decay); a=[]
+        for i in range(n):
+            t=i/RATE
+            a.append((random.uniform(-1,1)*.7 + math.sin(2*math.pi*190*t)*.3)*math.exp(-t*17))
+        return a
+    def hat_samples(decay=.055):
+        n=int(RATE*decay); a=[]
+        for i in range(n):
+            t=i/RATE
+            a.append(random.uniform(-1,1)*math.exp(-t*45)*.42)
+        return a
+    kick=kick_samples(); snare=snare_samples(); hat=hat_samples()
+    for bpm,feel in ((110,"Dusty"),(124,"Broken"),(132,"Driving")):
+        bars=4; beats=bars*4; total=int(beats*60/bpm*RATE)
+        mix=[0.0]*total
+        step=60/bpm/4
+        def place(src, when, gain=1.0):
+            start=int(when*RATE)
+            for j,v in enumerate(src):
+                if start+j<total: mix[start+j]+=v*gain
+        for s in range(beats*4):
+            t=s*step
+            # Syncopated, human-feeling 16th-note patterns.
+            pos=s%16
+            if pos in ((0,7,10,14) if bpm==110 else (0,6,10,13)):
+                place(kick,t, .82 if pos else 1.0)
+            if pos in (4,12): place(snare,t,.78)
+            if s%2==0: place(hat,t,.26 if s%4 else .34)
+            if bpm==124 and pos in (3,11): place(hat,t,.16)
+        peak=max(max(abs(x) for x in mix),1e-9)
+        write_wav(loops/f"Infinity_{feel}_Break_{bpm}BPM_4bar.wav",[x/peak*.88 for x in mix])
+
+    # Four-bar acid patterns, original synthesized oscillator + resonant-style moving filter.
+    scale=[0,3,5,7,10,12,15]
+    for bpm,root in ((124,45),(132,43),(138,40)):
+        bars=4; total=int(bars*4*60/bpm*RATE); mix=[0.0]*total
+        step=60/bpm/4
+        pattern=[0,-1,3,0,5,-1,3,7,0,-1,5,3,7,-1,5,3]
+        for s in range(bars*16):
+            note=pattern[s%16]
+            if note<0 and s%4 not in (2,): continue
+            midi=root+scale[note%len(scale)]
+            freq=440*2**((midi-69)/12)
+            start=int(s*step*RATE); length=int(step*RATE*.88)
+            phase=0.0
+            for j in range(length):
+                t=j/RATE
+                env=min(1,j/180)*math.exp(-t*3.2)
+                phase += 2*math.pi*freq/RATE
+                saw=2*((phase/(2*math.pi))%1)-1
+                sub=math.sin(phase*.5)
+                v=math.tanh((saw*.72+sub*.25)*1.8)*env
+                if start+j<total: mix[start+j]+=v*.32
+        peak=max(max(abs(x) for x in mix),1e-9)
+        write_wav(acid/f"Infinity_Acid_{bpm}BPM_4bar.wav",[x/peak*.78 for x in mix])
+
+    # Evolving, loopable-feeling pads/textures generated from layered oscillators and filtered noise.
+    for idx,(name,base) in enumerate((("Blue_Hour",110),("Concrete_Dawn",82),("Deep_Current",65),("Glass_Rain",146))):
+        seconds=12; n=RATE*seconds; out=[]
+        phases=[0.0,0.0,0.0]
+        for i in range(n):
+            t=i/RATE
+            lfo=.5+.5*math.sin(2*math.pi*t/seconds)
+            val=0.0
+            for k,ratio in enumerate((1,1.498,2.003)):
+                f=base*ratio*(1+.002*math.sin(2*math.pi*(.035+k*.012)*t))
+                phases[k]+=2*math.pi*f/RATE
+                val+=math.sin(phases[k])*(.20 if k==0 else .11)
+            noise=random.uniform(-1,1)
+            val+=noise*(.012+.025*lfo)
+            fade=min(1,t*2,(seconds-t)*2)
+            out.append(math.tanh(val*1.35)*max(0,fade))
+        write_wav(atmos/f"Infinity_Atmos_{name}_12s.wav",out)
+
 def main():
     OUT.mkdir(parents=True,exist_ok=True)
     (OUT/"Licenses").mkdir(parents=True,exist_ok=True)
@@ -102,16 +192,17 @@ def main():
         spec=repo/"systems"/"instruments"/ident/"README.md"
         if spec.exists(): shutil.copy2(spec,OUT/"Instruments"/folder/"SOURCE_README.md")
     make_original_kit()
+    render_generated_content()
     (OUT/"README_RU.txt").write_text(
-      "INFINITY SAMPLE LIBRARY - STARTER 01\n"
+      "INFINITY SAMPLE LIBRARY - STARTER 02\n"
       "Содержит оригинальные процедурно синтезированные ударные и компактные наборы инструментальных WAV-сэмплов Meta Open Sound.\n"
       "Инструментальные коллекции Meta Piano / Meta Nylon Guitar / Meta Steel Guitar опубликованы под CC0 1.0.\n"
-      "Оригинальные ударные сгенерированы скриптом проекта Infinity и могут свободно использоваться в музыке.\n"
+      "Оригинальные ударные, брейки, Acid-партии и атмосферные текстуры сгенерированы скриптом проекта Infinity и могут свободно использоваться в музыке.\n"
       "Формат: WAV PCM, 48 kHz, mono. Для каждого стороннего набора сохранены исходные сведения о лицензии.\n"
       "Источник Meta Open Sound: https://github.com/facebookincubator/Meta-open-sound\n"
       "Проверяйте файл LICENSE в папке Licenses перед повторным распространением отдельных исходных коллекций.\n",
       encoding="utf-8")
-    zip_path=Path("Infinity_Sample_Library_Starter_01.zip")
+    zip_path=Path("Infinity_Sample_Library_Starter_02.zip")
     with zipfile.ZipFile(zip_path,"w",zipfile.ZIP_DEFLATED,compresslevel=6) as z:
         for f in OUT.rglob("*"):
             if f.is_file(): z.write(f,f.relative_to(OUT.parent))
