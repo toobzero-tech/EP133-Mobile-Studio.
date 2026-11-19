@@ -361,3 +361,9 @@ rep("README_RU.md",
     "- DSP на фиксированных буферах без выделения памяти в аудиопотоке.",
     "- DSP на фиксированных буферах без выделения памяти в аудиопотоке.\n- Настоящий стереотракт: панорама дорожек сохраняется через сатурацию, компрессию, Delay и Reverb.\n- Стерео Delay 500 мс и независимые стереоканалы Room без взаимного протекания.")
 print("Infinity 0.12.0: stereo master bus and hard-pan regression test applied.")
+
+# Remove the former mono fold-down declaration; both channels are processed independently.
+rep("src/engine.cpp",
+    "        const float mixed=(mixedLeft+mixedRight)*0.5f;\n",
+    "        // Keep the stereo image intact through all master processing.\n")
+rep("tests/engine_tests.cpp", "#include <cassert>\n", "#include <algorithm>\n#include <cassert>\n")
