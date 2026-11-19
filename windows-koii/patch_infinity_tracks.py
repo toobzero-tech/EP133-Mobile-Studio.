@@ -265,3 +265,99 @@ r = r.replace("64 шага на паттерн и пэд", "64 шага на к�
 r = r.replace("Чтение старых проектов форматов v1/v2.", "Чтение старых проектов форматов v1/v2/v3 с переносом шагов на первые 8 дорожек.")
 r = r.replace("Пока отсутствуют полноценные 8 независимых дорожек, микшер и FX-цепочки, MIDI,", "Пока отсутствуют индивидуальные FX-цепочки на дорожках, MIDI,")
 p.write_text(r, encoding="utf-8")
+
+
+# Infinity 0.12.0: preserve true stereo through the master bus.
+# Track pan is now audible as a real left/right balance; delay and room buffers
+# are stereo as well, so a hard-panned source cannot leak into the opposite side.
+rep("src/engine.cpp",
+    "        const float mixed=(mixedLeft+mixedRight)*0.5f;\n",
+    "")
+rep("src/engine.cpp",
+"""        float processed = std::tanh(mixed * drive) / std::max(1.0f, std::tanh(drive));
+        const float magnitude = std::abs(processed);
+        const float threshold = 0.92f - compression * 0.62f;
+        if (magnitude > threshold && compression > 0.001f) {
+            const float over = magnitude - threshold;
+            processed = std::copysign(threshold + over / (1.0f + compression * 8.0f), processed);
+        }
+        // Fixed 500 ms echo and short feedback comb. No allocations in render().
+        const float delayed = delayBuffer_[delayCursor_];
+        delayBuffer_[delayCursor_] = std::clamp(processed + delayed * delayFeedback, -1.5f, 1.5f);
+        delayCursor_ = (delayCursor_ + 1) % delayBuffer_.size();
+        const float echoMix = processed * (1.0f - delayWet * 0.48f) + delayed * delayWet * 0.48f;
+        const float room = reverbBuffer_[reverbCursor_];
+        reverbBuffer_[reverbCursor_] = std::clamp(echoMix + room * 0.72f, -1.5f, 1.5f);
+        reverbCursor_ = (reverbCursor_ + 1) % reverbBuffer_.size();
+        const float wet = echoMix * (1.0f - reverbWet * 0.32f) + room * reverbWet * 0.32f;
+        const float outputSample = std::tanh(wet * 1.25f) * masterVolume * 0.72f;
+        const float balance=std::clamp((mixedRight-mixedLeft)*0.5f,-0.5f,0.5f);
+        output[i*2]=std::clamp(outputSample-balance*std::abs(outputSample),-1.0f,1.0f);
+        output[i*2+1]=std::clamp(outputSample+balance*std::abs(outputSample),-1.0f,1.0f);
+""",
+"""        const float normalization = std::max(1.0f, std::tanh(drive));
+        float processedLeft = std::tanh(mixedLeft * drive) / normalization;
+        float processedRight = std::tanh(mixedRight * drive) / normalization;
+        const float threshold = 0.92f - compression * 0.62f;
+        auto compress = [compression, threshold](float sample) noexcept {
+            const float magnitude = std::abs(sample);
+            if (magnitude <= threshold || compression <= 0.001f) return sample;
+            const float over = magnitude - threshold;
+            return std::copysign(threshold + over / (1.0f + compression * 8.0f), sample);
+        };
+        processedLeft = compress(processedLeft);
+        processedRight = compress(processedRight);
+
+        // Interleaved stereo buffers: 22,050 frames = 500 ms at 44.1 kHz.
+        const size_t delayIndex = delayCursor_ * 2;
+        const float delayedLeft = delayBuffer_[delayIndex];
+        const float delayedRight = delayBuffer_[delayIndex + 1];
+        delayBuffer_[delayIndex] = std::clamp(processedLeft + delayedLeft * delayFeedback, -1.5f, 1.5f);
+        delayBuffer_[delayIndex + 1] = std::clamp(processedRight + delayedRight * delayFeedback, -1.5f, 1.5f);
+        delayCursor_ = (delayCursor_ + 1) % (delayBuffer_.size() / 2);
+        const float echoLeft = processedLeft * (1.0f - delayWet * 0.48f) + delayedLeft * delayWet * 0.48f;
+        const float echoRight = processedRight * (1.0f - delayWet * 0.48f) + delayedRight * delayWet * 0.48f;
+
+        // Independent short stereo room buffers; no allocation or locks in render().
+        const size_t reverbIndex = reverbCursor_ * 2;
+        const float roomLeft = reverbBuffer_[reverbIndex];
+        const float roomRight = reverbBuffer_[reverbIndex + 1];
+        reverbBuffer_[reverbIndex] = std::clamp(echoLeft + roomLeft * 0.72f, -1.5f, 1.5f);
+        reverbBuffer_[reverbIndex + 1] = std::clamp(echoRight + roomRight * 0.72f, -1.5f, 1.5f);
+        reverbCursor_ = (reverbCursor_ + 1) % (reverbBuffer_.size() / 2);
+        const float wetLeft = echoLeft * (1.0f - reverbWet * 0.32f) + roomLeft * reverbWet * 0.32f;
+        const float wetRight = echoRight * (1.0f - reverbWet * 0.32f) + roomRight * reverbWet * 0.32f;
+        output[i * 2] = std::clamp(std::tanh(wetLeft * 1.25f) * masterVolume * 0.72f, -1.0f, 1.0f);
+        output[i * 2 + 1] = std::clamp(std::tanh(wetRight * 1.25f) * masterVolume * 0.72f, -1.0f, 1.0f);
+""")
+rep("tests/engine_tests.cpp",
+    "    engine.render(nullptr, 32);\n",
+"""    engine.render(nullptr, 32);
+
+    // A hard-left track must remain silent in the right channel through the
+    // complete master bus, rather than being narrowed back to mono.
+    Engine stereo;
+    stereo.setTrackPad(0, 0);
+    stereo.setTrackPan(0, -1.0f);
+    stereo.setTrackStep(0, 0, 0, true);
+    stereo.setPlaying(true);
+    std::vector<float> stereoBuffer(1024);
+    stereo.render(stereoBuffer.data(), 512);
+    float leftPeak = 0.0f, rightPeak = 0.0f;
+    for (size_t i = 0; i < stereoBuffer.size(); i += 2) {
+        leftPeak = std::max(leftPeak, std::abs(stereoBuffer[i]));
+        rightPeak = std::max(rightPeak, std::abs(stereoBuffer[i + 1]));
+    }
+    assert(leftPeak > 0.01f);
+    assert(rightPeak < 0.000001f);
+""")
+rep("CMakeLists.txt",
+    "project(Infinity_Windows VERSION 0.11.0",
+    "project(Infinity_Windows VERSION 0.12.0")
+rep("README_RU.md",
+    "Версия 0.11.0 добавляет 8 независимых секвенсорных дорожек и трековый микшер.",
+    "Версия 0.12.0 сохраняет полноценную стереопанораму через мастер-обработку.")
+rep("README_RU.md",
+    "- DSP на фиксированных буферах без выделения памяти в аудиопотоке.",
+    "- DSP на фиксированных буферах без выделения памяти в аудиопотоке.\n- Настоящий стереотракт: панорама дорожек сохраняется через сатурацию, компрессию, Delay и Reverb.\n- Стерео Delay 500 мс и независимые стереоканалы Room без взаимного протекания.")
+print("Infinity 0.12.0: stereo master bus and hard-pan regression test applied.")
