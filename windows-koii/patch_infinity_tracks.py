@@ -371,3 +371,75 @@ rep("tests/engine_tests.cpp", "#include <cassert>\n", "#include <algorithm>\n#in
 rep("tests/engine_tests.cpp",
     "    stereo.setTrackPan(0, -1.0f);\n",
     "    stereo.setTrackPan(0, -1.0f);\n    for (int track = 1; track < kTracks; ++track) stereo.setTrackMute(track, true);\n")
+
+# Infinity 0.13.0: export a complete 64-step pattern at the current tempo,
+# then render a one-second effects tail instead of cutting Delay/Reverb abruptly.
+rep("src/engine.hpp",
+    '  void exportWav(const std::string& path,float seconds=8.f);',
+    '  void exportWav(const std::string& path,float seconds=0.0f);')
+rep("src/engine.cpp",
+"""void Engine::exportWav(const std::string& path, float seconds) {
+    if (!std::isfinite(seconds) || seconds <= 0.0f || seconds > 600.0f)
+        throw std::runtime_error("Export duration out of range");
+    const size_t frames = static_cast<size_t>(double(seconds) * 44100.0);
+    if (frames == 0 || frames > (std::numeric_limits<size_t>::max() / 2))
+        throw std::runtime_error("Export frame count out of range");
+
+    std::vector<float> audio(frames * 2);
+    const bool wasPlaying = playing();
+    setPlaying(true);
+    render(audio.data(), frames);
+    setPlaying(wasPlaying);
+    writeWav16(path, audio, 44100, 2);
+}""",
+"""void Engine::exportWav(const std::string& path, float seconds) {
+    if (!std::isfinite(seconds) || seconds < 0.0f || seconds > 600.0f)
+        throw std::runtime_error("Export duration out of range");
+
+    // Zero means one complete 64-step pattern. Swing alternates short/long
+    // steps, so an even 64-step cycle retains the exact average duration.
+    const double patternSeconds = 64.0 * 60.0 / (double(tempo()) * 4.0);
+    const double requestedSeconds = seconds == 0.0f ? patternSeconds : double(seconds);
+    const size_t musicFrames = static_cast<size_t>(std::ceil(requestedSeconds * 44100.0));
+    constexpr size_t tailFrames = 44100; // Let the master delay and room decay.
+    if (musicFrames == 0 || musicFrames > (std::numeric_limits<size_t>::max() / 2) - tailFrames)
+        throw std::runtime_error("Export frame count out of range");
+
+    std::vector<float> audio((musicFrames + tailFrames) * 2);
+    const bool wasPlaying = playing();
+    setPlaying(true); // Restart at step 1 for a predictable full-pattern render.
+    render(audio.data(), musicFrames);
+    setPlaying(false);
+    render(audio.data() + musicFrames * 2, tailFrames); // FX tail, no new steps.
+    setPlaying(wasPlaying);
+    writeWav16(path, audio, 44100, 2);
+}""")
+rep("src/main.cpp",
+    'CreateWindowW(L"BUTTON",L"EXPORT 8s WAV",WS_CHILD|WS_VISIBLE,460,596,130,34,h,(HMENU)3,nullptr,nullptr);',
+    'CreateWindowW(L"BUTTON",L"EXPORT PATTERN WAV",WS_CHILD|WS_VISIBLE,460,596,160,34,h,(HMENU)3,nullptr,nullptr);')
+rep("src/main.cpp",
+    'engine.exportWav(narrow(file.c_str()),8.f);startAudio();setStatus(L"WAV export completed");',
+    'engine.exportWav(narrow(file.c_str()));startAudio();setStatus(L"Full pattern + FX tail exported to WAV");')
+rep("tests/engine_tests.cpp",
+    '    restored.trigger(0);',
+    """    restored.trigger(0);
+    restored.setTempo(120.0f);
+    restored.setSwing(0.20f);
+    restored.setPlaying(false);
+    restored.exportWav("full_pattern.wav");
+    const AudioSample exported = readWav("full_pattern.wav");
+    // 64 sixteenth-note steps at 120 BPM = 8 seconds, plus a 1-second FX tail.
+    assert(exported.sampleRate == 44100);
+    assert(exported.channels == 2);
+    assert(exported.mono.size() == 9u * 44100u);
+    std::remove("full_pattern.wav");""")
+rep("CMakeLists.txt",
+    "project(Infinity_Windows VERSION 0.12.0",
+    "project(Infinity_Windows VERSION 0.13.0")
+rep("README_RU.md",
+    "Версия 0.12.0 сохраняет полноценную стереопанораму через мастер-обработку.",
+    "Версия 0.13.0 экспортирует полный 64-шаговый паттерн с хвостом мастер-эффектов.")
+rep("README_RU.md",
+    "- Экспорт текущего микса в WAV 16-bit.",
+    "- Экспорт полного 64-шагового паттерна в WAV 16-bit с учётом текущего BPM и дополнительной секундой хвоста Delay/Reverb.")
+print("Infinity 0.13.0: full-pattern WAV export and FX-tail regression test applied.")
