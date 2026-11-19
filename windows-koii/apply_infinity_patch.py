@@ -16,6 +16,17 @@ patch("src/engine.hpp", [
     ("constexpr int kPads=12, kSteps=16, kPatterns=4;", "constexpr int kPads=12, kSteps=64, kPatterns=4;")
 ])
 
+patch("src/engine.hpp", [
+    ("void setPlaying(bool v) noexcept { playing_.store(v,std::memory_order_release); }", "void setPlaying(bool v) noexcept;"),
+    ("std::atomic<bool> playing_{false};", "std::atomic<bool> playing_{false};\n  std::atomic<bool> restartRequested_{false};")
+])
+patch("src/engine.cpp", [
+    ("void Engine::setVolume(float v) noexcept { volume_.store(std::clamp(v,0.f,1.f),std::memory_order_release); }",
+     "void Engine::setVolume(float v) noexcept { volume_.store(std::clamp(v,0.f,1.f),std::memory_order_release); }\nvoid Engine::setPlaying(bool v) noexcept { playing_.store(v,std::memory_order_release); if(v) restartRequested_.store(true,std::memory_order_release); }"),
+    ("void Engine::render(float* out,size_t frames) noexcept {\n Trigger e;",
+     "void Engine::render(float* out,size_t frames) noexcept {\n if(restartRequested_.exchange(false,std::memory_order_acq_rel)){stepIndex_=0;nextStepFrame_=frame_;}\n Trigger e;")
+])
+
 patch("src/engine.cpp", [
     ("for(int i=0;i<16;i+=4) grid_[0][0][i].store(1);", "for(int i=0;i<kSteps;i+=16) grid_[0][0][i].store(1);"),
     ("grid_[0][1][4].store(1); grid_[0][1][12].store(1);", "for(int i=4;i<kSteps;i+=16) grid_[0][1][i].store(1);"),
