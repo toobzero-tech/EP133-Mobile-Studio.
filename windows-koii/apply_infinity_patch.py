@@ -210,4 +210,47 @@ replace_once("README_RU.md",
 replace_once("README_RU.md",
     "- Экспорт текущего микса в WAV 16-bit.\n",
     "- Экспорт текущего микса в WAV 16-bit.\n- Мастер-эффекты в реальном времени: Delay, Room/Reverb, Saturation и Compressor.\n- DSP на фиксированных буферах без выделения памяти в аудиопотоке.\n")
-print("Infinity 0.9.0 master FX patch applied.")
+
+# Infinity 0.10.0: live 16-band Goertzel spectrum display.
+replace_once("src/main.cpp", "#include <cstdio>\\n", "#include <cstdio>\\n#include <cmath>\\n")
+replace_once("src/main.cpp",
+    "static std::vector<std::unique_ptr<AudioBuf>> buffers;\\n",
+    """static std::vector<std::unique_ptr<AudioBuf>> buffers;
+static std::atomic<float> spectrumBands[16]{};
+static void updateSpectrum(const std::vector<float>& mix) noexcept {
+ static constexpr float frequencies[16]={55.f,78.f,110.f,156.f,220.f,311.f,440.f,622.f,880.f,1245.f,1760.f,2490.f,3520.f,4980.f,7040.f,9960.f};
+ for(int band=0;band<16;++band){
+  const float coefficient=2.0f*std::cos(6.28318530718f*frequencies[band]/44100.0f);
+  float s1=0.0f,s2=0.0f;
+  for(int i=0;i<FRAMES;++i){const float sample=mix[size_t(i)*2];const float s=sample+coefficient*s1-s2;s2=s1;s1=s;}
+  const float power=std::max(0.0f,s1*s1+s2*s2-coefficient*s1*s2);
+  const float magnitude=std::sqrt(power)/float(FRAMES);
+  const float level=std::clamp(magnitude*5.0f,0.0f,1.0f);
+  const float previous=spectrumBands[band].load(std::memory_order_relaxed);
+  spectrumBands[band].store(previous*0.58f+level*0.42f,std::memory_order_relaxed);
+ }
+}
+""")
+replace_once("src/main.cpp",
+    "    engine.render(b->mix.data(),FRAMES);\\n",
+    "    engine.render(b->mix.data(),FRAMES);\\n    updateSpectrum(b->mix);\\n")
+replace_once("src/main.cpp",
+    'statusText=CreateWindowW(L"STATIC",L"Starting audio device...",WS_CHILD|WS_VISIBLE,20,555,760,24,h,nullptr,GetModuleHandleW(nullptr),nullptr);syncSteps(h);',
+    'statusText=CreateWindowW(L"STATIC",L"Starting audio device...",WS_CHILD|WS_VISIBLE,20,555,760,24,h,nullptr,GetModuleHandleW(nullptr),nullptr);syncSteps(h);SetTimer(h,1,33,nullptr);')
+replace_once("src/main.cpp",
+    " case WM_CREATE:build(h);return 0;\\n",
+    """ case WM_CREATE:build(h);return 0;
+ case WM_TIMER:InvalidateRect(h,nullptr,FALSE);return 0;
+ case WM_PAINT:{PAINTSTRUCT ps{};HDC dc=BeginPaint(h,&ps);RECT screen{570,52,810,120};HBRUSH bg=CreateSolidBrush(RGB(22,26,30));FillRect(dc,&screen,bg);DeleteObject(bg);SetBkMode(dc,TRANSPARENT);SetTextColor(dc,RGB(210,216,220));HFONT font=CreateFontW(10,0,0,0,FW_BOLD,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,L"Segoe UI");HGDIOBJ oldFont=SelectObject(dc,font);TextOutW(dc,580,56,L"LIVE SPECTRUM",13);for(int band=0;band<16;++band){const float level=spectrumBands[band].load(std::memory_order_relaxed);const int height=std::max(2,int(level*42.0f));RECT bar{580+band*14,112-height,590+band*14,112};HBRUSH color=CreateSolidBrush(RGB(255,118,38));FillRect(dc,&bar,color);DeleteObject(color);}SelectObject(dc,oldFont);DeleteObject(font);EndPaint(h,&ps);return 0;}
+""")
+replace_once("CMakeLists.txt", "project(Infinity_Windows VERSION 0.9.0", "project(Infinity_Windows VERSION 0.10.0")
+replace_once("README_RU.md",
+    "**БЕСКОНЕЧНОСТЬ ∞** — Windows-грувбокс и сэмплер. Версия 0.9.0 добавляет мастер-эффекты Delay, Reverb, Saturation и Compressor.",
+    "**БЕСКОНЕЧНОСТЬ ∞** — Windows-грувбокс и сэмплер. Версия 0.10.0 добавляет 16-полосный анализатор спектра в реальном времени и мастер-эффекты.")
+replace_once("README_RU.md",
+    "- DSP на фиксированных буферах без выделения памяти в аудиопотоке.\\n",
+    "- DSP на фиксированных буферах без выделения памяти в аудиопотоке.\\n- Живой 16-полосный Goertzel-анализатор спектра с плавной индикацией.\\n")
+required["CMakeLists.txt"][0] = "project(Infinity_Windows VERSION 0.10.0"
+required["README_RU.md"][1] = "0.10.0"
+print("Infinity 0.10.0 live spectrum patch applied.")
+
