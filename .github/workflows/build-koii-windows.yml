@@ -19,7 +19,8 @@ jobs:
           sudo apt-get install -y cmake ninja-build mingw-w64 xz-utils
       - name: Restore reviewed source
         run: |
-          base64 -d windows-koii/source.tar.xz.b64 > /tmp/infinity-source.tar.xz
+          cat windows-koii/source.tar.xz.b64.part* > /tmp/infinity-source.tar.xz.b64
+          base64 -d /tmp/infinity-source.tar.xz.b64 > /tmp/infinity-source.tar.xz
           mkdir -p /tmp/koii-src
           tar -xJf /tmp/infinity-source.tar.xz -C /tmp/koii-src
           SRC=/tmp/koii-src/EP133_KOII_Windows_0.5.0
