@@ -87,7 +87,7 @@ print("Infinity 0.8.0 source review and MinGW compatibility fixes passed.")
 
 # Infinity 0.9.0: fixed-buffer master effects and visible controls.
 replace_once("src/engine.hpp",
-    "  void setVolume(float volume) noexcept;\\n",
+    "  void setVolume(float volume) noexcept;\n",
     """  void setVolume(float volume) noexcept;
   // Master-bus effects; normalized parameters are safe to update from the UI thread.
   void setEffects(float delay, float reverb, float saturation, float compression) noexcept;
@@ -97,7 +97,7 @@ replace_once("src/engine.hpp",
   float compressionAmount() const noexcept { return compressionAmount_.load(std::memory_order_acquire); }
 """)
 replace_once("src/engine.hpp",
-    "  std::atomic<float> bpm_{120.f},swing_{0.f},volume_{0.8f};\\n",
+    "  std::atomic<float> bpm_{120.f},swing_{0.f},volume_{0.8f};\n",
     """  std::atomic<float> bpm_{120.f},swing_{0.f},volume_{0.8f};
   std::atomic<float> delayAmount_{0.f}, reverbAmount_{0.f}, saturationAmount_{0.f}, compressionAmount_{0.f};
   // Fixed-size delay lines: no allocation or locking in the real-time render path.
@@ -123,7 +123,7 @@ void Engine::setEffects(float delay, float reverb, float saturation, float compr
 }
 """)
 replace_once("src/engine.cpp",
-    "    const float masterVolume = volume_.load(std::memory_order_relaxed);\\n    const uint64_t baseFrames",
+    "    const float masterVolume = volume_.load(std::memory_order_relaxed);\n    const uint64_t baseFrames",
     """    const float masterVolume = volume_.load(std::memory_order_relaxed);
     const float delayWet = delayAmount_.load(std::memory_order_relaxed);
     const float reverbWet = reverbAmount_.load(std::memory_order_relaxed);
@@ -187,7 +187,7 @@ replace_once("src/main.cpp",
     'CreateWindowW(wc.lpszClassName,L"Бесконечность ∞",WS_OVERLAPPEDWINDOW|WS_VISIBLE,CW_USEDEFAULT,CW_USEDEFAULT,760,590,nullptr,nullptr,inst,nullptr);',
     'CreateWindowW(wc.lpszClassName,L"Бесконечность ∞",WS_OVERLAPPEDWINDOW|WS_VISIBLE,CW_USEDEFAULT,CW_USEDEFAULT,840,650,nullptr,nullptr,inst,nullptr);')
 replace_once("tests/engine_tests.cpp",
-    "    assert(engine.volume() == 1.0f);\\n    engine.setTempo",
+    "    assert(engine.volume() == 1.0f);\n    engine.setTempo",
     """    assert(engine.volume() == 1.0f);
     engine.setEffects(2.0f, -1.0f, 0.5f, 1.5f);
     assert(engine.delayAmount() == 1.0f);
@@ -197,9 +197,9 @@ replace_once("tests/engine_tests.cpp",
     engine.setEffects(0.55f, 0.7f, 0.4f, 0.6f);
     engine.setTempo""")
 replace_once("tests/engine_tests.cpp",
-    "    engine.render(buffer.data(), 1024);\\n    bool nonzero",
-    "    engine.render(buffer.data(), 1024);\\n    engine.render(buffer.data(), 1024); // Exercise FX buffers across blocks.\\n    bool nonzero")
+    "    engine.render(buffer.data(), 1024);\n    bool nonzero",
+    "    engine.render(buffer.data(), 1024);\n    engine.render(buffer.data(), 1024); // Exercise FX buffers across blocks.\n    bool nonzero")
 replace_once("README_RU.md",
-    "- Экспорт текущего микса в WAV 16-bit.\\n",
-    "- Экспорт текущего микса в WAV 16-bit.\\n- Мастер-эффекты в реальном времени: Delay, Room/Reverb, Saturation и Compressor.\\n- DSP на фиксированных буферах без выделения памяти в аудиопотоке.\\n")
+    "- Экспорт текущего микса в WAV 16-bit.\n",
+    "- Экспорт текущего микса в WAV 16-bit.\n- Мастер-эффекты в реальном времени: Delay, Room/Reverb, Saturation и Compressor.\n- DSP на фиксированных буферах без выделения памяти в аудиопотоке.\n")
 print("Infinity 0.9.0 master FX patch applied.")
