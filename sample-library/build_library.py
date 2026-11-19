@@ -74,6 +74,7 @@ def make_original_kit():
 
 def main():
     OUT.mkdir(parents=True,exist_ok=True)
+    (OUT/"Licenses").mkdir(parents=True,exist_ok=True)
     archive=ROOT/"meta.zip"
     fetch("https://codeload.github.com/facebookincubator/Meta-open-sound/zip/refs/heads/main",archive)
     with zipfile.ZipFile(archive) as z: z.extractall(SRC)
