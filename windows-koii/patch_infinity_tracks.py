@@ -421,8 +421,8 @@ rep("src/main.cpp",
     'engine.exportWav(narrow(file.c_str()),8.f);startAudio();setStatus(L"WAV export completed");',
     'engine.exportWav(narrow(file.c_str()));startAudio();setStatus(L"Full pattern + FX tail exported to WAV");')
 rep("tests/engine_tests.cpp",
-    '    restored.trigger(0);',
-    """    restored.trigger(0);
+    '    assert(restoredSound);',
+    """    assert(restoredSound);
     restored.setTempo(120.0f);
     restored.setSwing(0.20f);
     restored.setPlaying(false);
