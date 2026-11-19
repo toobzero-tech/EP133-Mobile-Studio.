@@ -1,4 +1,4 @@
-name: Бесконечность ∞ — сборка Windows
+name: БЕСКОНЕЧНОСТЬ ∞ — проверка и сборка Windows
 on:
   push:
     paths:
@@ -9,43 +9,27 @@ permissions:
   contents: read
 jobs:
   build-windows:
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[BUILD_INFINITY]') }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - name: Install MinGW and CMake
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build mingw-w64 xz-utils zip
-      - name: Restore and patch Windows source
+          sudo apt-get install -y cmake ninja-build mingw-w64 xz-utils
+      - name: Restore reviewed source
         run: |
-          base64 -d windows-koii/source.tar.xz.b64 > /tmp/koii.tar.xz
+          base64 -d windows-koii/source.tar.xz.b64 > /tmp/infinity-source.tar.xz
           mkdir -p /tmp/koii-src
-          tar -xJf /tmp/koii.tar.xz -C /tmp/koii-src
+          tar -xJf /tmp/infinity-source.tar.xz -C /tmp/koii-src
           SRC=/tmp/koii-src/EP133_KOII_Windows_0.5.0
           test -f "$SRC/CMakeLists.txt"
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("/tmp/koii-src/EP133_KOII_Windows_0.5.0/src/main.cpp")
-          s = p.read_text()
-          if not any(line.strip() == "#include <thread>" for line in s.splitlines()):
-              marker = "#include <cstdio>"
-              if marker not in s:
-                  raise SystemExit("Could not locate cstdio include; refusing an unsafe patch")
-              s = s.replace(marker, marker + "\n#include <thread>", 1)
-          old = 'statusText=CreateWindowW(L"STATIC",L"Audio engine ready",WS_CHILD|WS_VISIBLE,20,475,650,24,h,nullptr,nullptr);'
-          new = 'statusText=CreateWindowW(L"STATIC",L"Audio engine ready",WS_CHILD|WS_VISIBLE,20,475,650,24,h,nullptr,GetModuleHandleW(nullptr),nullptr);'
-          if old in s:
-              s = s.replace(old, new)
-          elif new not in s:
-              raise SystemExit("Could not locate the statusText CreateWindowW call; refusing an unsafe patch")
-          p.write_text(s)
-          PY
-      - name: Apply Infinity 0.7.0 source fixes
+      - name: Validate reviewed source
         run: python3 windows-koii/apply_infinity_patch.py
-      - name: Publish unpacked source for integration review
+      - name: Publish source review
         uses: actions/upload-artifact@v4
         with:
-          name: infinity-windows-source-review
+          name: infinity-windows-source-review-0.8.0
           path: |
             /tmp/koii-src/EP133_KOII_Windows_0.5.0/CMakeLists.txt
             /tmp/koii-src/EP133_KOII_Windows_0.5.0/README_RU.md
@@ -53,14 +37,14 @@ jobs:
             /tmp/koii-src/EP133_KOII_Windows_0.5.0/tests/**
           if-no-files-found: error
           retention-days: 7
-      - name: Run native engine tests
+      - name: Native strict tests with sanitizers
         run: |
-          cmake -S /tmp/koii-src/EP133_KOII_Windows_0.5.0 -B /tmp/koii-native -G Ninja
-          cmake --build /tmp/koii-native
-          ctest --test-dir /tmp/koii-native --output-on-failure
+          cmake -S /tmp/koii-src/EP133_KOII_Windows_0.5.0 -B /tmp/infinity-native -G Ninja
+          cmake --build /tmp/infinity-native --verbose
+          ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 ctest --test-dir /tmp/infinity-native --output-on-failure
       - name: Cross-compile Windows application
         run: |
-          cmake -S /tmp/koii-src/EP133_KOII_Windows_0.5.0 -B /tmp/koii-win -G Ninja \
+          cmake -S /tmp/koii-src/EP133_KOII_Windows_0.5.0 -B /tmp/infinity-win -G Ninja \
             -DCMAKE_SYSTEM_NAME=Windows \
             -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc-posix \
             -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++-posix \
@@ -68,16 +52,16 @@ jobs:
             -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++ -pthread -municode" \
             -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
             -DCMAKE_BUILD_TYPE=Release
-          cmake --build /tmp/koii-win --verbose
-          test -f /tmp/koii-win/Infinity.exe
+          cmake --build /tmp/infinity-win --verbose
+          test -f /tmp/infinity-win/Infinity.exe
       - name: Package Windows EXE
         run: |
           mkdir -p dist
-          cp /tmp/koii-win/Infinity.exe dist/Бесконечность.exe
+          cp /tmp/infinity-win/Infinity.exe dist/Бесконечность.exe
           cp /tmp/koii-src/EP133_KOII_Windows_0.5.0/README_RU.md dist/
       - uses: actions/upload-artifact@v4
         with:
-          name: Бесконечность-∞-Windows-0.7.0-Test
+          name: Бесконечность-∞-Windows-0.8.0-Reviewed
           path: dist/*
           if-no-files-found: error
           retention-days: 14
