@@ -367,3 +367,7 @@ rep("src/engine.cpp",
     "        const float mixed=(mixedLeft+mixedRight)*0.5f;\n",
     "        // Keep the stereo image intact through all master processing.\n")
 rep("tests/engine_tests.cpp", "#include <cassert>\n", "#include <algorithm>\n#include <cassert>\n")
+
+rep("tests/engine_tests.cpp",
+    "    stereo.setTrackPan(0, -1.0f);\n",
+    "    stereo.setTrackPan(0, -1.0f);\n    for (int track = 1; track < kTracks; ++track) stereo.setTrackMute(track, true);\n")
