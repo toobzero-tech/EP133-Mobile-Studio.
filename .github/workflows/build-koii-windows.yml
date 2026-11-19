@@ -27,10 +27,12 @@ jobs:
           test -f "$SRC/CMakeLists.txt"
       - name: Validate reviewed source
         run: python3 windows-koii/apply_infinity_patch.py
+      - name: Apply Infinity 0.11.0 tracks and mixer
+        run: python3 windows-koii/patch_infinity_tracks.py
       - name: Publish source review
         uses: actions/upload-artifact@v4
         with:
-          name: infinity-windows-source-review-0.10.0
+          name: infinity-windows-source-review-0.11.0
           path: |
             /tmp/koii-src/EP133_KOII_Windows_0.5.0/CMakeLists.txt
             /tmp/koii-src/EP133_KOII_Windows_0.5.0/README_RU.md
@@ -62,7 +64,7 @@ jobs:
           cp /tmp/koii-src/EP133_KOII_Windows_0.5.0/README_RU.md dist/
       - uses: actions/upload-artifact@v4
         with:
-          name: Бесконечность-∞-Windows-0.10.0
+          name: Бесконечность-∞-Windows-0.11.0
           path: dist/*
           if-no-files-found: error
           retention-days: 14
