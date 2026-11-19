@@ -75,10 +75,9 @@ jobs:
           mkdir -p dist
           cp /tmp/koii-win/Infinity.exe dist/Бесконечность.exe
           cp /tmp/koii-src/EP133_KOII_Windows_0.5.0/README_RU.md dist/
-          cd dist && zip -9 ../Бесконечность_∞_Windows_0.7.0_Test.zip *
       - uses: actions/upload-artifact@v4
         with:
           name: Бесконечность-∞-Windows-0.7.0-Test
-          path: Бесконечность_∞_Windows_0.7.0_Test.zip
+          path: dist/*
           if-no-files-found: error
           retention-days: 14
