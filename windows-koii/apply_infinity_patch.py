@@ -113,4 +113,49 @@ patch("tests/engine_tests.cpp", [
     ("assert(restored.step(2,4,9)); assert(restored.pattern()==2);",
      "assert(restored.step(2,4,9)); assert(restored.step(2,4,63)); assert(restored.pattern()==2);")
 ])
+
+patch("CMakeLists.txt", [
+    ("project(EP133_KOII_Windows VERSION 0.6.0 LANGUAGES CXX)", "project(Infinity_Windows VERSION 0.7.0 LANGUAGES CXX)"),
+    ("add_executable(EP133_KOII WIN32", "add_executable(Infinity WIN32"),
+    ("target_link_libraries(EP133_KOII PRIVATE", "target_link_libraries(Infinity PRIVATE"),
+    ("target_compile_definitions(EP133_KOII PRIVATE", "target_compile_definitions(Infinity PRIVATE")
+])
+
+patch("src/engine.cpp", [
+    ('"KOII_PROJECT 2\\n"', '"INFINITY_PROJECT 2\\n"'),
+    ('if(magic!="KOII_PROJECT" || (version!=1 && version!=2))', 'if(!((magic=="INFINITY_PROJECT" && version==2) || (magic=="KOII_PROJECT" && version==1)))')
+])
+
+patch("src/main.cpp", [
+    ('L"INFINITY  |  GROOVE STATION 0.7.0"', 'L"БЕСКОНЕЧНОСТЬ ∞"'),
+    ('L"KOIIStudioWindow"', 'L"InfinityWindow"'),
+    ('L"EP-133 KO II Studio 0.6.0"', 'L"Бесконечность ∞"'),
+    ('L"KOII project\\0*.koii\\0All files\\0*.*\\0"', 'L"Проект Бесконечность\\0*.infinity\\0All files\\0*.*\\0"'),
+    ('L"koii"', 'L"infinity"')
+])
+
+(root / "README_RU.md").write_text("""# Бесконечность ∞
+
+**Бесконечность ∞** — Windows-грувбокс и сэмплер с 12 пэдами, четырьмя сценами и 64-шаговым секвенсором.
+
+## Текущий этап 0.7.0
+
+- 12 пэдов с ручным запуском и загрузкой WAV.
+- 4 сцены A–D.
+- 64 шага на сцену и дорожку пэда, переключение страницами по 16 шагов.
+- Темп, Swing и Master Volume.
+- Срез семпла Start/End.
+- Сохранение и загрузка проектов .infinity.
+- Импорт старого формата проекта только для совместимости.
+- Экспорт текущего микса в WAV.
+
+## Запуск
+
+Распакуйте архив и запустите Бесконечность.exe. Для звука выберите доступное устройство вывода Windows.
+
+## Ограничения этого этапа
+
+Это ранняя техническая сборка. Многодорожечный микшер, эффекты, MIDI, FLAC, запись входа, автоматизация и полноценные сцены с бесшовным переходом ещё не реализованы. Сборка и автоматические тесты не заменяют проверку на реальном ПК с аудиоустройством.
+""", encoding="utf-8")
+
 print("Infinity 0.7.0 source patch applied.")
