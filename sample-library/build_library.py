@@ -186,12 +186,16 @@ def main():
         copied = 0
         for src in extract.rglob("*"):
             if not src.is_file(): continue
-            if src.suffix.lower() in (".wav", ".sfz", ".md", ".txt", ".json"):
-                target = dest / src.name
-                if target.exists() and src.suffix.lower() == ".wav":
-                    target = dest / (src.parent.name + "_" + src.name)
-                shutil.copy2(src, target)
-                if src.suffix.lower() == ".wav": copied += 1
+            if src.suffix.lower() not in (".wav", ".sfz", ".md", ".txt", ".json", ".license", ".xml"):
+                continue
+            rel = src.relative_to(extract)
+            # Preserve the original sample directory tree so SFZ paths still resolve.
+            if len(rel.parts) > 1 and rel.parts[0].lower().startswith(("meta-piano", "meta-nylon-guitar", "meta-steel-guitar")):
+                rel = Path(*rel.parts[1:])
+            target = dest / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, target)
+            if src.suffix.lower() == ".wav": copied += 1
         license_id = {"Piano":"meta-piano", "Guitar_Nylon":"meta-nylon-guitar", "Guitar_Steel":"meta-steel-guitar"}[folder]
         license_file = repo / "systems" / "instruments" / license_id / "LICENSE"
         if license_file.exists(): shutil.copy2(license_file, dest / "LICENSE")
@@ -210,13 +214,24 @@ def main():
     phazite_dest = OUT / "Community_CC0" / "Phazite"
     phazite_dest.mkdir(parents=True, exist_ok=True)
     phazite_count = 0
+    phazite_license = next((p for p in phazite_root.rglob("*") if p.is_file() and p.name.lower() in ("license.txt", "license")), None)
+    if phazite_license is None or "CC0 1.0" not in phazite_license.read_text(encoding="utf-8", errors="ignore"):
+        raise RuntimeError("Phazite pack license is missing or is not explicitly CC0 1.0")
+    phazite_sources = next((p for p in phazite_root.rglob("sources.json") if p.is_file()), None)
+    if phazite_sources is None:
+        raise RuntimeError("Phazite sources.json provenance manifest is missing")
     for src in phazite_root.rglob("*"):
         if not src.is_file(): continue
+        rel = src.relative_to(phazite_root)
         if src.suffix.lower() in (".flac", ".wav", ".ogg"):
-            shutil.copy2(src, phazite_dest / src.name)
+            target = phazite_dest / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, target)
             phazite_count += 1
-        elif src.name.lower() in ("license.txt", "readme.txt", "sources.json", "sources.txt"):
-            shutil.copy2(src, phazite_dest / src.name)
+        elif src.name.lower() in ("license.txt", "license", "readme.txt", "readme.md", "sources.json", "sources.txt"):
+            target = phazite_dest / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, target)
     if phazite_count < 50: raise RuntimeError(f"Phazite CC0 pack import too small: {phazite_count}")
 
     make_original_kit()
@@ -224,7 +239,7 @@ def main():
     (OUT/"README_RU.txt").write_text(
       "INFINITY SAMPLE LIBRARY - LIVE EXPANDED 04\\n"
       "Основа: полные мультисэмплы живого фортепиано и акустических гитар Meta Open Sound, оригинальные WAV 24-bit / 48 kHz, CC0 1.0.\\n"
-      "Дополнение: Phazite Sounds, 85 CC0 звуков, включая записанные ударные, перкуссию, фоли, эффекты и брейкбит; исходные sources.json и LICENSE сохранены.\\n"
+      "Дополнение: Phazite Sounds CC0 1.0; сохранены LICENSE, README и sources.json с происхождением звуков.\\n"
       "Процедурные ударные, Acid и атмосферные слои Infinity вынесены отдельно и не выдаются за живые записи.\\n"
       "Исходные форматы и разрешение аудио сохраняются; файлы Meta не перекодируются.\\n"
       "Источники: https://github.com/facebookincubator/Meta-open-sound и https://github.com/august-byrne/phazite-sounds\\n",
