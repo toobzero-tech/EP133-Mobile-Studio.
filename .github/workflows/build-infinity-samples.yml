@@ -1,0 +1,27 @@
+name: Build Infinity Sample Library
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "sample-library/**"
+      - ".github/workflows/build-infinity-samples.yml"
+permissions:
+  contents: read
+jobs:
+  build-sample-library:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install audio conversion tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 ffmpeg
+      - name: Download and assemble CC0 samples
+        run: python3 sample-library/build_library.py
+      - name: Upload sample library
+        uses: actions/upload-artifact@v4
+        with:
+          name: Infinity-Sample-Library-Starter-01
+          path: Infinity_Sample_Library_Starter_01.zip
+          if-no-files-found: error
+          retention-days: 30
