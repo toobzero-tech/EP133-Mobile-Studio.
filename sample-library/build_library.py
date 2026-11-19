@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build a small, redistributable starter library for Infinity."""
 from pathlib import Path
-import math, random, struct, wave, zipfile, urllib.request, shutil, subprocess
+import math, random, struct, wave, zipfile, urllib.request, shutil, subprocess, json, hashlib
 
 ROOT = Path("sample-build")
 SRC = ROOT / "meta-open-sound"
@@ -100,7 +100,7 @@ def render_generated_content():
             a.append(random.uniform(-1,1)*math.exp(-t*45)*.42)
         return a
     kick=kick_samples(); snare=snare_samples(); hat=hat_samples()
-    for bpm,feel in ((110,"Dusty"),(124,"Broken"),(132,"Driving")):
+    for bpm,feel in ((85,"HalfTime"),(95,"TripHop"),(110,"Dusty"),(118,"Organic"),(124,"Broken"),(132,"Driving"),(140,"Rave"),(150,"Breaks")):
         bars=4; beats=bars*4; total=int(beats*60/bpm*RATE)
         mix=[0.0]*total
         step=60/bpm/4
@@ -122,13 +122,13 @@ def render_generated_content():
 
     # Four-bar acid patterns, original synthesized oscillator + resonant-style moving filter.
     scale=[0,3,5,7,10,12,15]
-    for bpm,root in ((124,45),(132,43),(138,40)):
+    for bpm,root in ((118,45),(124,45),(128,43),(132,43),(138,40),(145,40)):
         bars=4; total=int(bars*4*60/bpm*RATE); mix=[0.0]*total
         step=60/bpm/4
         pattern=[0,-1,3,0,5,-1,3,7,0,-1,5,3,7,-1,5,3]
         for s in range(bars*16):
             note=pattern[s%16]
-            if note<0 and s%4 not in (2,): continue
+            if note < 0: continue
             midi=root+scale[note%len(scale)]
             freq=440*2**((midi-69)/12)
             start=int(s*step*RATE); length=int(step*RATE*.88)
@@ -145,7 +145,7 @@ def render_generated_content():
         write_wav(acid/f"Infinity_Acid_{bpm}BPM_4bar.wav",[x/peak*.78 for x in mix])
 
     # Evolving, loopable-feeling pads/textures generated from layered oscillators and filtered noise.
-    for idx,(name,base) in enumerate((("Blue_Hour",110),("Concrete_Dawn",82),("Deep_Current",65),("Glass_Rain",146))):
+    for idx,(name,base) in enumerate((("Blue_Hour",110),("Concrete_Dawn",82),("Deep_Current",65),("Glass_Rain",146),("Cold_Neon",98),("Submerged",55),("Afterimage",130),("Night_Transit",73))):
         seconds=12; n=RATE*seconds; out=[]
         phases=[0.0,0.0,0.0]
         for i in range(n):
@@ -202,9 +202,18 @@ def main():
       "Источник Meta Open Sound: https://github.com/facebookincubator/Meta-open-sound\n"
       "Проверяйте файл LICENSE в папке Licenses перед повторным распространением отдельных исходных коллекций.\n",
       encoding="utf-8")
-    zip_path=Path("Infinity_Sample_Library_Starter_02.zip")
+    zip_path=Path("Infinity_Sample_Library_Expanded_03.zip")
+    catalog = []
+    for f in sorted(OUT.rglob("*.wav")):
+        rel = str(f.relative_to(OUT)).replace("\\\\", "/")
+        catalog.append({"path": rel, "format": "WAV", "sample_rate": RATE,
+                        "channels": 1, "bit_depth": 16,
+                        "category": rel.split("/")[0],
+                        "sha256": hashlib.sha256(f.read_bytes()).hexdigest()})
+    (OUT/"manifest.json").write_text(json.dumps({"name":"Infinity Expanded Sample Library 03",
+        "audio_files":len(catalog), "files":catalog}, ensure_ascii=False, indent=2), encoding="utf-8")
     with zipfile.ZipFile(zip_path,"w",zipfile.ZIP_DEFLATED,compresslevel=6) as z:
         for f in OUT.rglob("*"):
             if f.is_file(): z.write(f,f.relative_to(OUT.parent))
-    print(f"Created {zip_path} ({zip_path.stat().st_size} bytes)")
+    print(f"Created {zip_path} ({zip_path.stat().st_size} bytes), {len(catalog)} WAV files")
 if __name__=="__main__": main()
