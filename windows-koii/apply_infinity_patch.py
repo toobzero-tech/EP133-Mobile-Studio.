@@ -238,7 +238,7 @@ replace_once("src/main.cpp",
     'statusText=CreateWindowW(L"STATIC",L"Starting audio device...",WS_CHILD|WS_VISIBLE,20,555,760,24,h,nullptr,GetModuleHandleW(nullptr),nullptr);syncSteps(h);',
     'statusText=CreateWindowW(L"STATIC",L"Starting audio device...",WS_CHILD|WS_VISIBLE,20,555,760,24,h,nullptr,GetModuleHandleW(nullptr),nullptr);syncSteps(h);SetTimer(h,1,33,nullptr);')
 replace_once("src/main.cpp",
-    " case WM_CREATE:build(h);return 0;\\n",
+    " switch(m){case WM_CREATE:build(h);return 0;\\n",
     """ case WM_CREATE:build(h);return 0;
  case WM_TIMER:InvalidateRect(h,nullptr,FALSE);return 0;
  case WM_PAINT:{PAINTSTRUCT ps{};HDC dc=BeginPaint(h,&ps);RECT screen{570,52,810,120};HBRUSH bg=CreateSolidBrush(RGB(22,26,30));FillRect(dc,&screen,bg);DeleteObject(bg);SetBkMode(dc,TRANSPARENT);SetTextColor(dc,RGB(210,216,220));HFONT font=CreateFontW(10,0,0,0,FW_BOLD,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,L"Segoe UI");HGDIOBJ oldFont=SelectObject(dc,font);TextOutW(dc,580,56,L"LIVE SPECTRUM",13);for(int band=0;band<16;++band){const float level=spectrumBands[band].load(std::memory_order_relaxed);const int height=std::max(2,int(level*42.0f));RECT bar{580+band*14,112-height,590+band*14,112};HBRUSH color=CreateSolidBrush(RGB(255,118,38));FillRect(dc,&bar,color);DeleteObject(color);}SelectObject(dc,oldFont);DeleteObject(font);EndPaint(h,&ps);return 0;}
