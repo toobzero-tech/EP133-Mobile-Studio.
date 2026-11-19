@@ -73,12 +73,12 @@ jobs:
       - name: Package Windows EXE
         run: |
           mkdir -p dist
-          cp /tmp/koii-win/EP133_KOII.exe dist/
+          cp /tmp/koii-win/EP133_KOII.exe dist/Infinity.exe
           cp /tmp/koii-src/EP133_KOII_Windows_0.5.0/README_RU.md dist/
-          cd dist && zip -9 ../EP133_KOII_Windows_0.5.1_Fixed_Test.zip *
+          cd dist && zip -9 ../Infinity_Windows_0.7.0_Test.zip *
       - uses: actions/upload-artifact@v4
         with:
-          name: EP133-KOII-Windows-0.5.1-Fixed-Test
-          path: EP133_KOII_Windows_0.5.1_Fixed_Test.zip
+          name: Infinity-Windows-0.7.0-Test
+          path: Infinity_Windows_0.7.0_Test.zip
           if-no-files-found: error
           retention-days: 14
