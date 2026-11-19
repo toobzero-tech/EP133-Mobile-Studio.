@@ -222,26 +222,32 @@ def main():
     make_original_kit()
     render_generated_content()
     (OUT/"README_RU.txt").write_text(
-      "INFINITY SAMPLE LIBRARY - STARTER 02\n"
-      "Содержит оригинальные процедурно синтезированные ударные и компактные наборы инструментальных WAV-сэмплов Meta Open Sound.\n"
-      "Инструментальные коллекции Meta Piano / Meta Nylon Guitar / Meta Steel Guitar опубликованы под CC0 1.0.\n"
-      "Оригинальные ударные, брейки, Acid-партии и атмосферные текстуры сгенерированы скриптом проекта Infinity и могут свободно использоваться в музыке.\n"
-      "Формат: WAV PCM, 48 kHz, mono. Для каждого стороннего набора сохранены исходные сведения о лицензии.\n"
-      "Источник Meta Open Sound: https://github.com/facebookincubator/Meta-open-sound\n"
-      "Проверяйте файл LICENSE в папке Licenses перед повторным распространением отдельных исходных коллекций.\n",
+      "INFINITY SAMPLE LIBRARY - LIVE EXPANDED 04\\n"
+      "Основа: полные мультисэмплы живого фортепиано и акустических гитар Meta Open Sound, оригинальные WAV 24-bit / 48 kHz, CC0 1.0.\\n"
+      "Дополнение: Phazite Sounds, 85 CC0 звуков, включая записанные ударные, перкуссию, фоли, эффекты и брейкбит; исходные sources.json и LICENSE сохранены.\\n"
+      "Процедурные ударные, Acid и атмосферные слои Infinity вынесены отдельно и не выдаются за живые записи.\\n"
+      "Исходные форматы и разрешение аудио сохраняются; файлы Meta не перекодируются.\\n"
+      "Источники: https://github.com/facebookincubator/Meta-open-sound и https://github.com/august-byrne/phazite-sounds\\n",
       encoding="utf-8")
     zip_path=Path("Infinity_Live_Sample_Library_04.zip")
     catalog = []
-    for f in sorted(OUT.rglob("*.wav")):
+    audio_files = sorted(list(OUT.rglob("*.wav")) + list(OUT.rglob("*.flac")) + list(OUT.rglob("*.ogg")))
+    for f in audio_files:
         rel = str(f.relative_to(OUT)).replace("\\\\", "/")
-        catalog.append({"path": rel, "format": "WAV", "sample_rate": RATE,
-                        "channels": 1, "bit_depth": 16,
-                        "category": rel.split("/")[0],
-                        "sha256": hashlib.sha256(f.read_bytes()).hexdigest()})
+        probe = subprocess.run(["ffprobe","-v","error","-select_streams","a:0","-show_entries",
+            "stream=sample_rate,channels,bits_per_sample,bits_per_raw_sample","-of","json",str(f)],
+            capture_output=True,text=True,check=True)
+        stream = json.loads(probe.stdout).get("streams",[{}])[0]
+        catalog.append({"path": rel, "format": f.suffix[1:].upper(),
+            "sample_rate": int(stream.get("sample_rate",0)) or None,
+            "channels": stream.get("channels"),
+            "bit_depth": stream.get("bits_per_raw_sample") or stream.get("bits_per_sample"),
+            "category": rel.split("/")[0],
+            "sha256": hashlib.sha256(f.read_bytes()).hexdigest()})
     (OUT/"manifest.json").write_text(json.dumps({"name":"Infinity Live Sample Library 04",
         "audio_files":len(catalog), "cc0_phazite_files":phazite_count, "files":catalog}, ensure_ascii=False, indent=2), encoding="utf-8")
     with zipfile.ZipFile(zip_path,"w",zipfile.ZIP_DEFLATED,compresslevel=6) as z:
         for f in OUT.rglob("*"):
             if f.is_file(): z.write(f,f.relative_to(OUT.parent))
-    print(f"Created {zip_path} ({zip_path.stat().st_size} bytes), {len(catalog)} WAV files")
+    print(f"Created {zip_path} ({zip_path.stat().st_size} bytes), {len(catalog)} audio files")
 if __name__=="__main__": main()
