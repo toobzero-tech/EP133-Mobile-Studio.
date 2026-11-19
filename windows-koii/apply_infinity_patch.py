@@ -133,12 +133,12 @@ patch("src/main.cpp", [
 
 patch("src/wav.cpp", [
     ("#include <fstream>", "#include <fstream>\n#include <filesystem>"),
-    ("std::ifstream f(path,std::ios::binary);", "std::ifstream f(std::filesystem::u8path(path),std::ios::binary);")
+    ("std::ifstream f(path,std::ios::binary);", "std::ifstream f(std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(path.data()), path.size())),std::ios::binary);")
 ])
 patch("src/engine.cpp", [
     ("#include <iomanip>", "#include <iomanip>\n#include <filesystem>"),
-    ("std::ofstream f(path, std::ios::binary);", "std::ofstream f(std::filesystem::u8path(path), std::ios::binary);"),
-    ("std::ifstream f(path, std::ios::binary);", "std::ifstream f(std::filesystem::u8path(path), std::ios::binary);")
+    ("std::ofstream f(path, std::ios::binary);", "std::ofstream f(std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(path.data()), path.size())), std::ios::binary);"),
+    ("std::ifstream f(path, std::ios::binary);", "std::ifstream f(std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(path.data()), path.size())), std::ios::binary);")
 ])
 
 (root / "README_RU.md").write_text("""# Бесконечность ∞
