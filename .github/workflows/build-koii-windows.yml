@@ -40,6 +40,8 @@ jobs:
               raise SystemExit("Could not locate the statusText CreateWindowW call; refusing an unsafe patch")
           p.write_text(s)
           PY
+      - name: Apply Infinity 0.7.0 source fixes
+        run: python3 windows-koii/apply_infinity_patch.py
       - name: Publish unpacked source for integration review
         uses: actions/upload-artifact@v4
         with:
