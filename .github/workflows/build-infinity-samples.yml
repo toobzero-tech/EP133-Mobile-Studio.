@@ -21,7 +21,7 @@ jobs:
       - name: Upload sample library
         uses: actions/upload-artifact@v4
         with:
-          name: Infinity-Sample-Library-Starter-02
-          path: Infinity_Sample_Library_Starter_02.zip
+          name: Infinity-Live-Sample-Library-04
+          path: Infinity_Live_Sample_Library_04.zip
           if-no-files-found: error
           retention-days: 30
