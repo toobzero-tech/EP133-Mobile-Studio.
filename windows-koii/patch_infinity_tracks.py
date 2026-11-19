@@ -199,6 +199,33 @@ rep("src/engine.cpp",
 
 # Win32 UI: select one of eight tracks, edit its steps, level/pan/mute/solo.
 rep("src/main.cpp",
+"static HWND root,statusText; static int selectedPad=0,selectedTrack=0,stepPage=0; static HWND tempoSlider{},swingSlider{},volumeSlider{},sliceStartSlider{},sliceEndSlider{},delaySlider{},reverbSlider{},saturationSlider{},compressionSlider{},trackVolumeSlider{},trackPanSlider{};",
+"static HWND root,statusText; static int selectedPad=0,selectedTrack=0,stepPage=0; static HWND tempoSlider{},swingSlider{},volumeSlider{},sliceStartSlider{},sliceEndSlider{},delaySlider{},reverbSlider{},saturationSlider{},compressionSlider{},trackVolumeSlider{},trackPanSlider{},trackPadCombo{};")
+rep("src/main.cpp",
+"if(trackPanSlider)SendMessageW(trackPanSlider,TBM_SETPOS,TRUE,(int)(engine.trackPan(selectedTrack)*100));if(sliceStartSlider&&sliceEndSlider){",
+"if(trackPanSlider)SendMessageW(trackPanSlider,TBM_SETPOS,TRUE,(int)(engine.trackPan(selectedTrack)*100));if(trackPadCombo)SendMessageW(trackPadCombo,CB_SETCURSEL,engine.trackPad(selectedTrack),0);if(sliceStartSlider&&sliceEndSlider){")
+rep("src/main.cpp",
+'CreateWindowW(L"BUTTON",L"SOLO",WS_CHILD|WS_VISIBLE|BS_AUTOCHECKBOX,620,448,70,28,h,(HMENU)402,nullptr,nullptr);',
+'CreateWindowW(L"BUTTON",L"SOLO",WS_CHILD|WS_VISIBLE|BS_AUTOCHECKBOX,620,448,70,28,h,(HMENU)402,nullptr,nullptr);label(h,L"PAD",700,432,50,16);trackPadCombo=CreateWindowW(L"COMBOBOX",L"",WS_CHILD|WS_VISIBLE|CBS_DROPDOWNLIST,700,448,105,180,h,(HMENU)403,nullptr,nullptr);for(int p=0;p<kPads;p++){wchar_t name[16];swprintf_s(name,L"PAD %02d",p+1);SendMessageW(trackPadCombo,CB_ADDSTRING,0,(LPARAM)name);}')
+rep("src/main.cpp",
+"  if(id==402){engine.setTrackSolo(selectedTrack,SendMessageW(GetDlgItem(h,402),BM_GETCHECK,0,0)==BST_CHECKED);return 0;}",
+"  if(id==402){engine.setTrackSolo(selectedTrack,SendMessageW(GetDlgItem(h,402),BM_GETCHECK,0,0)==BST_CHECKED);return 0;}\n  if(id==403&&HIWORD(wp)==CBN_SELCHANGE){const int pad=(int)SendMessageW(trackPadCombo,CB_GETCURSEL,0,0);if(pad>=0)engine.setTrackPad(selectedTrack,pad);return 0;}")
+
+rep("tests/engine_tests.cpp",
+"    sampler.setStep(2, 4, 9, true);",
+"    sampler.setTrackStep(2,5,9,true); sampler.setTrackStep(2,5,63,true);\n    sampler.setTrackPad(5,10); sampler.setTrackVolume(5,0.42f); sampler.setTrackPan(5,-0.35f);\n    sampler.setTrackMute(5,true); sampler.setTrackSolo(5,true);\n    sampler.setStep(2, 4, 9, true);")
+rep("tests/engine_tests.cpp",
+"    assert(restored.step(2, 4, 9));",
+"    assert(restored.step(2, 4, 9));\n    assert(restored.trackStep(2,5,9)&&restored.trackStep(2,5,63));\n    assert(restored.trackPad(5)==10);\n    assert(restored.trackVolume(5)>0.419f&&restored.trackVolume(5)<0.421f);\n    assert(restored.trackPan(5)>-0.351f&&restored.trackPan(5)<-0.349f);\n    assert(restored.trackMute(5)&&restored.trackSolo(5));")
+
+p = root / "README_RU.md"
+r = p.read_text(encoding="utf-8")
+r = r.replace("64 шага на паттерн и пэд", "64 шага на каждую из 8 дорожек в каждом паттерне")
+r = r.replace("Чтение старых проектов форматов v1/v2.", "Чтение старых проектов форматов v1/v2/v3 с переносом шагов на первые 8 дорожек.")
+r = r.replace("Пока отсутствуют полноценные 8 независимых дорожек, микшер и FX-цепочки, MIDI,", "Пока отсутствуют индивидуальные FX-цепочки на дорожках, MIDI,")
+p.write_text(r, encoding="utf-8")
+
+rep("src/main.cpp",
 "static HWND root,statusText; static int selectedPad=0,stepPage=0; static HWND tempoSlider{},swingSlider{},volumeSlider{},sliceStartSlider{},sliceEndSlider{},delaySlider{},reverbSlider{},saturationSlider{},compressionSlider{};",
 "static HWND root,statusText; static int selectedPad=0,selectedTrack=0,stepPage=0; static HWND tempoSlider{},swingSlider{},volumeSlider{},sliceStartSlider{},sliceEndSlider{},delaySlider{},reverbSlider{},saturationSlider{},compressionSlider{},trackVolumeSlider{},trackPanSlider{};")
 rep("src/main.cpp",
