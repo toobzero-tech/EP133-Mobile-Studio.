@@ -1,1 +1,1 @@
-Infinity 0.11.0 build requested.
+Infinity 0.11.0 build retry after UI patch correction.
