@@ -110,14 +110,16 @@ export function start(){
  const loader=new GLTFLoader();
  loader.load("./runner.glb",g=>{
   const oldGeometry=new Set(),oldMaterials=new Set();
-  runner.traverse(o=>{if(o.isMesh){if(o.geometry)oldGeometry.add(o.geometry);for(const m of (Array.isArray(o.material)?o.material:[o.material]))if(m)oldMaterials.add(m)}});
+  runner.traverse(o=>{if(o.geometry)oldGeometry.add(o.geometry);for(const m of (Array.isArray(o.material)?o.material:[o.material]))if(m)oldMaterials.add(m)});
   while(runner.children.length)runner.remove(runner.children[0]);
   oldGeometry.forEach(v=>v.dispose());oldMaterials.forEach(v=>v.dispose());
+  runner.userData.limbs=null;
   const model=g.scene;const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());const scale=1.78/Math.max(size.y,.01);model.scale.setScalar(scale);const b2=new THREE.Box3().setFromObject(model);model.position.y-=b2.min.y;model.traverse(o=>{if(o.isMesh){
    const source=Array.isArray(o.material)?o.material:[o.material];
    const pencilMats=source.map(m=>new THREE.MeshStandardMaterial({color:grayColor(m?.color??0x777777),map:graphiteTexture,roughness:1,metalness:0}));
    o.material=Array.isArray(o.material)?pencilMats:pencilMats[0];
   }});runner.add(model);addSketchOutlines(model);
+  runner.userData.model=model;runner.userData.modelBaseY=model.position.y;
   if(g.animations.length){mixer=new THREE.AnimationMixer(model);const clip=g.animations.find(a=>/run|jog|sprint/i.test(a.name))||g.animations[0];runAction=mixer.clipAction(clip);runAction.play()}
   modelReady=true;
  },undefined,()=>{});
@@ -290,6 +292,7 @@ export function start(){
  document.getElementById("sound").addEventListener("click",e=>{soundEnabled=!soundEnabled;e.currentTarget.textContent=soundEnabled?"♪":"×";if(soundEnabled){audioReady();tone(520,.07,"sine",.025)}});
  document.querySelectorAll("[data-view]").forEach((b,i)=>b.addEventListener("click",()=>{view=i;document.querySelectorAll("[data-view]").forEach(x=>x.classList.toggle("active",x===b))}));
  window.addEventListener("keydown",e=>{if(e.code==="Space"||e.code==="ArrowUp"){e.preventDefault();jump()}if(e.code==="Escape"){paused=!paused;setText("pause",paused?"▶":"Ⅱ")}});
+ document.addEventListener("visibilitychange",()=>{if(document.hidden&&started&&!dead){paused=true;setText("pause","▶");msg.textContent="ПАУЗА"}});
  const clock=new THREE.Clock();let frameAccumulator=0;
  function frame(){
   requestAnimationFrame(frame);
@@ -300,8 +303,10 @@ export function start(){
   if(!paused&&!dead&&started){
    elapsed+=dt;score+=dt*speed*2;const velocity=1.15+speed*1.08;
    laneZ+=(targetLaneZ-laneZ)*(1-Math.exp(-8*dt));runner.position.z=pathZ(-2.25)+laneZ;
-   if(mixer){mixer.timeScale=.35+speed*.19;mixer.update(dt)}else if(runner.userData.limbs){const p=elapsed*velocity*1.8;runner.userData.limbs.forEach((l,i)=>{l.leg.rotation.x=Math.sin(p+i*Math.PI)*.75;l.arm.rotation.x=-Math.sin(p+i*Math.PI)*.65;l.foot.rotation.x=l.leg.rotation.x*.25})}
-   if(!grounded){jumpV-=21*dt;jumpY+=jumpV*dt;if(jumpY<=0){jumpY=0;jumpV=0;grounded=true;tone(92,.07,"triangle",.022,-24)}}
+   if(mixer){mixer.timeScale=.35+speed*.19;mixer.update(dt)}
+   else if(runner.userData.limbs&&runner.userData.limbs[0]?.leg?.parent){const p=elapsed*velocity*1.8;runner.userData.limbs.forEach((l,i)=>{l.leg.rotation.x=Math.sin(p+i*Math.PI)*.75;l.arm.rotation.x=-Math.sin(p+i*Math.PI)*.65;l.foot.rotation.x=l.leg.rotation.x*.25})}
+   else if(runner.userData.model){const p=elapsed*velocity*3.2;runner.userData.model.position.y=runner.userData.modelBaseY+Math.abs(Math.sin(p))*.025;runner.userData.model.rotation.z=Math.sin(p)*.018}
+   if(!grounded){jumpV-=21*dt;jumpY+=jumpV*dt;if(jumpY<=0){jumpY=0;jumpV=0;grounded=true;runner.rotation.z=0;tone(92,.07,"triangle",.022,-24)}}
    if(grounded&&elapsed-lastStep>Math.max(.22,.48/(.5+speed*.14))){tone(68,.045,"sine",.012,-12);lastStep=elapsed}
    runner.position.y=jumpY;runner.position.x=-2.25;
 
