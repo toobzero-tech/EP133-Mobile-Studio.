@@ -210,7 +210,7 @@ export function start(){
   for(const m of (root.userData.ownedMaterials||[]))m.dispose();
   scene.remove(root);
  }
- function reset(){obstacles.splice(0).forEach(o=>disposeTree(o.mesh));score=0;elapsed=0;lastStep=0;nextSpawn=.8;jumpY=0;jumpV=0;grounded=true;skill=.3;streak=0;dead=false;paused=false;msg.innerHTML="";setText("pause","Ⅱ")}
+ function reset(){obstacles.splice(0).forEach(o=>disposeTree(o.mesh));score=0;elapsed=0;lastStep=0;nextSpawn=.8;jumpY=0;jumpV=0;grounded=true;skill=.3;streak=0;laneZ=0;targetLaneZ=0;runner.position.set(-2.25,pathZ(-2.25),0);runner.rotation.set(0,0,0);dead=false;paused=false;msg.innerHTML="";setText("pause","Ⅱ")}
  function jump(){if(dead||paused){if(dead||!started){reset();started=true}return}if(grounded){jumpV=8.6;grounded=false;runner.rotation.z=-.12;tone(260,.12,"triangle",.04,180)}}
  let started=false;const msg=document.getElementById("message");
  document.getElementById("jump").addEventListener("pointerdown",e=>{e.preventDefault();jump()});
