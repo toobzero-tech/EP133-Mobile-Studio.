@@ -1,4 +1,4 @@
-name: Build Running Man APK
+name: Build Running Man 3D APK
 
 on:
   workflow_dispatch:
@@ -13,7 +13,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
@@ -25,41 +25,45 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Prepare 3D engine and licensed character
+        run: |
+          cd RunningMan/app/src/main/assets
+          npm init -y
+          npm install --no-save three esbuild
+          npx esbuild game3d.js --bundle --format=iife --global-name=RunningMan3D --outfile=game3d.bundle.js
+          curl -fL --retry 3 --retry-delay 2 -A "RunningMan-Game-Build/1.0" "https://www.innerscene.com/api/library/run-maya-3d-person-animated-eebf24b9/download" -o runner.glb
+          test "$(stat -c%s runner.glb)" -gt 1000000
+          file runner.glb
+          ls -lh game3d.bundle.js runner.glb
       - name: Accept SDK licenses and install platform
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-35" "build-tools;35.0.0"
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-      - name: Validate game JavaScript
+      - name: Validate 3D game source
         run: |
-          python3 - <<'PY'
-          import re
-          from pathlib import Path
-          html = Path("RunningMan/app/src/main/assets/index.html").read_text(encoding="utf-8")
-          scripts = re.findall(r"<script[^>]*>(.*?)</script>", html, flags=re.S|re.I)
-          assert scripts, "Game JavaScript block is missing"
-          Path("/tmp/running-man.js").write_text("\n".join(scripts), encoding="utf-8")
-          print("Validated game script source:", len(scripts), "block(s)")
-          PY
-          node --check /tmp/running-man.js
+          node --check --input-type=module < RunningMan/app/src/main/assets/game3d.js
+          node --check <(sed -n 's/.*<script>\(.*\)<\/script>.*/\1/p' RunningMan/app/src/main/assets/index.html)
+          test -s RunningMan/app/src/main/assets/game3d.bundle.js
+          test -s RunningMan/app/src/main/assets/runner.glb
       - name: Build debug APK
         run: gradle --no-daemon --stacktrace -p RunningMan assembleDebug
-      - name: Verify APK
+      - name: Verify APK and bundled 3D assets
         run: |
-          test -s RunningMan/app/build/outputs/apk/debug/app-debug.apk
           APK=RunningMan/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
           unzip -t "$APK"
-          unzip -l "$APK" | grep -q 'AndroidManifest.xml'
-          unzip -l "$APK" | grep -q 'classes.dex'
           unzip -l "$APK" | grep -q 'assets/index.html'
+          unzip -l "$APK" | grep -q 'assets/game3d.bundle.js'
+          unzip -l "$APK" | grep -q 'assets/runner.glb'
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "package: name='com.toobzero.runningman'"
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "sdkVersion:'28'"
           ls -lh "$APK"
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: RunningMan-APK
+          name: RunningMan-3D-APK
           path: RunningMan/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
