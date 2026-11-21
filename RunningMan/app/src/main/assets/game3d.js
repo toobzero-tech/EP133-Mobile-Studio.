@@ -7,7 +7,7 @@ export function start(){
  scene.background=new THREE.Color(0xfaf9f6);
  const pathZ=x=>1.35*Math.sin(x*.052)+.48*Math.sin(x*.117+.6);
  const camera=new THREE.PerspectiveCamera(54,1,.1,140);camera.position.set(-10,3.35,0);camera.lookAt(5.5,1.05,0);
- const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.35));renderer.shadowMap.enabled=false;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
+ const renderer=new THREE.WebGLRenderer({canvas,antialias:false,alpha:false,powerPreference:"high-performance"});renderer.setPixelRatio(Math.min(devicePixelRatio,1.2));renderer.shadowMap.enabled=false;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
  scene.add(new THREE.HemisphereLight(0xffffff,0xb8b2a8,2.2));
  const sun=new THREE.DirectionalLight(0xffffff,1.15);sun.position.set(-5,10,7);scene.add(sun);
  const grayColor=color=>{const c=new THREE.Color(color);const y=.299*c.r+.587*c.g+.114*c.b;return new THREE.Color().setRGB(y,y,y)};
@@ -31,11 +31,34 @@ export function start(){
  const paperTexture=makePaperTexture();
  function makeGraphiteTexture(){
   const c=document.createElement("canvas");c.width=c.height=256;const ctx=c.getContext("2d");
-  ctx.fillStyle="#f4f1eb";ctx.fillRect(0,0,256,256);
-  for(let pass=0;pass<3;pass++){ctx.strokeStyle=pass===0?"rgba(35,33,30,.13)":"rgba(35,33,30,.075)";ctx.lineWidth=pass===0?.7:.45;
-   for(let i=0;i<170;i++){const x=Math.random()*256,y=Math.random()*256,len=5+Math.random()*30;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+len,y-len*(pass===1?.18:.72));ctx.stroke()}}
-  for(let i=0;i<900;i++){const x=Math.random()*256,y=Math.random()*256;ctx.fillStyle="rgba(30,28,26,"+(Math.random()*.11)+")";ctx.fillRect(x,y,.7,.7)}
-  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2,2);t.colorSpace=THREE.SRGBColorSpace;return t;
+  ctx.fillStyle="#eeeae3";ctx.fillRect(0,0,256,256);
+  // Layered, irregular graphite strokes imitate pencil pressure and cross-hatching.
+  const angles=[-.78,-.28,.32,.82];
+  for(let pass=0;pass<angles.length;pass++){
+   const angle=angles[pass],density=pass<2?240:145;
+   ctx.strokeStyle=pass===0?"rgba(28,27,26,.19)":pass===1?"rgba(38,36,33,.13)":"rgba(42,39,35,.085)";
+   ctx.lineCap="round";
+   for(let i=0;i<density;i++){
+    const x=Math.random()*320-32,y=Math.random()*320-32,len=3+Math.random()*(pass<2?24:15);
+    const a=angle+(Math.random()-.5)*.22;
+    ctx.lineWidth=.25+Math.random()*(pass===0?.85:.5);
+    ctx.beginPath();ctx.moveTo(x,y);
+    ctx.lineTo(x+Math.cos(a)*len,y+Math.sin(a)*len);ctx.stroke();
+   }
+  }
+  for(let i=0;i<1800;i++){
+   const x=Math.random()*256,y=Math.random()*256;
+   ctx.fillStyle="rgba(24,23,22,"+(Math.random()*.16)+")";
+   ctx.fillRect(x,y,.35+Math.random()*.85,.35+Math.random()*.65);
+  }
+  // Uneven pressure patches create the soft, rubbed graphite look.
+  for(let i=0;i<24;i++){
+   const x=Math.random()*256,y=Math.random()*256,r=4+Math.random()*19;
+   const g=ctx.createRadialGradient(x,y,0,x,y,r);
+   g.addColorStop(0,"rgba(45,42,38,.09)");g.addColorStop(1,"rgba(45,42,38,0)");
+   ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  }
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2.5,2.5);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=1;return t;
  }
  const graphiteTexture=makeGraphiteTexture();
  const floorMat=mat(0xbcb4a6);floorMat.map=paperTexture;floorMat.needsUpdate=true;
