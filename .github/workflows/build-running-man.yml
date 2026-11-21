@@ -44,7 +44,15 @@ jobs:
       - name: Validate 3D game source
         run: |
           node --check --input-type=module < RunningMan/app/src/main/assets/game3d.js
-          node --check <(sed -n 's/.*<script>\(.*\)<\/script>.*/\1/p' RunningMan/app/src/main/assets/index.html)
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path("RunningMan/app/src/main/assets/index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script>(.*?)</script>", html, flags=re.S)
+          assert scripts, "Inline startup script missing"
+          Path("/tmp/running-man-start.js").write_text("\\n".join(scripts), encoding="utf-8")
+          PY
+          node --check /tmp/running-man-start.js
           test -s RunningMan/app/src/main/assets/game3d.bundle.js
           test -s RunningMan/app/src/main/assets/runner.glb
       - name: Build debug APK
