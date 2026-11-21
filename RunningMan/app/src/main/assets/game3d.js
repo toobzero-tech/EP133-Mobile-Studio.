@@ -150,34 +150,42 @@ export function start(){
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,depth),mat(color));mesh.position.set(x,h/2,pathZ(x)+z);scene.add(mesh);addSketchOutlines(mesh);obstacles.push({mesh,x,z,w,h,type,passed:false});
  }
  function addGraphiteHatching(root,seed=1){
-  root.updateMatrixWorld(true);
-  const worldBox=new THREE.Box3().setFromObject(root);
-  const corners=[];
-  for(let a=0;a<2;a++)for(let b=0;b<2;b++)for(let c=0;c<2;c++){
-   corners.push(root.worldToLocal(new THREE.Vector3(a?worldBox.max.x:worldBox.min.x,b?worldBox.max.y:worldBox.min.y,c?worldBox.max.z:worldBox.min.z)));
-  }
-  const bounds=new THREE.Box3().setFromPoints(corners),min=bounds.min,max=bounds.max;
-  const width=Math.max(.12,max.z-min.z),height=Math.max(.12,max.y-min.y),front=min.x-.006;
+  // Draw separate, irregular graphite strokes on each mesh's camera-facing
+  // surface. This follows the runner's limbs and clothing instead of laying
+  // one flat hatch sheet across the entire character.
   let state=(seed>>>0)||1;
   const rand=()=>{state^=state<<13;state^=state>>>17;state^=state<<5;return (state>>>0)/4294967296};
-  const pts=[];
-  // Fine, imperfect graphite strokes on the camera-facing surface.
-  const count=12+Math.floor(rand()*9);
-  for(let i=0;i<count;i++){
-   const y=min.y+rand()*height,z=min.z+rand()*width;
-   const len=.06+rand()*.16,dy=(rand()-.5)*.045;
-   pts.push(front,y,z,front,y+dy,z+len);
-  }
-  for(let i=0;i<Math.floor(count*.65);i++){
-   const y=min.y+rand()*height,z=min.z+rand()*width;
-   const len=.05+rand()*.11;
-   pts.push(front,y,z,front,y+len,z-len*.42);
-  }
-  const geo=new THREE.BufferGeometry();
-  geo.setAttribute("position",new THREE.Float32BufferAttribute(pts,3));
-  const ink=new THREE.LineBasicMaterial({color:0x393632,transparent:true,opacity:.22,depthWrite:false});
-  const strokes=new THREE.LineSegments(geo,ink);strokes.renderOrder=3;root.add(strokes);
-  root.userData.ownedMaterials.push(ink);
+  const ink=new THREE.LineBasicMaterial({color:0x393632,transparent:true,opacity:.19,depthWrite:false});
+  let meshIndex=0;
+  root.traverse(mesh=>{
+   if(!mesh.isMesh||!mesh.geometry)return;
+   const geometry=mesh.geometry;
+   if(!geometry.boundingBox)geometry.computeBoundingBox();
+   const bounds=geometry.boundingBox;
+   if(!bounds||!Number.isFinite(bounds.min.x)||!Number.isFinite(bounds.max.y))return;
+   const width=bounds.max.z-bounds.min.z,height=bounds.max.y-bounds.min.y;
+   if(width<.025||height<.025)return;
+   const front=bounds.min.x-.003;
+   const pts=[];
+   const count=Math.min(15,5+Math.floor(rand()*8));
+   for(let i=0;i<count;i++){
+    const y=bounds.min.y+rand()*height,z=bounds.min.z+rand()*width;
+    const len=Math.min(width*.28,.025+rand()*.085),dy=(rand()-.5)*Math.min(height*.06,.018);
+    pts.push(front,y,z,front,y+dy,z+len);
+   }
+   for(let i=0;i<Math.floor(count*.45);i++){
+    const y=bounds.min.y+rand()*height,z=bounds.min.z+rand()*width;
+    const len=Math.min(height*.22,.025+rand()*.07);
+    pts.push(front,y,z,front,y+len,z-len*.35);
+   }
+   const hatchGeometry=new THREE.BufferGeometry();
+   hatchGeometry.setAttribute("position",new THREE.Float32BufferAttribute(pts,3));
+   const strokes=new THREE.LineSegments(hatchGeometry,ink);
+   strokes.renderOrder=3;
+   mesh.add(strokes);
+   meshIndex++;
+  });
+  if(root.userData.ownedMaterials)root.userData.ownedMaterials.push(ink);
  }
  function obstacleShape(x,z,type,variant=0){
   const variationSeed=variant;
