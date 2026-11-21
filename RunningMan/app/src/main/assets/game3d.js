@@ -15,6 +15,8 @@ export function start(){
  const lane=new THREE.Mesh(new THREE.BoxGeometry(200,.08,5.2),mat(0xc9c1b3));lane.position.set(0,-.02,0);lane.receiveShadow=true;scene.add(lane);
  for(let z=-2.4;z<=2.4;z+=.8){const l=new THREE.Mesh(new THREE.BoxGeometry(200,.012,.012),lineMat);l.position.set(0,.03,z);scene.add(l)}
  const runner=new THREE.Group();runner.position.set(-2.25,0,0);scene.add(runner);
+ const runnerShadow=new THREE.Mesh(new THREE.CircleGeometry(.48,32),new THREE.MeshBasicMaterial({color:0x292622,transparent:true,opacity:.2,depthWrite:false}));
+ runnerShadow.rotation.x=-Math.PI/2;runnerShadow.position.set(-2.25,-.055,0);scene.add(runnerShadow);
  let mixer=null,runAction=null,modelReady=false;
  function fallbackRunner(){
   const skin=mat(0xc69d7d),shirt=mat(0x555b5c),pants=mat(0x34383a),shoe=mat(0x252525);
@@ -81,6 +83,7 @@ export function start(){
    if(mixer)mixer.update(dt);else if(runner.userData.limbs){const p=elapsed*velocity*1.8;runner.userData.limbs.forEach((l,i)=>{l.leg.rotation.x=Math.sin(p+i*Math.PI)*.75;l.arm.rotation.x=-Math.sin(p+i*Math.PI)*.65;l.foot.rotation.x=l.leg.rotation.x*.25})}
    if(!grounded){jumpV-=21*dt;jumpY+=jumpV*dt;if(jumpY<=0){jumpY=0;jumpV=0;grounded=true}}
    runner.position.y=jumpY;runner.position.x=-2.25;
+   runnerShadow.position.x=-2.25;runnerShadow.scale.setScalar(1/(1+jumpY*.35));runnerShadow.material.opacity=.2/(1+jumpY*.7);
    nextSpawn-=dt;if(nextSpawn<=0)spawn();
    for(let i=obstacles.length-1;i>=0;i--){const o=obstacles[i];o.x-=velocity*dt;o.mesh.position.x=o.x;
     if(!o.passed&&o.x< -2.7){o.passed=true;streak++;skill=clamp(skill+.025,0,1)}
@@ -91,7 +94,7 @@ export function start(){
   }
   const target=view===0?new THREE.Vector3(0,1.2,0):view===1?new THREE.Vector3(-1.2,1.25,1.2):new THREE.Vector3(-3,1.2,5.5);
   const pos=view===0?new THREE.Vector3(0,4.2,10.5):view===1?new THREE.Vector3(-4,3.7,9):new THREE.Vector3(-2.3,3.2,12);
-  camera.position.lerp(pos,1-Math.pow(.001,dt));camera.lookAt(target);
+  camera.position.lerp(pos,1-Math.pow(.001,dt));camera.fov=THREE.MathUtils.lerp(camera.fov,48+(speed-1)*.28,1-Math.pow(.01,dt));camera.lookAt(target);
   const w=canvas.clientWidth,h=canvas.clientHeight;if(canvas.width!==Math.floor(w*renderer.getPixelRatio())||canvas.height!==Math.floor(h*renderer.getPixelRatio()))renderer.setSize(w,h,false);camera.aspect=w/Math.max(h,1);camera.updateProjectionMatrix();renderer.render(scene,camera);
  }
  msg.innerHTML="БЕГУЩИЙ ЧЕЛОВЕК<br><small>3D · РЕАЛИСТИЧНЫЙ БЕГ</small><br><button id='play'>НАЧАТЬ</button>";
