@@ -10,7 +10,7 @@ export function start(){
  scene.add(new THREE.HemisphereLight(0xf4eee2,0x756b5b,2.0));
  const sun=new THREE.DirectionalLight(0xffedcf,3.2);sun.position.set(-5,10,7);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-18;sun.shadow.camera.right=18;sun.shadow.camera.top=18;sun.shadow.camera.bottom=-18;scene.add(sun);
  const grayColor=color=>{const c=new THREE.Color(color);const y=.299*c.r+.587*c.g+.114*c.b;return new THREE.Color().setRGB(y,y,y)};
- const mat=(color,roughness=.94,metalness=0)=>new THREE.MeshStandardMaterial({color:grayColor(color),roughness,metalness});
+ const mat=(color,roughness=.94,metalness=0)=>new THREE.MeshStandardMaterial({color:grayColor(color),map:graphiteTexture,roughness,metalness});
  function addSketchOutlines(root){
   root.traverse(o=>{if(!o.isMesh||o.userData.sketchOutline)return;o.userData.sketchOutline=true;
    const edges=new THREE.EdgesGeometry(o.geometry,18);
@@ -27,6 +27,15 @@ export function start(){
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(18,18);t.colorSpace=THREE.SRGBColorSpace;return t;
  }
  const paperTexture=makePaperTexture();
+ function makeGraphiteTexture(){
+  const c=document.createElement("canvas");c.width=c.height=256;const ctx=c.getContext("2d");
+  ctx.fillStyle="#f4f1eb";ctx.fillRect(0,0,256,256);
+  for(let pass=0;pass<3;pass++){ctx.strokeStyle=pass===0?"rgba(35,33,30,.13)":"rgba(35,33,30,.075)";ctx.lineWidth=pass===0?.7:.45;
+   for(let i=0;i<170;i++){const x=Math.random()*256,y=Math.random()*256,len=5+Math.random()*30;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+len,y-len*(pass===1?.18:.72));ctx.stroke()}}
+  for(let i=0;i<900;i++){const x=Math.random()*256,y=Math.random()*256;ctx.fillStyle="rgba(30,28,26,"+(Math.random()*.11)+")";ctx.fillRect(x,y,.7,.7)}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2,2);t.colorSpace=THREE.SRGBColorSpace;return t;
+ }
+ const graphiteTexture=makeGraphiteTexture();
  const floorMat=mat(0xbcb4a6);floorMat.map=paperTexture;floorMat.needsUpdate=true;
  const lineMat=mat(0x777064),wood=mat(0xc99a55),graphite=mat(0x302d29),eraser=mat(0xb97875),paper=mat(0xe5ddce);
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(200,200),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.08;floor.receiveShadow=true;scene.add(floor);
@@ -56,7 +65,7 @@ export function start(){
   while(runner.children.length)runner.remove(runner.children[0]);
   const model=g.scene;const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());const scale=1.78/Math.max(size.y,.01);model.scale.setScalar(scale);const b2=new THREE.Box3().setFromObject(model);model.position.y-=b2.min.y;model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;
    const source=Array.isArray(o.material)?o.material:[o.material];
-   const pencilMats=source.map(m=>new THREE.MeshStandardMaterial({color:grayColor(m?.color??0x777777),roughness:1,metalness:0}));
+   const pencilMats=source.map(m=>new THREE.MeshStandardMaterial({color:grayColor(m?.color??0x777777),map:graphiteTexture,roughness:1,metalness:0}));
    o.material=Array.isArray(o.material)?pencilMats:pencilMats[0];
   }});runner.add(model);addSketchOutlines(model);
   if(g.animations.length){mixer=new THREE.AnimationMixer(model);const clip=g.animations.find(a=>/run|jog|sprint/i.test(a.name))||g.animations[0];runAction=mixer.clipAction(clip);runAction.play()}
