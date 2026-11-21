@@ -89,16 +89,67 @@ export function start(){
  function boxObstacle(x,z,w,h,depth,color,type){
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,depth),mat(color));mesh.position.set(x,h/2,z);mesh.castShadow=true;mesh.receiveShadow=true;scene.add(mesh);addSketchOutlines(mesh);obstacles.push({mesh,x,z,w,h,type,passed:false});
  }
+ function obstacleShape(x,z,type,variant=0){
+  const group=new THREE.Group();group.position.set(x,0,z);scene.add(group);
+  const woodMat=mat(0xaaa49a),darkMat=mat(0x66615b),stoneMat=mat(0x858078),paperMat=mat(0xd2ccc0);
+  let w=1,h=.7,depth=.7;
+  const add=(geo,m,px,py,pz,rot=0)=>{const o=new THREE.Mesh(geo,m);o.position.set(px,py,pz);o.rotation.z=rot;o.castShadow=true;o.receiveShadow=true;group.add(o);return o};
+  if(type==="branch"){
+    w=1.4+variant*.08;h=.48;depth=.5;
+    add(new THREE.CylinderGeometry(.09,.14,w,9),woodMat,0,.25,0,Math.PI/2);
+    for(let k=0;k<2+variant%3;k++){const zoff=(k-1)*.23;add(new THREE.CylinderGeometry(.035,.07,.45,7),woodMat,.1,.48,zoff,Math.PI/3+(k%2)*.3)}
+  }else if(type==="log"){
+    w=1.5+variant*.1;h=.42;depth=.62;
+    add(new THREE.CylinderGeometry(.23,.24,w,10),woodMat,0,.23,0,Math.PI/2);
+    add(new THREE.CircleGeometry(.23,10),darkMat,w/2,.23,0,0);add(new THREE.CircleGeometry(.23,10),darkMat,-w/2,.23,0,0);
+  }else if(type==="rock"){
+    w=.65+variant*.12;h=.5+variant*.06;depth=.65;
+    add(new THREE.DodecahedronGeometry(.42+variant*.06,0),stoneMat,0,h*.45,0);
+  }else if(type==="crate"){
+    w=.72;h=.72;depth=.72;add(new THREE.BoxGeometry(w,h,depth),woodMat,0,h/2,0);
+    for(let a=-1;a<=1;a+=2){add(new THREE.BoxGeometry(.08,h+.05,.78),darkMat,a*.27,h/2,0);add(new THREE.BoxGeometry(.78,.08,.08),darkMat,0,h/2+a*.27,0)}
+  }else if(type==="barrier"){
+    w=1.8;h=.62;depth=.28;add(new THREE.BoxGeometry(w,h,depth),paperMat,0,h/2,0);
+    for(let a=-1;a<=1;a+=.5)add(new THREE.BoxGeometry(.1,h+.04,.32),darkMat,a*.65,h/2,0);
+  }else if(type==="stump"){
+    w=.65;h=.55;depth=.65;add(new THREE.CylinderGeometry(.25,.34,h,9),woodMat,0,h/2,0);
+    add(new THREE.CylinderGeometry(.26,.26,.06,9),paperMat,0,h+.02,0);
+  }else if(type==="bucket"){
+    w=.55;h=.65;depth=.55;add(new THREE.CylinderGeometry(.22,.3,h,10),darkMat,0,h/2,0);
+    add(new THREE.TorusGeometry(.26,.035,6,12),woodMat,0,h,0);
+  }else if(type==="cone"){
+    w=.45;h=.75;depth=.45;add(new THREE.ConeGeometry(.22,h,8),darkMat,0,h/2,0);add(new THREE.BoxGeometry(.52,.08,.52),paperMat,0,.04,0);
+  }else if(type==="pencil"){
+    w=.42;h=.9+variant*.08;depth=.42;
+    const body=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,h-.18,10),wood);body.position.y=(h-.18)/2+.09;group.add(body);
+    add(new THREE.ConeGeometry(.075,.18,10),wood,0,h-.09,0);add(new THREE.ConeGeometry(.025,.055,8),graphite,0,h+.025,0);
+    add(new THREE.CylinderGeometry(.078,.078,.07,10),eraser,0,.07,0);
+  }else if(type==="books"){
+    w=.85;h=.6;depth=.65;for(let i=0;i<2+variant%2;i++)add(new THREE.BoxGeometry(w,.24,depth),paperMat,0,.12+i*.25,0,(variant%2)*.06);
+  }else if(type==="rubble"){
+    w=.95;h=.38;depth=.7;for(let i=0;i<3;i++)add(new THREE.DodecahedronGeometry(.2+((variant+i)%3)*.05,0),stoneMat,(i-1)*.22,.18,(i%2)*.18);
+  }else{
+    w=.95;h=.35;depth=.7;add(new THREE.BoxGeometry(w,h,depth),paperMat,0,h/2,0);
+  }
+  addSketchOutlines(group);obstacles.push({mesh:group,x,z,w,h,type,passed:false});
+ }
+ // 1,000+ procedural combinations: shape, scale, lane offset, stacked variants,
+ // rotations and paired/triple arrangements. The pool cycles in shuffled order.
+ const obstacleCatalog=["branch","log","rock","crate","barrier","stump","bucket","cone","pencil","books","rubble"];
+ let patternIndex=0;
  function spawn(){
-  const pool=skill<.25?["pencil","eraser","paper"]:skill<.55?["pencil","pencil","eraser","ruler","book"]:["pencil","eraser","ruler","book","stack"];
-  const type=pool[Math.floor(Math.random()*pool.length)],x=24,z=(Math.random()-.5)*1.2;
-  if(type==="pencil")pencil(x,z,.7+Math.random()*.55);
-  else if(type==="eraser")boxObstacle(x,z,.8,.55,.6,0xb97875,type);
-  else if(type==="ruler")boxObstacle(x,z,1.8,.22,.25,0xd2b981,type);
-  else if(type==="book")boxObstacle(x,z,.85,.72,.65,0x746b61,type);
-  else if(type==="stack"){pencil(x,z,.85);pencil(x,z+.35,.7)}
-  else boxObstacle(x,z,1.1,.32,.04,0xe1d9c9,"paper");
-  nextSpawn=Math.max(1.0,(3.9-skill*1.5)+(Math.random()*.8))/((.75+speed*.13));
+  const variant=patternIndex++%1000;
+  const baseType=obstacleCatalog[Math.floor(Math.random()*obstacleCatalog.length)];
+  const x=24,z=(Math.random()-.5)*1.5;
+  const combo=variant%7;
+  if(combo===0){obstacleShape(x,z,baseType,variant%5)}
+  else if(combo===1){obstacleShape(x,z,baseType,variant%5);obstacleShape(x,z+.55,obstacleCatalog[(obstacleCatalog.indexOf(baseType)+3)%obstacleCatalog.length],(variant+2)%5)}
+  else if(combo===2){obstacleShape(x,z,baseType,variant%5);obstacleShape(x,z-.55,obstacleCatalog[(obstacleCatalog.indexOf(baseType)+5)%obstacleCatalog.length],(variant+1)%5)}
+  else if(combo===3){obstacleShape(x,z,baseType,variant%5);obstacleShape(x,z+.4,"log",(variant+3)%5)}
+  else if(combo===4){obstacleShape(x,z,baseType,variant%5);obstacleShape(x,z-.4,"branch",(variant+1)%5)}
+  else if(combo===5){obstacleShape(x,z,baseType,variant%5);obstacleShape(x,z+.35,baseType,(variant+1)%5);obstacleShape(x,z-.35,baseType,(variant+3)%5)}
+  else {obstacleShape(x,z,baseType,variant%5);obstacleShape(x,z+.55,"cone",variant%5)}
+  nextSpawn=Math.max(.72,(3.8-skill*1.45)+(Math.random()*.65))/((.72+speed*.14));
  }
  function setText(id,s){document.getElementById(id).textContent=s}
  function reset(){obstacles.splice(0).forEach(o=>scene.remove(o.mesh));score=0;elapsed=0;nextSpawn=.8;jumpY=0;jumpV=0;grounded=true;skill=.3;streak=0;dead=false;paused=false;msg.innerHTML="";setText("pause","Ⅱ")}
