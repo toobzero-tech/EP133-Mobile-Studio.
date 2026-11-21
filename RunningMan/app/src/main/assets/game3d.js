@@ -63,7 +63,10 @@ export function start(){
  fallbackRunner();addSketchOutlines(runner);
  const loader=new GLTFLoader();
  loader.load("./runner.glb",g=>{
+  const oldGeometry=new Set(),oldMaterials=new Set();
+  runner.traverse(o=>{if(o.isMesh){if(o.geometry)oldGeometry.add(o.geometry);for(const m of (Array.isArray(o.material)?o.material:[o.material]))if(m)oldMaterials.add(m)}});
   while(runner.children.length)runner.remove(runner.children[0]);
+  oldGeometry.forEach(v=>v.dispose());oldMaterials.forEach(v=>v.dispose());
   const model=g.scene;const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());const scale=1.78/Math.max(size.y,.01);model.scale.setScalar(scale);const b2=new THREE.Box3().setFromObject(model);model.position.y-=b2.min.y;model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;
    const source=Array.isArray(o.material)?o.material:[o.material];
    const pencilMats=source.map(m=>new THREE.MeshStandardMaterial({color:grayColor(m?.color??0x777777),map:graphiteTexture,roughness:1,metalness:0}));
@@ -72,7 +75,8 @@ export function start(){
   if(g.animations.length){mixer=new THREE.AnimationMixer(model);const clip=g.animations.find(a=>/run|jog|sprint/i.test(a.name))||g.animations[0];runAction=mixer.clipAction(clip);runAction.play()}
   modelReady=true;
  },undefined,()=>{});
- const obstacles=[];let nextSpawn=1.2,elapsed=0,score=0,best=+(localStorage.getItem("rm3dBest")||0),speed=5,paused=true,dead=false,jumpY=0,jumpV=0,grounded=true,skill=.3,streak=0,view=0,laneZ=0,targetLaneZ=0;
+ const obstacles=[];let nextSpawn=1.2,elapsed=0,score=0,best=0,speed=5,paused=true,dead=false,jumpY=0,jumpV=0,grounded=true,skill=.3,streak=0,view=0,laneZ=0,targetLaneZ=0;
+ try{best=+(localStorage.getItem("rm3dBest")||0)}catch(e){best=0}
  let audio=null,soundEnabled=true,lastStep=0;
  function audioReady(){if(!soundEnabled)return null;try{if(!audio){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;audio=new AC()}if(audio.state==="suspended")audio.resume();return audio}catch(e){return null}}
  function tone(freq,duration=.09,type="sine",volume=.045,slide=0){const ctx=audioReady();if(!ctx)return;const osc=ctx.createOscillator(),gain=ctx.createGain();osc.type=type;osc.frequency.setValueAtTime(freq,ctx.currentTime);if(slide)osc.frequency.exponentialRampToValueAtTime(Math.max(30,freq+slide),ctx.currentTime+duration);gain.gain.setValueAtTime(.0001,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(volume,ctx.currentTime+.012);gain.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+duration);osc.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+duration+.02)}
@@ -141,17 +145,19 @@ export function start(){
  let patternIndex=0;
  function spawn(){
   const variant=patternIndex++%1000;
-  const baseType=obstacleCatalog[Math.floor(Math.random()*obstacleCatalog.length)];
-  const x=24,z=(Math.random()-.5)*1.5;
-  const combo=variant%7;
-  if(combo===0){obstacleShape(x,z,baseType,variant%5)}
-  else if(combo===1){obstacleShape(x,z,baseType,variant%5);obstacleShape(x,z+.55,obstacleCatalog[(obstacleCatalog.indexOf(baseType)+3)%obstacleCatalog.length],(variant+2)%5)}
-  else if(combo===2){obstacleShape(x,z,baseType,variant%5);obstacleShape(x,z-.55,obstacleCatalog[(obstacleCatalog.indexOf(baseType)+5)%obstacleCatalog.length],(variant+1)%5)}
-  else if(combo===3){obstacleShape(x,z,baseType,variant%5);obstacleShape(x,z+.4,"log",(variant+3)%5)}
-  else if(combo===4){obstacleShape(x,z,baseType,variant%5);obstacleShape(x,z-.4,"branch",(variant+1)%5)}
-  else if(combo===5){obstacleShape(x,z,baseType,variant%5);obstacleShape(x,z+.35,baseType,(variant+1)%5);obstacleShape(x,z-.35,baseType,(variant+3)%5)}
-  else {obstacleShape(x,z,baseType,variant%5);obstacleShape(x,z+.55,"cone",variant%5)}
-  nextSpawn=Math.max(.72,(3.8-skill*1.45)+(Math.random()*.65))/((.72+speed*.14));
+  const baseIndex=Math.floor(Math.random()*obstacleCatalog.length);
+  const baseType=obstacleCatalog[baseIndex];
+  const x=24,lanes=[-1.65,0,1.65];
+  const first=Math.floor(Math.random()*3),combo=variant%7;
+  obstacleShape(x,lanes[first],baseType,variant%5);
+  // Leave at least one clear lane in every obstacle row.
+  if(combo!==0){
+   const choices=[0,1,2].filter(i=>i!==first);
+   const second=choices[(variant+Math.floor(Math.random()*2))%2];
+   const secondType=combo===3?"log":combo===4?"branch":combo===6?"cone":obstacleCatalog[(baseIndex+(variant%5)+1)%obstacleCatalog.length];
+   obstacleShape(x,lanes[second],secondType,(variant+2)%5);
+  }
+  nextSpawn=Math.max(.9,(4.2-skill*1.35)+(Math.random()*.7))/((.72+speed*.14));
  }
  function setText(id,s){document.getElementById(id).textContent=s}
  function disposeTree(root){
@@ -192,7 +198,7 @@ export function start(){
    nextSpawn-=dt;if(nextSpawn<=0)spawn();
    for(let i=obstacles.length-1;i>=0;i--){const o=obstacles[i];o.x-=velocity*dt;o.mesh.position.x=o.x;
     if(!o.passed&&o.x< -2.7){o.passed=true;streak++;skill=clamp(skill+.025,0,1)}
-    if(Math.abs(o.x+2.25)<(o.w*.5+.28)&&jumpY<o.h*.83&&Math.abs(o.z-laneZ)<.68){dead=true;impactSound();skill=clamp(skill-.2,0,1);best=Math.max(best,Math.floor(score));localStorage.setItem("rm3dBest",best);msg.innerHTML="СТОЛКНОВЕНИЕ<br>СЧЁТ: "+Math.floor(score)+" · РЕКОРД: "+best+"<br><button id='retry'>ЕЩЁ РАЗ</button>";document.getElementById("retry").onclick=()=>{reset();started=true};break}
+    if(Math.abs(o.x+2.25)<(o.w*.5+.28)&&jumpY<o.h*.83&&Math.abs(o.z-laneZ)<.48){dead=true;impactSound();skill=clamp(skill-.2,0,1);best=Math.max(best,Math.floor(score));try{localStorage.setItem("rm3dBest",best)}catch(e){}msg.innerHTML="СТОЛКНОВЕНИЕ<br>СЧЁТ: "+Math.floor(score)+" · РЕКОРД: "+best+"<br><button id='retry'>ЕЩЁ РАЗ</button>";document.getElementById("retry").onclick=()=>{reset();started=true};break}
     if(o.x< -18){disposeTree(o.mesh);obstacles.splice(i,1)}
    }
    setText("score","СЧЁТ "+String(Math.floor(score)).padStart(6,"0")+" · РЕКОРД "+String(best).padStart(6,"0"));
