@@ -78,7 +78,7 @@ function drawRunner(x,y,t){
  arm(armA,elbowA,handA);arm(armB,elbowB,handB);
  // Neck and head with ear, nose and sketch contour
  ctx.fillStyle='#d9c9ad';ctx.strokeStyle='#292622';ctx.lineWidth=2.5;
- ctx.beginPath();ctx.roundRect(-4,-84,8,13,3);ctx.fill();ctx.stroke();
+ ctx.beginPath();ctx.moveTo(-4,-81);ctx.lineTo(-4,-73);ctx.quadraticCurveTo(-4,-70,0,-70);ctx.quadraticCurveTo(4,-70,4,-73);ctx.lineTo(4,-81);ctx.closePath();ctx.fill();ctx.stroke();
  ctx.beginPath();ctx.ellipse(view==='front'?0:2,-101,13,16,view==='front'?0:-.1,0,Math.PI*2);ctx.fillStyle='#e4d5bd';ctx.fill();ctx.stroke();
  ctx.strokeStyle='#988a75';ctx.lineWidth=1;ctx.beginPath();ctx.arc(1,-102,9,.25,2.45);ctx.stroke();
  if(view!=='front'){ctx.beginPath();ctx.ellipse(-10,-99,2.4,3.2,0,0,Math.PI*2);ctx.stroke();line([[10,-101],[15,-98],[10,-96]],1.5);ctx.fillStyle='#292622';ctx.beginPath();ctx.arc(7,-105,1.5,0,7);ctx.fill();line([[4,-91],[9,-91]],.8,'#9a8973')}
