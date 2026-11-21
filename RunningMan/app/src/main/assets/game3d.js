@@ -4,13 +4,31 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function start(){
  const canvas=document.querySelector("#stage"),scene=new THREE.Scene();
- scene.background=new THREE.Color(0xded8cb);scene.fog=new THREE.Fog(0xded8cb,18,75);
- const camera=new THREE.PerspectiveCamera(54,1,.1,140);camera.position.set(-10,4.1,5.2);camera.lookAt(2.8,1.05,0);
+ scene.background=new THREE.Color(0xeee9df);scene.fog=new THREE.Fog(0xeee9df,22,88);
+ const camera=new THREE.PerspectiveCamera(54,1,.1,140);camera.position.set(-10,3.35,0);camera.lookAt(5.5,1.05,0);
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
  scene.add(new THREE.HemisphereLight(0xf4eee2,0x756b5b,2.0));
  const sun=new THREE.DirectionalLight(0xffedcf,3.2);sun.position.set(-5,10,7);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-18;sun.shadow.camera.right=18;sun.shadow.camera.top=18;sun.shadow.camera.bottom=-18;scene.add(sun);
- const mat=(color,roughness=.82,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
- const floorMat=mat(0xbcb4a6),lineMat=mat(0x777064),wood=mat(0xc99a55),graphite=mat(0x302d29),eraser=mat(0xb97875),paper=mat(0xe5ddce);
+ const grayColor=color=>{const c=new THREE.Color(color);const y=.299*c.r+.587*c.g+.114*c.b;return new THREE.Color().setRGB(y,y,y)};
+ const mat=(color,roughness=.94,metalness=0)=>new THREE.MeshStandardMaterial({color:grayColor(color),roughness,metalness});
+ function addSketchOutlines(root){
+  root.traverse(o=>{if(!o.isMesh||o.userData.sketchOutline)return;o.userData.sketchOutline=true;
+   const edges=new THREE.EdgesGeometry(o.geometry,18);
+   const ink=new THREE.LineBasicMaterial({color:0x37332e,transparent:true,opacity:.68,depthWrite:false});
+   const lines=new THREE.LineSegments(edges,ink);lines.renderOrder=2;o.add(lines);
+  });
+ }
+ function makePaperTexture(){
+  const c=document.createElement("canvas");c.width=c.height=512;const ctx=c.getContext("2d");
+  ctx.fillStyle="#e9e4d9";ctx.fillRect(0,0,512,512);
+  for(let i=0;i<11000;i++){const x=Math.random()*512,y=Math.random()*512,a=.025+Math.random()*.07;ctx.fillStyle="rgba(55,49,42,"+a+")";ctx.fillRect(x,y,Math.random()*1.5+.3,.5)}
+  ctx.strokeStyle="rgba(65,59,51,.10)";ctx.lineWidth=.6;
+  for(let i=0;i<95;i++){const x=Math.random()*512,y=Math.random()*512;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+5+Math.random()*24,y-2+Math.random()*4);ctx.stroke()}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(18,18);t.colorSpace=THREE.SRGBColorSpace;return t;
+ }
+ const paperTexture=makePaperTexture();
+ const floorMat=mat(0xbcb4a6);floorMat.map=paperTexture;floorMat.needsUpdate=true;
+ const lineMat=mat(0x777064),wood=mat(0xc99a55),graphite=mat(0x302d29),eraser=mat(0xb97875),paper=mat(0xe5ddce);
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(200,200),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.08;floor.receiveShadow=true;scene.add(floor);
  const lane=new THREE.Mesh(new THREE.BoxGeometry(200,.08,5.2),mat(0xc9c1b3));lane.position.set(0,-.02,0);lane.receiveShadow=true;scene.add(lane);
  for(let z=-2.4;z<=2.4;z+=.8){const l=new THREE.Mesh(new THREE.BoxGeometry(200,.012,.012),lineMat);l.position.set(0,.03,z);scene.add(l)}
@@ -32,11 +50,15 @@ export function start(){
   }
   runner.userData.limbs=limbs;
  }
- fallbackRunner();
+ fallbackRunner();addSketchOutlines(runner);
  const loader=new GLTFLoader();
  loader.load("./runner.glb",g=>{
   while(runner.children.length)runner.remove(runner.children[0]);
-  const model=g.scene;const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());const scale=1.78/Math.max(size.y,.01);model.scale.setScalar(scale);const b2=new THREE.Box3().setFromObject(model);model.position.y-=b2.min.y;model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material){o.material.roughness=Math.max(o.material.roughness??.7,.55)}}});runner.add(model);
+  const model=g.scene;const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());const scale=1.78/Math.max(size.y,.01);model.scale.setScalar(scale);const b2=new THREE.Box3().setFromObject(model);model.position.y-=b2.min.y;model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;
+   const source=Array.isArray(o.material)?o.material:[o.material];
+   const pencilMats=source.map(m=>new THREE.MeshStandardMaterial({color:grayColor(m?.color??0x777777),roughness:1,metalness:0}));
+   o.material=Array.isArray(o.material)?pencilMats:pencilMats[0];
+  }});runner.add(model);addSketchOutlines(model);
   if(g.animations.length){mixer=new THREE.AnimationMixer(model);const clip=g.animations.find(a=>/run|jog|sprint/i.test(a.name))||g.animations[0];runAction=mixer.clipAction(clip);runAction.play()}
   modelReady=true;
  },undefined,()=>{});
@@ -53,10 +75,10 @@ export function start(){
   const lead=new THREE.Mesh(new THREE.ConeGeometry(.025,.055,8),graphite);lead.position.y=h+.025;group.add(lead);
   const band=new THREE.Mesh(new THREE.CylinderGeometry(.078,.078,.07,12),eraser);band.position.y=.07;group.add(band);
   const rings=new THREE.Mesh(new THREE.CylinderGeometry(.079,.079,.018,12),mat(0xb9a88f,.45,.4));rings.position.y=.115;group.add(rings);
-  scene.add(group);obstacles.push({mesh:group,x,z,w:.42,h,type:"pencil",passed:false});
+  scene.add(group);addSketchOutlines(group);obstacles.push({mesh:group,x,z,w:.42,h,type:"pencil",passed:false});
  }
  function boxObstacle(x,z,w,h,depth,color,type){
-  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,depth),mat(color));mesh.position.set(x,h/2,z);mesh.castShadow=true;mesh.receiveShadow=true;scene.add(mesh);obstacles.push({mesh,x,z,w,h,type,passed:false});
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,depth),mat(color));mesh.position.set(x,h/2,z);mesh.castShadow=true;mesh.receiveShadow=true;scene.add(mesh);addSketchOutlines(mesh);obstacles.push({mesh,x,z,w,h,type,passed:false});
  }
  function spawn(){
   const pool=skill<.25?["pencil","eraser","paper"]:skill<.55?["pencil","pencil","eraser","ruler","book"]:["pencil","eraser","ruler","book","stack"];
@@ -98,8 +120,8 @@ export function start(){
    setText("score","СЧЁТ "+String(Math.floor(score)).padStart(6,"0")+" · РЕКОРД "+String(best).padStart(6,"0"));
   }
   // Third-person chase view: the runner advances along +X and the camera follows from behind.
-  const target=view===0?new THREE.Vector3(2.8,1.15,0):view===1?new THREE.Vector3(2.2,1.2,0):new THREE.Vector3(-1.8,1.2,0);
-  const pos=view===0?new THREE.Vector3(-9.5,4.0,5.0):view===1?new THREE.Vector3(-7.2,3.4,8.0):new THREE.Vector3(8.5,3.1,0);
+  const target=view===0?new THREE.Vector3(5.8,1.05,0):view===1?new THREE.Vector3(3.8,1.15,4.8):new THREE.Vector3(-1.8,1.2,0);
+  const pos=view===0?new THREE.Vector3(-10,3.35,0):view===1?new THREE.Vector3(-7.8,3.8,6.2):new THREE.Vector3(8.5,3.1,0);
   camera.position.lerp(pos,1-Math.pow(.001,dt));camera.fov=THREE.MathUtils.lerp(camera.fov,54+(speed-1)*.32,1-Math.pow(.01,dt));camera.lookAt(target);
   const w=canvas.clientWidth,h=canvas.clientHeight;if(canvas.width!==Math.floor(w*renderer.getPixelRatio())||canvas.height!==Math.floor(h*renderer.getPixelRatio()))renderer.setSize(w,h,false);camera.aspect=w/Math.max(h,1);camera.updateProjectionMatrix();renderer.render(scene,camera);
  }
