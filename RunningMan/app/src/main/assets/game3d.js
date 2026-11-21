@@ -5,7 +5,7 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function start(){
  const canvas=document.querySelector("#stage"),scene=new THREE.Scene();
  scene.background=new THREE.Color(0xded8cb);scene.fog=new THREE.Fog(0xded8cb,18,75);
- const camera=new THREE.PerspectiveCamera(48,1,.1,120);camera.position.set(0,4.2,10.5);camera.lookAt(0,1,0);
+ const camera=new THREE.PerspectiveCamera(54,1,.1,140);camera.position.set(-10,4.1,5.2);camera.lookAt(2.8,1.05,0);
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
  scene.add(new THREE.HemisphereLight(0xf4eee2,0x756b5b,2.0));
  const sun=new THREE.DirectionalLight(0xffedcf,3.2);sun.position.set(-5,10,7);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-18;sun.shadow.camera.right=18;sun.shadow.camera.top=18;sun.shadow.camera.bottom=-18;scene.add(sun);
@@ -97,9 +97,10 @@ export function start(){
    }
    setText("score","СЧЁТ "+String(Math.floor(score)).padStart(6,"0")+" · РЕКОРД "+String(best).padStart(6,"0"));
   }
-  const target=view===0?new THREE.Vector3(0,1.2,0):view===1?new THREE.Vector3(-1.2,1.25,1.2):new THREE.Vector3(-3,1.2,5.5);
-  const pos=view===0?new THREE.Vector3(0,4.2,10.5):view===1?new THREE.Vector3(-4,3.7,9):new THREE.Vector3(-2.3,3.2,12);
-  camera.position.lerp(pos,1-Math.pow(.001,dt));camera.fov=THREE.MathUtils.lerp(camera.fov,48+(speed-1)*.28,1-Math.pow(.01,dt));camera.lookAt(target);
+  // Third-person chase view: the runner advances along +X and the camera follows from behind.
+  const target=view===0?new THREE.Vector3(2.8,1.15,0):view===1?new THREE.Vector3(2.2,1.2,0):new THREE.Vector3(-1.8,1.2,0);
+  const pos=view===0?new THREE.Vector3(-9.5,4.0,5.0):view===1?new THREE.Vector3(-7.2,3.4,8.0):new THREE.Vector3(8.5,3.1,0);
+  camera.position.lerp(pos,1-Math.pow(.001,dt));camera.fov=THREE.MathUtils.lerp(camera.fov,54+(speed-1)*.32,1-Math.pow(.01,dt));camera.lookAt(target);
   const w=canvas.clientWidth,h=canvas.clientHeight;if(canvas.width!==Math.floor(w*renderer.getPixelRatio())||canvas.height!==Math.floor(h*renderer.getPixelRatio()))renderer.setSize(w,h,false);camera.aspect=w/Math.max(h,1);camera.updateProjectionMatrix();renderer.render(scene,camera);
  }
  msg.innerHTML="БЕГУЩИЙ ЧЕЛОВЕК<br><small>3D · РЕАЛИСТИЧНЫЙ БЕГ</small><br><button id='play'>НАЧАТЬ</button>";
