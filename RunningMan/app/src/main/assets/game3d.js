@@ -168,7 +168,7 @@ export function start(){
   for(const m of (root.userData.ownedMaterials||[]))m.dispose();
   scene.remove(root);
  }
- function reset(){obstacles.splice(0).forEach(o=>disposeTree(o.mesh));score=0;elapsed=0;nextSpawn=.8;jumpY=0;jumpV=0;grounded=true;skill=.3;streak=0;dead=false;paused=false;msg.innerHTML="";setText("pause","Ⅱ")}
+ function reset(){obstacles.splice(0).forEach(o=>disposeTree(o.mesh));score=0;elapsed=0;lastStep=0;nextSpawn=.8;jumpY=0;jumpV=0;grounded=true;skill=.3;streak=0;dead=false;paused=false;msg.innerHTML="";setText("pause","Ⅱ")}
  function jump(){if(dead||paused){if(dead||!started){reset();started=true}return}if(grounded){jumpV=8.6;grounded=false;runner.rotation.z=-.12;tone(260,.12,"triangle",.04,180)}}
  let started=false;const msg=document.getElementById("message");
  document.getElementById("jump").addEventListener("pointerdown",e=>{e.preventDefault();jump()});
@@ -192,7 +192,8 @@ export function start(){
    elapsed+=dt;score+=dt*speed*2;const velocity=1.15+speed*1.08;
    laneZ+=(targetLaneZ-laneZ)*(1-Math.exp(-8*dt));runner.position.z=laneZ;
    if(mixer){mixer.timeScale=.35+speed*.19;mixer.update(dt)}else if(runner.userData.limbs){const p=elapsed*velocity*1.8;runner.userData.limbs.forEach((l,i)=>{l.leg.rotation.x=Math.sin(p+i*Math.PI)*.75;l.arm.rotation.x=-Math.sin(p+i*Math.PI)*.65;l.foot.rotation.x=l.leg.rotation.x*.25})}
-   if(!grounded){jumpV-=21*dt;jumpY+=jumpV*dt;if(jumpY<=0){jumpY=0;jumpV=0;grounded=true}}
+   if(!grounded){jumpV-=21*dt;jumpY+=jumpV*dt;if(jumpY<=0){jumpY=0;jumpV=0;grounded=true;tone(92,.07,"triangle",.022,-24)}}
+   if(grounded&&elapsed-lastStep>Math.max(.22,.48/(.5+speed*.14))){tone(68,.045,"sine",.012,-12);lastStep=elapsed}
    runner.position.y=jumpY;runner.position.x=-2.25;
    runnerShadow.position.x=-2.25;runnerShadow.position.z=laneZ;runnerShadow.scale.setScalar(1/(1+jumpY*.35));runnerShadow.material.opacity=.2/(1+jumpY*.7);
    nextSpawn-=dt;if(nextSpawn<=0)spawn();
