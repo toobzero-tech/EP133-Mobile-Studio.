@@ -75,7 +75,21 @@ export function start(){
  const trackGeometry=new THREE.BufferGeometry();trackGeometry.setAttribute("position",new THREE.Float32BufferAttribute(trackPositions,3));trackGeometry.setIndex(trackIndices);trackGeometry.computeVertexNormals();
  const trackMaterial=mat(0xe4e0d8);trackMaterial.side=THREE.DoubleSide;scene.add(new THREE.Mesh(trackGeometry,trackMaterial));
  const trackInk=new THREE.LineBasicMaterial({color:0x77716a,transparent:true,opacity:.42});
- scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(leftEdge),trackInk));scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(rightEdge),trackInk));
+ scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(leftEdge),trackInk));scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(rightEdge),trackInk)); 
+ // Recycled graphite scuffs give the paper track visible forward motion.
+ const roadMarks=[],roadMarkInk=new THREE.LineBasicMaterial({color:0x625d56,transparent:true,opacity:.16,depthWrite:false});
+ for(let i=0;i<28;i++){
+  const geo=new THREE.BufferGeometry();
+  const p=[];
+  for(let j=0;j<3;j++){
+   const z=-1.8+j*1.15,dx=.16+(j%2)*.08;
+   p.push(-dx,.003,z,dx,.003,z+.12);
+  }
+  geo.setAttribute("position",new THREE.Float32BufferAttribute(p,3));
+  const mark=new THREE.LineSegments(geo,roadMarkInk);
+  const x=-12+i*2;mark.position.set(x,0,pathZ(x));scene.add(mark);roadMarks.push(mark);
+ }
+
  const runner=new THREE.Group();runner.position.set(-2.25,0,0);scene.add(runner);
  let mixer=null,runAction=null,modelReady=false;
  function fallbackRunner(){
@@ -292,6 +306,11 @@ export function start(){
    runner.position.y=jumpY;runner.position.x=-2.25;
 
    nextSpawn-=dt;if(nextSpawn<=0)spawn();
+   for(const mark of roadMarks){
+    let x=mark.position.x-velocity*dt;
+    if(x< -15)x+=56;
+    mark.position.set(x,0,pathZ(x));
+   }
    for(let i=obstacles.length-1;i>=0;i--){const o=obstacles[i];o.x-=velocity*dt;o.mesh.position.x=o.x;o.mesh.position.z=pathZ(o.x)+o.z;
     if(!o.passed&&o.x< -2.7){o.passed=true;streak++;aiDirector.recordPass()}
     if(Math.abs(o.x+2.25)<(o.w*.5+.28)&&jumpY<o.h*.83&&Math.abs(o.z-laneZ)<.48){dead=true;impactSound();aiDirector.recordHit();best=Math.max(best,Math.floor(score));try{localStorage.setItem("rm3dBest",best)}catch(e){}msg.innerHTML="СТОЛКНОВЕНИЕ<br>СЧЁТ: "+Math.floor(score)+" · РЕКОРД: "+best+"<br><button id='retry'>ЕЩЁ РАЗ</button>";document.getElementById("retry").onclick=()=>{reset();started=true};break}
