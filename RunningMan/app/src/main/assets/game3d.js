@@ -106,7 +106,7 @@ export function start(){
   }
   runner.userData.limbs=limbs;
  }
- fallbackRunner();addSketchOutlines(runner);
+ fallbackRunner();addSketchOutlines(runner);runner.userData.ownedMaterials=[];
  const loader=new GLTFLoader();
  loader.load("./runner.glb",g=>{
   const oldGeometry=new Set(),oldMaterials=new Set();
@@ -125,7 +125,7 @@ export function start(){
     return new THREE.MeshStandardMaterial({color,map:graphiteTexture,roughness:1,metalness:0});
    });
    o.material=Array.isArray(o.material)?pencilMats:pencilMats[0];
-  }});runner.add(model);addSketchOutlines(model);
+  }});runner.add(model);addSketchOutlines(model);model.userData.ownedMaterials=[];addGraphiteHatching(model,0x13a5);
   runner.userData.model=model;runner.userData.modelBaseY=model.position.y;
   if(g.animations.length){mixer=new THREE.AnimationMixer(model);const clip=g.animations.find(a=>/run|jog|sprint/i.test(a.name))||g.animations[0];runAction=mixer.clipAction(clip);runAction.play()}
   modelReady=true;
@@ -279,11 +279,14 @@ export function start(){
  }
  function setText(id,s){document.getElementById(id).textContent=s}
  function disposeTree(root){
+  const geometries=new Set(),materials=new Set();
   root.traverse(o=>{
-   if(o.geometry)o.geometry.dispose();
-   if(o.isLineSegments&&o.material&&o.material.dispose)o.material.dispose();
+   if(o.geometry)geometries.add(o.geometry);
+   for(const m of (Array.isArray(o.material)?o.material:[o.material]))if(m)materials.add(m);
   });
-  for(const m of (root.userData.ownedMaterials||[]))m.dispose();
+  for(const g of geometries)g.dispose();
+  for(const m of (root.userData.ownedMaterials||[]))if(m)materials.add(m);
+  for(const m of materials)m.dispose();
   scene.remove(root);
  }
  function reset(){obstacles.splice(0).forEach(o=>disposeTree(o.mesh));score=0;elapsed=0;lastStep=0;nextSpawn=.8;jumpY=0;jumpV=0;grounded=true;skill=.3;streak=0;laneZ=0;targetLaneZ=0;runner.position.set(-2.25,0,pathZ(-2.25));runner.rotation.set(0,0,0);dead=false;paused=false;msg.innerHTML="";setText("pause","Ⅱ")}
