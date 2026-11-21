@@ -147,6 +147,29 @@ export function start(){
     w=.85;h=.6;depth=.65;for(let i=0;i<2+variation%2;i++)add(new THREE.BoxGeometry(w,.24,depth),paperMat,0,.12+i*.25,0,(variation%2)*.06);
   }else if(type==="rubble"){
     w=.95;h=.38;depth=.7;for(let i=0;i<3;i++)add(new THREE.DodecahedronGeometry(.2+((variation+i)%3)*.05,0),stoneMat,(i-1)*.22,.18,(i%2)*.18);
+  }else if(type==="chair"){
+    w=.9;h=1.05;depth=.72;add(new THREE.BoxGeometry(.72,.09,.68),woodMat,0,.48,0);add(new THREE.BoxGeometry(.72,.62,.09),woodMat,0,.83,-.29);
+    for(let a of [-1,1])for(let b of [-1,1])add(new THREE.BoxGeometry(.07,.48,.07),darkMat,a*.29,.24,b*.25);
+  }else if(type==="umbrella"){
+    w=1.05;h=1.12;depth=.9;add(new THREE.CylinderGeometry(.025,.025,.9,7),darkMat,0,.48,0);add(new THREE.SphereGeometry(.52,12,7,0,Math.PI*2,0,Math.PI/2),paperMat,0,.96,0);
+    for(let a=0;a<6;a++){const t=a*Math.PI/3;add(new THREE.CylinderGeometry(.012,.012,.72,5),darkMat,Math.cos(t)*.22,.78,Math.sin(t)*.22,Math.PI/2)}
+  }else if(type==="ladder"){
+    w=.9;h=1.25;depth=.35;for(let a of [-1,1])add(new THREE.BoxGeometry(.07,h,.07),woodMat,a*.36,h/2,0);for(let y=.18;y<h;y+=.22)add(new THREE.BoxGeometry(.78,.055,.07),darkMat,0,y,0);
+  }else if(type==="wheel"){
+    w=.95;h=.95;depth=.3;const tire=add(new THREE.TorusGeometry(.39,.12,8,18),darkMat,0,.48,0);tire.rotation.y=Math.PI/2;const hub=add(new THREE.CylinderGeometry(.14,.14,.34,12),paperMat,0,.48,0);hub.rotation.z=Math.PI/2;
+    for(let a=0;a<8;a++){const t=a*Math.PI/4;add(new THREE.BoxGeometry(.035,.62,.035),woodMat,Math.sin(t)*.2,.48+Math.cos(t)*.2,0,t)}
+  }else if(type==="suitcase"){
+    w=.92;h=.62;depth=.58;add(new THREE.BoxGeometry(w,h,depth),darkMat,0,h/2,0);add(new THREE.BoxGeometry(.34,.08,.06),woodMat,0,h+.04,0);for(let a of [-1,1])add(new THREE.BoxGeometry(.05,.12,.06),paperMat,a*.31,.03,.25);
+  }else if(type==="lamp"){
+    w=.72;h=1.18;depth=.72;add(new THREE.CylinderGeometry(.22,.25,.07,12),darkMat,0,.04,0);add(new THREE.CylinderGeometry(.035,.045,.72,8),woodMat,0,.42,0);add(new THREE.ConeGeometry(.34,.38,12),paperMat,0,.98,0);
+  }else if(type==="hoop"){
+    w=1.1;h=.92;depth=.32;const ring=add(new THREE.TorusGeometry(.36,.075,8,20),woodMat,0,.5,0);ring.rotation.y=Math.PI/2;for(let a of [-1,1])add(new THREE.BoxGeometry(.07,.9,.07),darkMat,a*.42,.45,0);add(new THREE.BoxGeometry(.95,.07,.07),darkMat,0,.05,0);
+  }else if(type==="cans"){
+    w=.88;h=.62;depth=.48;for(let a=-1;a<=1;a++)add(new THREE.CylinderGeometry(.13,.13,.48,10),variation%2?woodMat:darkMat,a*.27,.24,(a%2)*.12);add(new THREE.CylinderGeometry(.12,.12,.035,10),paperMat,0,.5,0);
+  }else if(type==="newspaper"){
+    w=1.25;h=.18;depth=.86;add(new THREE.BoxGeometry(w,.045,depth),paperMat,0,.06,0,(variation%7-3)*.045);for(let a=0;a<5;a++)add(new THREE.BoxGeometry(.16,.008,.018),darkMat,-.42+a*.2,.088,(a%2)*.2-.1);
+  }else if(type==="sign"){
+    w=.78;h=1.05;depth=.18;add(new THREE.BoxGeometry(.68,.58,.07),paperMat,0,.72,0);add(new THREE.CylinderGeometry(.035,.045,.72,7),darkMat,0,.36,0);add(new THREE.BoxGeometry(.82,.06,.24),woodMat,0,.04,0);
   }else{
     w=.95;h=.35;depth=.7;add(new THREE.BoxGeometry(w,h,depth),paperMat,0,h/2,0);
   }
@@ -154,7 +177,7 @@ export function start(){
  }
  // 1,000+ procedural combinations: shape, scale, lane offset, stacked variants,
  // rotations and paired/triple arrangements. The pool cycles in shuffled order.
- const obstacleCatalog=["branch","log","rock","crate","barrier","stump","bucket","cone","pencil","books","rubble"];
+ const obstacleCatalog=["branch","log","rock","crate","barrier","stump","bucket","cone","pencil","books","rubble","chair","umbrella","ladder","wheel","suitcase","lamp","hoop","cans","newspaper","sign"];
  // Offline adaptive AI director: no network, API key or gameplay latency.
  let patternIndex=0,randomState=0x13a5c79,shapeBag=[],recentShapes=[];
  const aiRandom=()=>{randomState^=randomState<<13;randomState^=randomState>>>17;randomState^=randomState<<5;return (randomState>>>0)/4294967296};
