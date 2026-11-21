@@ -13,11 +13,14 @@ public class MainActivity extends Activity {
         super.onCreate(state);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         WebView view = new WebView(this);
-        view.setBackgroundColor(0xffe9e4d8);
+        view.setBackgroundColor(0xffded8cb);
+        view.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         WebSettings settings = view.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(true);
+        settings.setAllowFileAccessFromFileURLs(true);
+        settings.setLoadsImagesAutomatically(true);
         view.setWebChromeClient(new WebChromeClient());
         view.setOverScrollMode(View.OVER_SCROLL_NEVER);
         setContentView(view);
