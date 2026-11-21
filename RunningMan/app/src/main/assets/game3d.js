@@ -126,6 +126,36 @@ export function start(){
  function boxObstacle(x,z,w,h,depth,color,type){
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,depth),mat(color));mesh.position.set(x,h/2,pathZ(x)+z);scene.add(mesh);addSketchOutlines(mesh);obstacles.push({mesh,x,z,w,h,type,passed:false});
  }
+ function addGraphiteHatching(root,seed=1){
+  root.updateMatrixWorld(true);
+  const worldBox=new THREE.Box3().setFromObject(root);
+  const corners=[];
+  for(let a=0;a<2;a++)for(let b=0;b<2;b++)for(let c=0;c<2;c++){
+   corners.push(root.worldToLocal(new THREE.Vector3(a?worldBox.max.x:worldBox.min.x,b?worldBox.max.y:worldBox.min.y,c?worldBox.max.z:worldBox.min.z)));
+  }
+  const bounds=new THREE.Box3().setFromPoints(corners),min=bounds.min,max=bounds.max;
+  const width=Math.max(.12,max.z-min.z),height=Math.max(.12,max.y-min.y),front=min.x-.006;
+  let state=(seed>>>0)||1;
+  const rand=()=>{state^=state<<13;state^=state>>>17;state^=state<<5;return (state>>>0)/4294967296};
+  const pts=[];
+  // Fine, imperfect graphite strokes on the camera-facing surface.
+  const count=12+Math.floor(rand()*9);
+  for(let i=0;i<count;i++){
+   const y=min.y+rand()*height,z=min.z+rand()*width;
+   const len=.06+rand()*.16,dy=(rand()-.5)*.045;
+   pts.push(front,y,z,front,y+dy,z+len);
+  }
+  for(let i=0;i<Math.floor(count*.65);i++){
+   const y=min.y+rand()*height,z=min.z+rand()*width;
+   const len=.05+rand()*.11;
+   pts.push(front,y,z,front,y+len,z-len*.42);
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute("position",new THREE.Float32BufferAttribute(pts,3));
+  const ink=new THREE.LineBasicMaterial({color:0x393632,transparent:true,opacity:.22,depthWrite:false});
+  const strokes=new THREE.LineSegments(geo,ink);strokes.renderOrder=3;root.add(strokes);
+  root.userData.ownedMaterials.push(ink);
+ }
  function obstacleShape(x,z,type,variant=0){
   const variationSeed=variant;
   const group=new THREE.Group();group.position.set(x,0,pathZ(x)+z);scene.add(group);
@@ -196,7 +226,7 @@ export function start(){
   }else{
     w=.95;h=.35;depth=.7;add(new THREE.BoxGeometry(w,h,depth),paperMat,0,h/2,0);
   }
-  addSketchOutlines(group);obstacles.push({mesh:group,x,z,w:w*sx,h:h*sy,type,passed:false});
+  addSketchOutlines(group);addGraphiteHatching(group,variationSeed);obstacles.push({mesh:group,x,z,w:w*sx,h:h*sy,type,passed:false});
  }
  // 1,000+ procedural combinations: shape, scale, lane offset, stacked variants,
  // rotations and paired/triple arrangements. The pool cycles in shuffled order.
