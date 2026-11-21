@@ -58,7 +58,7 @@ export function start(){
  function fallbackRunner(){
   const skin=mat(0xc69d7d),shirt=mat(0x555b5c),pants=mat(0x34383a),shoe=mat(0x252525);
   const sphere=(r,m,x,y,z)=>{const o=new THREE.Mesh(new THREE.SphereGeometry(r,20,16),m);o.position.set(x,y,z);runner.add(o);return o};
-  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.29,.62,6,12),shirt);torso.position.y=1.12;torsrunner.add(torso);
+  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.29,.62,6,12),shirt);torso.position.y=1.12;runner.add(torso);
   sphere(.19,skin,0,1.78,0);
   const limbs=[];
   for(let side of [-1,1]){
