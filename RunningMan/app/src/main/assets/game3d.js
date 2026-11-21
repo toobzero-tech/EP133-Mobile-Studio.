@@ -43,8 +43,6 @@ export function start(){
  const lane=new THREE.Mesh(new THREE.BoxGeometry(200,.08,5.2),mat(0xc9c1b3));lane.position.set(0,-.02,0);scene.add(lane);
  for(let z=-2.4;z<=2.4;z+=.8){const l=new THREE.Mesh(new THREE.BoxGeometry(200,.012,.012),lineMat);l.position.set(0,.03,z);scene.add(l)}
  const runner=new THREE.Group();runner.position.set(-2.25,0,0);scene.add(runner);
- const runnerShadow=new THREE.Mesh(new THREE.CircleGeometry(.48,32),new THREE.MeshBasicMaterial({color:0x292622,transparent:true,opacity:.2,depthWrite:false}));
- runnerShadow.rotation.x=-Math.PI/2;runnerShadow.position.set(-2.25,-.055,0);scene.add(runnerShadow);
  let mixer=null,runAction=null,modelReady=false;
  function fallbackRunner(){
   const skin=mat(0xc69d7d),shirt=mat(0x555b5c),pants=mat(0x34383a),shoe=mat(0x252525);
@@ -195,7 +193,7 @@ export function start(){
    if(!grounded){jumpV-=21*dt;jumpY+=jumpV*dt;if(jumpY<=0){jumpY=0;jumpV=0;grounded=true;tone(92,.07,"triangle",.022,-24)}}
    if(grounded&&elapsed-lastStep>Math.max(.22,.48/(.5+speed*.14))){tone(68,.045,"sine",.012,-12);lastStep=elapsed}
    runner.position.y=jumpY;runner.position.x=-2.25;
-   runnerShadow.position.x=-2.25;runnerShadow.position.z=laneZ;runnerShadow.scale.setScalar(1/(1+jumpY*.35));runnerShadow.material.opacity=.2/(1+jumpY*.7);
+
    nextSpawn-=dt;if(nextSpawn<=0)spawn();
    for(let i=obstacles.length-1;i>=0;i--){const o=obstacles[i];o.x-=velocity*dt;o.mesh.position.x=o.x;
     if(!o.passed&&o.x< -2.7){o.passed=true;streak++;skill=clamp(skill+.025,0,1)}
