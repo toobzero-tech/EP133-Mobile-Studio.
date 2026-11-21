@@ -5,7 +5,10 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function start(){
  const canvas=document.querySelector("#stage"),scene=new THREE.Scene();
  scene.background=new THREE.Color(0xfaf9f6);
- const pathZ=x=>1.35*Math.sin(x*.052)+.48*Math.sin(x*.117+.6);
+ let travelDistance=0;
+ const rawPathZ=x=>1.35*Math.sin(x*.052)+.48*Math.sin(x*.117+.6);
+ // Advance the curve profile beneath the fixed runner for endless forward travel.
+ const pathZ=x=>rawPathZ(x+travelDistance)-rawPathZ(-2.25+travelDistance);
  const camera=new THREE.PerspectiveCamera(54,1,.1,140);camera.position.set(-10,3.35,0);camera.lookAt(5.5,1.05,0);
  const renderer=new THREE.WebGLRenderer({canvas,antialias:false,alpha:false,powerPreference:"high-performance"});renderer.setPixelRatio(Math.min(devicePixelRatio,1.2));renderer.shadowMap.enabled=false;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
  scene.add(new THREE.HemisphereLight(0xffffff,0xb8b2a8,2.2));
@@ -75,7 +78,17 @@ export function start(){
  const trackGeometry=new THREE.BufferGeometry();trackGeometry.setAttribute("position",new THREE.Float32BufferAttribute(trackPositions,3));trackGeometry.setIndex(trackIndices);trackGeometry.computeVertexNormals();
  const trackMaterial=mat(0xe4e0d8);trackMaterial.side=THREE.DoubleSide;scene.add(new THREE.Mesh(trackGeometry,trackMaterial));
  const trackInk=new THREE.LineBasicMaterial({color:0x77716a,transparent:true,opacity:.42});
- scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(leftEdge),trackInk));scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(rightEdge),trackInk)); 
+ const leftEdgeGeometry=new THREE.BufferGeometry().setFromPoints(leftEdge),rightEdgeGeometry=new THREE.BufferGeometry().setFromPoints(rightEdge);
+ scene.add(new THREE.Line(leftEdgeGeometry,trackInk));scene.add(new THREE.Line(rightEdgeGeometry,trackInk));
+ function updateTrack(){
+  const positions=trackGeometry.attributes.position,left=leftEdgeGeometry.attributes.position,right=rightEdgeGeometry.attributes.position;
+  for(let i=0;i<=trackSegments;i++){
+   const x=trackStart+(trackEnd-trackStart)*i/trackSegments,c=pathZ(x);
+   positions.setXYZ(i*2,x,-.012,c-trackWidth/2);positions.setXYZ(i*2+1,x,-.012,c+trackWidth/2);
+   left.setXYZ(i,x,.006,c-trackWidth/2);right.setXYZ(i,x,.006,c+trackWidth/2);
+  }
+  positions.needsUpdate=true;left.needsUpdate=true;right.needsUpdate=true;trackGeometry.computeVertexNormals();
+ }
  // Recycled graphite scuffs give the paper track visible forward motion.
  const roadMarks=[],roadMarkInk=new THREE.LineBasicMaterial({color:0x625d56,transparent:true,opacity:.16,depthWrite:false});
  for(let i=0;i<28;i++){
@@ -129,7 +142,7 @@ export function start(){
   runner.userData.model=model;runner.userData.modelBaseY=model.position.y;
   if(g.animations.length){mixer=new THREE.AnimationMixer(model);const clip=g.animations.find(a=>/run|jog|sprint/i.test(a.name))||g.animations[0];runAction=mixer.clipAction(clip);runAction.play()}
   modelReady=true;
- },undefined,()=>{});
+ },undefined,error=>{console.error("Runner model failed to load; using procedural runner",error);});
  const obstacles=[];let nextSpawn=1.2,elapsed=0,score=0,best=0,speed=5,paused=true,dead=false,jumpY=0,jumpV=0,grounded=true,skill=.3,streak=0,view=0,laneZ=0,targetLaneZ=0;
  try{best=+(localStorage.getItem("rm3dBest")||0)}catch(e){best=0}
  let audio=null,soundEnabled=true,lastStep=0;
@@ -297,7 +310,7 @@ export function start(){
   for(const m of materials)m.dispose();
   scene.remove(root);
  }
- function reset(){obstacles.splice(0).forEach(o=>disposeTree(o.mesh));score=0;elapsed=0;lastStep=0;nextSpawn=.8;jumpY=0;jumpV=0;grounded=true;skill=.3;streak=0;laneZ=0;targetLaneZ=0;runner.position.set(-2.25,0,pathZ(-2.25));runner.rotation.set(0,0,0);dead=false;paused=false;msg.innerHTML="";setText("pause","Ⅱ")}
+ function reset(){obstacles.splice(0).forEach(o=>disposeTree(o.mesh));score=0;elapsed=0;lastStep=0;nextSpawn=.8;jumpY=0;jumpV=0;grounded=true;skill=.3;streak=0;travelDistance=0;laneZ=0;targetLaneZ=0;runner.position.set(-2.25,0,0);runner.rotation.set(0,0,0);updateTrack();dead=false;paused=false;msg.innerHTML="";setText("pause","Ⅱ")}
  function jump(){if(dead||paused){if(dead||!started){reset();started=true}return}if(grounded){jumpV=8.6;grounded=false;runner.rotation.z=-.12;tone(260,.12,"triangle",.04,180)}}
  let started=false;const msg=document.getElementById("message");
  document.getElementById("jump").addEventListener("pointerdown",e=>{e.preventDefault();jump()});
@@ -321,7 +334,8 @@ export function start(){
   frameAccumulator=0;
   if(!paused&&!dead&&started){
    elapsed+=dt;score+=dt*speed*2;const velocity=1.15+speed*1.08;
-   laneZ+=(targetLaneZ-laneZ)*(1-Math.exp(-8*dt));runner.position.z=pathZ(-2.25)+laneZ;
+   travelDistance+=velocity*dt;updateTrack();
+   laneZ+=(targetLaneZ-laneZ)*(1-Math.exp(-8*dt));runner.position.z=laneZ;
    if(mixer){mixer.timeScale=.35+speed*.19;mixer.update(dt)}
    else if(runner.userData.limbs&&runner.userData.limbs[0]?.leg?.parent){const p=elapsed*velocity*1.8;runner.userData.limbs.forEach((l,i)=>{l.leg.rotation.x=Math.sin(p+i*Math.PI)*.75;l.arm.rotation.x=-Math.sin(p+i*Math.PI)*.65;l.foot.rotation.x=l.leg.rotation.x*.25})}
    else if(runner.userData.model){const p=elapsed*velocity*3.2;runner.userData.model.position.y=runner.userData.modelBaseY+Math.abs(Math.sin(p))*.025;runner.userData.model.rotation.z=Math.sin(p)*.018}
