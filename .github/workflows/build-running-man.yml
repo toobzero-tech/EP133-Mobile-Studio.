@@ -31,6 +31,18 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-35" "build-tools;35.0.0"
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+      - name: Validate game JavaScript
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path("RunningMan/app/src/main/assets/index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script[^>]*>(.*?)</script>", html, flags=re.S|re.I)
+          assert scripts, "Game JavaScript block is missing"
+          Path("/tmp/running-man.js").write_text("\n".join(scripts), encoding="utf-8")
+          print("Validated game script source:", len(scripts), "block(s)")
+          PY
+          node --check /tmp/running-man.js
       - name: Build debug APK
         run: gradle --no-daemon --stacktrace -p RunningMan assembleDebug
       - name: Verify APK
