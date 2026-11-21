@@ -116,7 +116,14 @@ export function start(){
   runner.userData.limbs=null;
   const model=g.scene;const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());const scale=1.78/Math.max(size.y,.01);model.scale.setScalar(scale);const b2=new THREE.Box3().setFromObject(model);model.position.y-=b2.min.y;model.traverse(o=>{if(o.isMesh){
    const source=Array.isArray(o.material)?o.material:[o.material];
-   const pencilMats=source.map(m=>new THREE.MeshStandardMaterial({color:grayColor(m?.color??0x777777),map:graphiteTexture,roughness:1,metalness:0}));
+   const pencilMats=source.map(m=>{
+    const color=grayColor(m?.color??0x777777);
+    if(m){
+     for(const key of ["map","normalMap","roughnessMap","metalnessMap","emissiveMap","aoMap","alphaMap","bumpMap","displacementMap"])if(m[key])m[key].dispose();
+     m.dispose();
+    }
+    return new THREE.MeshStandardMaterial({color,map:graphiteTexture,roughness:1,metalness:0});
+   });
    o.material=Array.isArray(o.material)?pencilMats:pencilMats[0];
   }});runner.add(model);addSketchOutlines(model);
   runner.userData.model=model;runner.userData.modelBaseY=model.position.y;
@@ -293,6 +300,7 @@ export function start(){
  document.querySelectorAll("[data-view]").forEach((b,i)=>b.addEventListener("click",()=>{view=i;document.querySelectorAll("[data-view]").forEach(x=>x.classList.toggle("active",x===b))}));
  window.addEventListener("keydown",e=>{if(e.code==="Space"||e.code==="ArrowUp"){e.preventDefault();jump()}if(e.code==="Escape"){paused=!paused;setText("pause",paused?"▶":"Ⅱ")}});
  document.addEventListener("visibilitychange",()=>{if(document.hidden&&started&&!dead){paused=true;setText("pause","▶");msg.textContent="ПАУЗА"}});
+ window.addEventListener("pagehide",()=>{try{localStorage.setItem("rm3dBest",String(Math.max(best,Math.floor(score))))}catch(e){}});
  const clock=new THREE.Clock();let frameAccumulator=0;
  function frame(){
   requestAnimationFrame(frame);
