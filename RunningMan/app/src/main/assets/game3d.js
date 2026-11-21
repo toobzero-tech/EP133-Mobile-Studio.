@@ -94,6 +94,7 @@ export function start(){
   const group=new THREE.Group();group.position.set(x,0,z);scene.add(group);
   const woodMat=mat(0xaaa49a),darkMat=mat(0x66615b),stoneMat=mat(0x858078),paperMat=mat(0xd2ccc0);
   let w=1,h=.7,depth=.7;
+  group.userData.ownedMaterials=[woodMat,darkMat,stoneMat,paperMat];
   const add=(geo,m,px,py,pz,rot=0)=>{const o=new THREE.Mesh(geo,m);o.position.set(px,py,pz);o.rotation.z=rot;o.castShadow=true;o.receiveShadow=true;group.add(o);return o};
   if(type==="branch"){
     w=1.4+variant*.08;h=.48;depth=.5;
@@ -153,7 +154,14 @@ export function start(){
   nextSpawn=Math.max(.72,(3.8-skill*1.45)+(Math.random()*.65))/((.72+speed*.14));
  }
  function setText(id,s){document.getElementById(id).textContent=s}
- function disposeTree(root){root.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.isLineSegments&&o.material&&o.material.dispose)o.material.dispose()});scene.remove(root)}
+ function disposeTree(root){
+  root.traverse(o=>{
+   if(o.geometry)o.geometry.dispose();
+   if(o.isLineSegments&&o.material&&o.material.dispose)o.material.dispose();
+  });
+  for(const m of (root.userData.ownedMaterials||[]))m.dispose();
+  scene.remove(root);
+ }
  function reset(){obstacles.splice(0).forEach(o=>disposeTree(o.mesh));score=0;elapsed=0;nextSpawn=.8;jumpY=0;jumpV=0;grounded=true;skill=.3;streak=0;dead=false;paused=false;msg.innerHTML="";setText("pause","Ⅱ")}
  function jump(){if(dead||paused){if(dead||!started){reset();started=true}return}if(grounded){jumpV=8.6;grounded=false;runner.rotation.z=-.12;tone(260,.12,"triangle",.04,180)}}
  let started=false;const msg=document.getElementById("message");
@@ -167,9 +175,13 @@ export function start(){
  document.getElementById("sound").addEventListener("click",e=>{soundEnabled=!soundEnabled;e.currentTarget.textContent=soundEnabled?"♪":"×";if(soundEnabled){audioReady();tone(520,.07,"sine",.025)}});
  document.querySelectorAll("[data-view]").forEach((b,i)=>b.addEventListener("click",()=>{view=i;document.querySelectorAll("[data-view]").forEach(x=>x.classList.toggle("active",x===b))}));
  window.addEventListener("keydown",e=>{if(e.code==="Space"||e.code==="ArrowUp"){e.preventDefault();jump()}if(e.code==="Escape"){paused=!paused;setText("pause",paused?"▶":"Ⅱ")}});
- const clock=new THREE.Clock();
+ const clock=new THREE.Clock();let frameAccumulator=0;
  function frame(){
-  requestAnimationFrame(frame);const dt=Math.min(clock.getDelta(),.04);
+  requestAnimationFrame(frame);
+  frameAccumulator+=clock.getDelta();
+  if(frameAccumulator<1/30)return;
+  const dt=Math.min(frameAccumulator,.05);
+  frameAccumulator=0;
   if(!paused&&!dead&&started){
    elapsed+=dt;score+=dt*speed*2;const velocity=1.15+speed*1.08;
    laneZ+=(targetLaneZ-laneZ)*(1-Math.exp(-8*dt));runner.position.z=laneZ;
