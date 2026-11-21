@@ -1,17 +1,17 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#ded8cb"><title>Бегущий человек 3D</title>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#eee9df"><title>Бегущий человек</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#ded8cb;font-family:Arial,sans-serif;touch-action:none}#stage{width:100%;height:100%;display:block}
-#hud{position:absolute;inset:0;color:#292622;pointer-events:none}.panel{background:rgba(235,229,216,.88);border:1.5px solid #51483d;box-shadow:2px 3px 0 rgba(50,42,32,.15);border-radius:9px}
+#hud{position:absolute;inset:0;color:#302d29;pointer-events:none}.panel{background:rgba(239,235,226,.90);border:1.5px solid #514b43;box-shadow:2px 3px 0 rgba(50,42,32,.15);border-radius:9px}
 #score{position:absolute;left:3%;top:3%;padding:8px 11px;font-weight:bold;font-size:clamp(11px,2.5vw,20px);letter-spacing:.6px}
-button{font-family:inherit;color:#292622;font-weight:bold;pointer-events:auto;border:2px solid #39342f;border-radius:10px;background:#d6cfc0;box-shadow:0 3px 0 #8b8172}
+button{font-family:inherit;color:#292622;font-weight:bold;pointer-events:auto;border:2px solid #39342f;border-radius:10px;background:#e5dfd4;box-shadow:0 3px 0 #91897d}
 button:active{transform:translateY(2px);box-shadow:0 1px 0 #8b8172}
 #pause{position:absolute;right:3%;top:3%;width:48px;height:44px;font-size:22px}#sound{position:absolute;right:calc(3% + 56px);top:3%;width:44px;height:44px;font-size:18px}
 #speedWrap{position:absolute;right:3%;top:17%;height:43%;width:52px;display:flex;align-items:center;justify-content:space-around;flex-direction:column;padding:7px 2px;font-size:10px;font-weight:bold;letter-spacing:.5px}
-#speed{height:75%;width:24px;writing-mode:vertical-lr;direction:rtl;accent-color:#c77c2b;pointer-events:auto}
-#jump{position:absolute;right:11%;bottom:5%;width:26%;height:15%;min-width:110px;max-width:190px;background:#d69a45;font-size:clamp(15px,3vw,22px)}
-#views{position:absolute;left:3%;bottom:5%;display:flex;gap:5px;pointer-events:auto}#views button{padding:8px 9px;font-size:clamp(9px,1.8vw,13px);background:#ded7c9}#views button.active{background:#d69a45}
+#speed{height:75%;width:24px;writing-mode:vertical-lr;direction:rtl;accent-color:#77716a;pointer-events:auto}
+#jump{position:absolute;right:11%;bottom:5%;width:26%;height:15%;min-width:110px;max-width:190px;background:#b8b0a3;font-size:clamp(15px,3vw,22px)}
+#views{position:absolute;left:3%;bottom:5%;display:flex;gap:5px;pointer-events:auto}#views button{padding:8px 9px;font-size:clamp(9px,1.8vw,13px);background:#e8e2d8}#views button.active{background:#b8b0a3}
 #message{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);width:min(82%,420px);padding:18px;text-align:center;font-size:clamp(17px,4vw,28px);font-weight:bold;white-space:pre-line;line-height:1.45;pointer-events:auto;background:rgba(235,229,216,.84);border:1px solid #51483d;border-radius:12px}
 #message button{padding:10px 22px;margin-top:12px;background:#d69a45;font-size:16px}#hint{position:absolute;left:50%;top:3%;transform:translateX(-50%);font-size:10px;letter-spacing:1px;opacity:.6;white-space:nowrap}
-</style></head><body><canvas id="stage"></canvas><div id="hud"><div id="score" class="panel">СЧЁТ 000000</div><div id="hint">3D · БЕСКОНЕЧНЫЙ БЕГ</div><button id="sound" aria-label="Звук">♪</button><button id="pause">Ⅱ</button><div id="speedWrap" class="panel">СКОРОСТЬ<input id="speed" type="range" min="1" max="10" value="5"><span id="speedVal">5 / 10</span></div><div id="views"><button data-view="side" class="active">ПРОФИЛЬ</button><button data-view="three">¾</button><button data-view="front">СПЕРЕДИ</button></div><button id="jump">ПРЫЖОК</button><div id="message"></div></div>
+</style></head><body><canvas id="stage"></canvas><div id="hud"><div id="score" class="panel">СЧЁТ 000000</div><div id="hint">КАРАНДАШНЫЙ БЕСКОНЕЧНЫЙ БЕГ</div><button id="sound" aria-label="Звук">♪</button><button id="pause">Ⅱ</button><div id="speedWrap" class="panel">СКОРОСТЬ<input id="speed" type="range" min="1" max="10" value="5"><span id="speedVal">5 / 10</span></div><div id="views"><button data-view="side" class="active">СЗАДИ</button><button data-view="three">¾</button><button data-view="front">ПРОФИЛЬ</button></div><button id="jump">ПРЫЖОК</button><div id="message"></div></div>
 <script src="./game3d.bundle.js"></script><script>window.addEventListener("load",()=>{try{RunningMan3D.start()}catch(e){document.getElementById("message").textContent="ОШИБКА 3D: "+e.message;console.error(e)}});</script></body></html>
