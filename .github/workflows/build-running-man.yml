@@ -44,6 +44,7 @@ jobs:
       - name: Validate 3D game source
         run: |
           node --check --input-type=module < RunningMan/app/src/main/assets/game3d.js
+          npx --yes eslint@8 --no-eslintrc --env browser,es2022 --parser-options '{"sourceType":"module","ecmaVersion":"latest"}' --rule 'no-undef:error' RunningMan/app/src/main/assets/game3d.js
           python3 - <<'PY'
           import re
           from pathlib import Path
