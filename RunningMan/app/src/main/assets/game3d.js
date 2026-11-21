@@ -4,7 +4,8 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function start(){
  const canvas=document.querySelector("#stage"),scene=new THREE.Scene();
- scene.background=new THREE.Color(0xfaf9f6);scene.fog=new THREE.Fog(0xfaf9f6,34,110);
+ scene.background=new THREE.Color(0xfaf9f6);
+ const pathZ=x=>1.35*Math.sin(x*.052)+.48*Math.sin(x*.117+.6);
  const camera=new THREE.PerspectiveCamera(54,1,.1,140);camera.position.set(-10,3.35,0);camera.lookAt(5.5,1.05,0);
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.35));renderer.shadowMap.enabled=false;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
  scene.add(new THREE.HemisphereLight(0xffffff,0xb8b2a8,2.2));
@@ -40,20 +41,30 @@ export function start(){
  const floorMat=mat(0xbcb4a6);floorMat.map=paperTexture;floorMat.needsUpdate=true;
  const lineMat=mat(0x777064),wood=mat(0xc99a55),graphite=mat(0x302d29),eraser=mat(0xb97875),paper=mat(0xe5ddce);
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(200,200),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.08;scene.add(floor);
- const lane=new THREE.Mesh(new THREE.BoxGeometry(200,.08,5.2),mat(0xc9c1b3));lane.position.set(0,-.02,0);scene.add(lane);
- for(let z=-2.4;z<=2.4;z+=.8){const l=new THREE.Mesh(new THREE.BoxGeometry(200,.012,.012),lineMat);l.position.set(0,.03,z);scene.add(l)}
+ const trackPositions=[],trackIndices=[],leftEdge=[],rightEdge=[];
+ const trackSegments=180,trackStart=-35,trackEnd=45,trackWidth=5.2;
+ for(let i=0;i<=trackSegments;i++){
+  const x=trackStart+(trackEnd-trackStart)*i/trackSegments,center=pathZ(x);
+  trackPositions.push(x,-.012,center-trackWidth/2,x,-.012,center+trackWidth/2);
+  leftEdge.push(new THREE.Vector3(x,.006,center-trackWidth/2));rightEdge.push(new THREE.Vector3(x,.006,center+trackWidth/2));
+  if(i<trackSegments){const n=i*2;trackIndices.push(n,n+1,n+2,n+1,n+3,n+2)}
+ }
+ const trackGeometry=new THREE.BufferGeometry();trackGeometry.setAttribute("position",new THREE.Float32BufferAttribute(trackPositions,3));trackGeometry.setIndex(trackIndices);trackGeometry.computeVertexNormals();
+ const trackMaterial=mat(0xe4e0d8);trackMaterial.side=THREE.DoubleSide;scene.add(new THREE.Mesh(trackGeometry,trackMaterial));
+ const trackInk=new THREE.LineBasicMaterial({color:0x77716a,transparent:true,opacity:.42});
+ scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(leftEdge),trackInk));scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(rightEdge),trackInk));
  const runner=new THREE.Group();runner.position.set(-2.25,0,0);scene.add(runner);
  let mixer=null,runAction=null,modelReady=false;
  function fallbackRunner(){
   const skin=mat(0xc69d7d),shirt=mat(0x555b5c),pants=mat(0x34383a),shoe=mat(0x252525);
-  const sphere=(r,m,x,y,z)=>{const o=new THREE.Mesh(new THREE.SphereGeometry(r,20,16),m);o.position.set(x,y,z);o.castShadow=true;runner.add(o);return o};
-  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.29,.62,6,12),shirt);torso.position.y=1.12;torso.castShadow=true;runner.add(torso);
+  const sphere=(r,m,x,y,z)=>{const o=new THREE.Mesh(new THREE.SphereGeometry(r,20,16),m);o.position.set(x,y,z);runner.add(o);return o};
+  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.29,.62,6,12),shirt);torso.position.y=1.12;torsrunner.add(torso);
   sphere(.19,skin,0,1.78,0);
   const limbs=[];
   for(let side of [-1,1]){
-   let leg=new THREE.Mesh(new THREE.CapsuleGeometry(.105,.53,5,10),pants);leg.position.set(side*.14,.48,0);leg.castShadow=true;runner.add(leg);
-   let arm=new THREE.Mesh(new THREE.CapsuleGeometry(.075,.5,5,10),skin);arm.position.set(side*.34,1.18,0);arm.castShadow=true;runner.add(arm);
-   let foot=new THREE.Mesh(new THREE.BoxGeometry(.2,.12,.36),shoe);foot.position.set(side*.14,.08,.09);foot.castShadow=true;runner.add(foot);
+   let leg=new THREE.Mesh(new THREE.CapsuleGeometry(.105,.53,5,10),pants);leg.position.set(side*.14,.48,0);runner.add(leg);
+   let arm=new THREE.Mesh(new THREE.CapsuleGeometry(.075,.5,5,10),skin);arm.position.set(side*.34,1.18,0);runner.add(arm);
+   let foot=new THREE.Mesh(new THREE.BoxGeometry(.2,.12,.36),shoe);foot.position.set(side*.14,.08,.09);runner.add(foot);
    limbs.push({leg,arm,foot,side});
   }
   runner.userData.limbs=limbs;
@@ -65,7 +76,7 @@ export function start(){
   runner.traverse(o=>{if(o.isMesh){if(o.geometry)oldGeometry.add(o.geometry);for(const m of (Array.isArray(o.material)?o.material:[o.material]))if(m)oldMaterials.add(m)}});
   while(runner.children.length)runner.remove(runner.children[0]);
   oldGeometry.forEach(v=>v.dispose());oldMaterials.forEach(v=>v.dispose());
-  const model=g.scene;const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());const scale=1.78/Math.max(size.y,.01);model.scale.setScalar(scale);const b2=new THREE.Box3().setFromObject(model);model.position.y-=b2.min.y;model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;
+  const model=g.scene;const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());const scale=1.78/Math.max(size.y,.01);model.scale.setScalar(scale);const b2=new THREE.Box3().setFromObject(model);model.position.y-=b2.min.y;model.traverse(o=>{if(o.isMesh){
    const source=Array.isArray(o.material)?o.material:[o.material];
    const pencilMats=source.map(m=>new THREE.MeshStandardMaterial({color:grayColor(m?.color??0x777777),map:graphiteTexture,roughness:1,metalness:0}));
    o.material=Array.isArray(o.material)?pencilMats:pencilMats[0];
@@ -81,23 +92,23 @@ export function start(){
  function impactSound(){tone(115,.16,"triangle",.065,-65);tone(62,.22,"sine",.045,-28)}
 
  function pencil(x,z,h=1.0){
-  const group=new THREE.Group();group.position.set(x,0,z);
-  const body=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,h-.18,12),wood);body.position.y=(h-.18)/2+.09;body.castShadow=true;group.add(body);
-  const tip=new THREE.Mesh(new THREE.ConeGeometry(.075,.18,12),wood);tip.position.y=h-.09;tip.castShadow=true;group.add(tip);
+  const group=new THREE.Group();group.position.set(x,0,pathZ(x)+z);
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,h-.18,12),wood);body.position.y=(h-.18)/2+.09;group.add(body);
+  const tip=new THREE.Mesh(new THREE.ConeGeometry(.075,.18,12),wood);tip.position.y=h-.09;group.add(tip);
   const lead=new THREE.Mesh(new THREE.ConeGeometry(.025,.055,8),graphite);lead.position.y=h+.025;group.add(lead);
   const band=new THREE.Mesh(new THREE.CylinderGeometry(.078,.078,.07,12),eraser);band.position.y=.07;group.add(band);
   const rings=new THREE.Mesh(new THREE.CylinderGeometry(.079,.079,.018,12),mat(0xb9a88f,.45,.4));rings.position.y=.115;group.add(rings);
   scene.add(group);addSketchOutlines(group);obstacles.push({mesh:group,x,z,w:.42,h,type:"pencil",passed:false});
  }
  function boxObstacle(x,z,w,h,depth,color,type){
-  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,depth),mat(color));mesh.position.set(x,h/2,z);mesh.castShadow=true;mesh.receiveShadow=true;scene.add(mesh);addSketchOutlines(mesh);obstacles.push({mesh,x,z,w,h,type,passed:false});
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,depth),mat(color));mesh.position.set(x,h/2,pathZ(x)+z);scene.add(mesh);addSketchOutlines(mesh);obstacles.push({mesh,x,z,w,h,type,passed:false});
  }
  function obstacleShape(x,z,type,variant=0){
-  const group=new THREE.Group();group.position.set(x,0,z);scene.add(group);
+  const group=new THREE.Group();group.position.set(x,0,pathZ(x)+z);scene.add(group);
   const woodMat=mat(0xaaa49a),darkMat=mat(0x66615b),stoneMat=mat(0x858078),paperMat=mat(0xd2ccc0);
   let w=1,h=.7,depth=.7;
   group.userData.ownedMaterials=[woodMat,darkMat,stoneMat,paperMat];
-  const add=(geo,m,px,py,pz,rot=0)=>{const o=new THREE.Mesh(geo,m);o.position.set(px,py,pz);o.rotation.z=rot;o.castShadow=true;o.receiveShadow=true;group.add(o);return o};
+  const add=(geo,m,px,py,pz,rot=0)=>{const o=new THREE.Mesh(geo,m);o.position.set(px,py,pz);o.rotation.z=rot;group.add(o);return o};
   if(type==="branch"){
     w=1.4+variant*.08;h=.48;depth=.5;
     add(new THREE.CylinderGeometry(.09,.14,w,9),woodMat,0,.25,0,Math.PI/2);
@@ -188,14 +199,14 @@ export function start(){
   frameAccumulator=0;
   if(!paused&&!dead&&started){
    elapsed+=dt;score+=dt*speed*2;const velocity=1.15+speed*1.08;
-   laneZ+=(targetLaneZ-laneZ)*(1-Math.exp(-8*dt));runner.position.z=laneZ;
+   laneZ+=(targetLaneZ-laneZ)*(1-Math.exp(-8*dt));runner.position.z=pathZ(-2.25)+laneZ;
    if(mixer){mixer.timeScale=.35+speed*.19;mixer.update(dt)}else if(runner.userData.limbs){const p=elapsed*velocity*1.8;runner.userData.limbs.forEach((l,i)=>{l.leg.rotation.x=Math.sin(p+i*Math.PI)*.75;l.arm.rotation.x=-Math.sin(p+i*Math.PI)*.65;l.foot.rotation.x=l.leg.rotation.x*.25})}
    if(!grounded){jumpV-=21*dt;jumpY+=jumpV*dt;if(jumpY<=0){jumpY=0;jumpV=0;grounded=true;tone(92,.07,"triangle",.022,-24)}}
    if(grounded&&elapsed-lastStep>Math.max(.22,.48/(.5+speed*.14))){tone(68,.045,"sine",.012,-12);lastStep=elapsed}
    runner.position.y=jumpY;runner.position.x=-2.25;
 
    nextSpawn-=dt;if(nextSpawn<=0)spawn();
-   for(let i=obstacles.length-1;i>=0;i--){const o=obstacles[i];o.x-=velocity*dt;o.mesh.position.x=o.x;
+   for(let i=obstacles.length-1;i>=0;i--){const o=obstacles[i];o.x-=velocity*dt;o.mesh.position.x=o.x;o.mesh.position.z=pathZ(o.x)+o.z;
     if(!o.passed&&o.x< -2.7){o.passed=true;streak++;skill=clamp(skill+.025,0,1)}
     if(Math.abs(o.x+2.25)<(o.w*.5+.28)&&jumpY<o.h*.83&&Math.abs(o.z-laneZ)<.48){dead=true;impactSound();skill=clamp(skill-.2,0,1);best=Math.max(best,Math.floor(score));try{localStorage.setItem("rm3dBest",best)}catch(e){}msg.innerHTML="СТОЛКНОВЕНИЕ<br>СЧЁТ: "+Math.floor(score)+" · РЕКОРД: "+best+"<br><button id='retry'>ЕЩЁ РАЗ</button>";document.getElementById("retry").onclick=()=>{reset();started=true};break}
     if(o.x< -18){disposeTree(o.mesh);obstacles.splice(i,1)}
@@ -203,8 +214,8 @@ export function start(){
    setText("score","СЧЁТ "+String(Math.floor(score)).padStart(6,"0")+" · РЕКОРД "+String(best).padStart(6,"0"));
   }
   // Third-person chase view: the runner advances along +X and the camera follows from behind.
-  const target=view===0?new THREE.Vector3(2.8,1.05,laneZ*.72):view===1?new THREE.Vector3(2.4,1.15,laneZ*.72+4.8):new THREE.Vector3(-1.8,1.2,laneZ*.72);
-  const pos=view===0?new THREE.Vector3(-8.5,3.05,laneZ+0.15):view===1?new THREE.Vector3(-7.2,3.55,laneZ+6.2):new THREE.Vector3(8.5,3.1,laneZ);
+  const target=view===0?new THREE.Vector3(2.8,1.05,pathZ(2.8)+laneZ*.72):view===1?new THREE.Vector3(2.4,1.15,pathZ(2.4)+laneZ*.72+4.8):new THREE.Vector3(-1.8,1.2,pathZ(-1.8)+laneZ*.72);
+  const pos=view===0?new THREE.Vector3(-8.5,3.05,pathZ(-8.5)+laneZ+0.15):view===1?new THREE.Vector3(-7.2,3.55,pathZ(-7.2)+laneZ+6.2):new THREE.Vector3(8.5,3.1,pathZ(8.5)+laneZ);
   camera.position.lerp(pos,1-Math.pow(.001,dt));camera.fov=THREE.MathUtils.lerp(camera.fov,54+(speed-1)*.32,1-Math.pow(.01,dt));camera.lookAt(target);
   const w=canvas.clientWidth,h=canvas.clientHeight;if(canvas.width!==Math.floor(w*renderer.getPixelRatio())||canvas.height!==Math.floor(h*renderer.getPixelRatio()))renderer.setSize(w,h,false);camera.aspect=w/Math.max(h,1);camera.updateProjectionMatrix();renderer.render(scene,camera);
  }
