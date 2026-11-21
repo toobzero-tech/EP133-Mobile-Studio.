@@ -155,22 +155,28 @@ export function start(){
  // 1,000+ procedural combinations: shape, scale, lane offset, stacked variants,
  // rotations and paired/triple arrangements. The pool cycles in shuffled order.
  const obstacleCatalog=["branch","log","rock","crate","barrier","stump","bucket","cone","pencil","books","rubble"];
- let patternIndex=0;
+ // Offline adaptive AI director: no network, API key or gameplay latency.
+ let patternIndex=0,randomState=0x13a5c79,shapeBag=[],recentShapes=[];
+ const aiRandom=()=>{randomState^=randomState<<13;randomState^=randomState>>>17;randomState^=randomState<<5;return (randomState>>>0)/4294967296};
+ function nextShape(){
+  if(!shapeBag.length){shapeBag=obstacleCatalog.slice();for(let i=shapeBag.length-1;i>0;i--){const j=Math.floor(aiRandom()*(i+1));[shapeBag[i],shapeBag[j]]=[shapeBag[j],shapeBag[i]]}}
+  let pick=shapeBag.pop();
+  if(recentShapes.slice(-3).includes(pick)&&shapeBag.length){shapeBag.unshift(pick);pick=shapeBag.pop()}
+  recentShapes.push(pick);if(recentShapes.length>6)recentShapes.shift();
+  return pick;
+ }
+ const aiDirector={get level(){return Math.round(skill*100)},get density(){return clamp(.25+skill*.55,.25,.8)},recordPass(){skill=clamp(skill+.012,0,1)},recordHit(){skill=clamp(skill-.22,0,1)},nextGap(){const challenge=clamp(skill*.72+(speed-1)*.035,0,.92);return Math.max(1.05,4.5-challenge*2.3+aiRandom()*.8)/(.78+speed*.13)}};
  function spawn(){
-  const variant=patternIndex++;
-  const baseIndex=(variant*7+Math.floor(variant/11))%obstacleCatalog.length;
-  const baseType=obstacleCatalog[baseIndex];
-  const x=24,lanes=[-1.65,0,1.65];
-  const first=(variant*5+Math.floor(variant/7))%3,combo=variant%11;
-  obstacleShape(x,lanes[first],baseType,variant);
-  // Leave at least one clear lane in every obstacle row.
-  if(combo!==0){
-   const choices=[0,1,2].filter(i=>i!==first);
-   const second=choices[(Math.floor(variant/3)+Math.floor(variant/13))%2];
-   const secondType=combo===3?"log":combo===4?"branch":combo===6?"cone":obstacleCatalog[(variant*13+Math.floor(variant/5)+3)%obstacleCatalog.length];
-   obstacleShape(x,lanes[second],secondType,variant*3+17);
+  const variant=patternIndex++,x=24,lanes=[-1.65,0,1.65];
+  const first=Math.floor(aiRandom()*3),baseType=nextShape();
+  const shapeSeed=(variant*7919+Math.floor(aiRandom()*65535))>>>0;
+  obstacleShape(x,lanes[first],baseType,shapeSeed);
+  // Keep at least one lane open; the director raises density as the player improves.
+  if(aiRandom()<aiDirector.density){
+   const choices=[0,1,2].filter(i=>i!==first),second=choices[Math.floor(aiRandom()*choices.length)];
+   obstacleShape(x,lanes[second],nextShape(),(shapeSeed*3+17)>>>0);
   }
-  nextSpawn=Math.max(.9,(4.2-skill*1.35)+(Math.random()*.7))/((.72+speed*.14));
+  nextSpawn=aiDirector.nextGap();
  }
  function setText(id,s){document.getElementById(id).textContent=s}
  function disposeTree(root){
@@ -211,8 +217,8 @@ export function start(){
 
    nextSpawn-=dt;if(nextSpawn<=0)spawn();
    for(let i=obstacles.length-1;i>=0;i--){const o=obstacles[i];o.x-=velocity*dt;o.mesh.position.x=o.x;o.mesh.position.z=pathZ(o.x)+o.z;
-    if(!o.passed&&o.x< -2.7){o.passed=true;streak++;skill=clamp(skill+.025,0,1)}
-    if(Math.abs(o.x+2.25)<(o.w*.5+.28)&&jumpY<o.h*.83&&Math.abs(o.z-laneZ)<.48){dead=true;impactSound();skill=clamp(skill-.2,0,1);best=Math.max(best,Math.floor(score));try{localStorage.setItem("rm3dBest",best)}catch(e){}msg.innerHTML="СТОЛКНОВЕНИЕ<br>СЧЁТ: "+Math.floor(score)+" · РЕКОРД: "+best+"<br><button id='retry'>ЕЩЁ РАЗ</button>";document.getElementById("retry").onclick=()=>{reset();started=true};break}
+    if(!o.passed&&o.x< -2.7){o.passed=true;streak++;aiDirector.recordPass()}
+    if(Math.abs(o.x+2.25)<(o.w*.5+.28)&&jumpY<o.h*.83&&Math.abs(o.z-laneZ)<.48){dead=true;impactSound();aiDirector.recordHit();best=Math.max(best,Math.floor(score));try{localStorage.setItem("rm3dBest",best)}catch(e){}msg.innerHTML="СТОЛКНОВЕНИЕ<br>СЧЁТ: "+Math.floor(score)+" · РЕКОРД: "+best+"<br><button id='retry'>ЕЩЁ РАЗ</button>";document.getElementById("retry").onclick=()=>{reset();started=true};break}
     if(o.x< -18){disposeTree(o.mesh);obstacles.splice(i,1)}
    }
    setText("score","СЧЁТ "+String(Math.floor(score)).padStart(6,"0")+" · РЕКОРД "+String(best).padStart(6,"0"));
@@ -223,6 +229,6 @@ export function start(){
   camera.position.lerp(pos,1-Math.pow(.001,dt));camera.fov=THREE.MathUtils.lerp(camera.fov,54+(speed-1)*.32,1-Math.pow(.01,dt));camera.lookAt(target);
   const w=canvas.clientWidth,h=canvas.clientHeight;if(canvas.width!==Math.floor(w*renderer.getPixelRatio())||canvas.height!==Math.floor(h*renderer.getPixelRatio()))renderer.setSize(w,h,false);camera.aspect=w/Math.max(h,1);camera.updateProjectionMatrix();renderer.render(scene,camera);
  }
- msg.innerHTML="БЕГУЩИЙ ЧЕЛОВЕК<br><small>3D · РЕАЛИСТИЧНЫЙ БЕГ</small><br><button id='play'>НАЧАТЬ</button>";
+ msg.innerHTML="БЕГУЩИЙ ЧЕЛОВЕК<br><small>АДАПТИВНЫЙ ИИ-ДИРЕКТОР · БЕСКОНЕЧНЫЙ БЕГ</small><br><button id='play'>НАЧАТЬ</button>";
  frame();
 }
