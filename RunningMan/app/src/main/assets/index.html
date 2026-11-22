@@ -141,7 +141,11 @@ function runner(px,py,zoom=1){
   const tuck=jump>0?Math.sin(jump*Math.PI):0;
   const armLift=tuck*9;
   const landing=jump>0?Math.pow(1-Math.sin(jump*Math.PI),5):0;
-  ctx.save();ctx.translate(px,py-lift);ctx.rotate(-tuck*.035);ctx.scale(zoom*(1+landing*.055),zoom*(1-landing*.065));
+  // A small vertical compression on alternating footfalls gives the stride
+  // weight. The torso counter-rotates slightly instead of sliding rigidly.
+  const runBob=jump===0?Math.abs(Math.sin(phase*2))*2.15:0;
+  const torsoSway=jump===0?Math.sin(phase)*.012:0;
+  ctx.save();ctx.translate(px+Math.sin(phase)*1.15,py-lift+runBob);ctx.rotate(-tuck*.035+torsoSway);ctx.scale(zoom*(1+landing*.055),zoom*(1-landing*.065));
   // soft graphite shadow
   ctx.fillStyle='rgba(35,32,27,'+(jump>0?.07:.15)+')';ctx.beginPath();ctx.ellipse(0,5+jump*15,22+jump*15,5,0,0,Math.PI*2);ctx.fill();
   // back leg and shoe
