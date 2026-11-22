@@ -26,7 +26,8 @@ h1{font-size:clamp(34px,9vw,54px);line-height:.98;letter-spacing:2px;margin:0 0 
 .sub{font-style:italic;margin:0 0 30px;color:#615d53}
 .switch{width:min(240px,75vw);padding:15px;margin:8px;font-size:17px;font-weight:bold;letter-spacing:1px}
 #menu small{max-width:260px;margin-top:18px;line-height:1.5;color:#615d53}
-#paused{display:none;background:rgba(247,245,239,.86);font-size:30px;font-weight:bold;letter-spacing:2px;gap:18px}
+#paused{display:none;background:rgba(247,245,239,.91);font-size:30px;font-weight:bold;letter-spacing:2px;gap:18px}
+#result{display:none;font-size:15px;line-height:1.8;letter-spacing:.6px;font-weight:normal;color:#514c42;text-align:center}
 #paused button{padding:13px 22px;font-size:16px}
 #hint{position:absolute;bottom:max(12px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);font:12px Georgia;color:rgba(45,42,35,.58);white-space:nowrap;pointer-events:none}
 </style>
@@ -41,7 +42,7 @@ h1{font-size:clamp(34px,9vw,54px);line-height:.98;letter-spacing:2px;margin:0 0 
 <div id="speedbox"><span id="speedlabel">5/10</span><input id="speed" type="range" min="1" max="10" value="5" aria-label="Скорость бега"></div>
 <div id="hint">ТАП ПО ЛИСТУ — ПРЫЖОК</div>
 </div>
-<div id="paused"><div id="pauseTitle">ПАУЗА</div><button id="resume">▶ ПРОДОЛЖИТЬ</button><button id="restartPause">↻ ЗАНОВО</button></div>
+<div id="paused"><div id="pauseTitle">ПАУЗА</div><div id="result"></div><button id="resume">▶ ПРОДОЛЖИТЬ</button><button id="restartPause">↻ ЗАНОВО</button></div>
 <div id="menu">
 <h1>БЕГУЩИЙ<br>ЧЕЛОВЕК</h1>
 <div class="sub">Бесконечный бег · рисунок карандашом</div>
@@ -280,7 +281,8 @@ function draw(){
   ctx.clearRect(0,0,W,H);
   if(paper){ctx.fillStyle=ctx.createPattern(paper,'repeat');ctx.fillRect(0,0,W,H)}
   const sway=Math.sin(clock*.105)*Math.min(1,speed/7)*1.15;
-  ctx.save();ctx.translate(sway+cameraKick*(Math.random()-.5),Math.abs(Math.sin(clock*.21))*1.0);
+  const shake=cameraKick*Math.sin(clock*1.7)*.42;
+  ctx.save();ctx.translate(sway+shake,Math.abs(Math.sin(clock*.21))*1.0);
   drawTrack();
   objects.slice().sort((a,b)=>a.z-b.z).forEach(obstacle);
   const warningStart=clamp(1-speed*.00155*38,.35,.94);
@@ -297,6 +299,7 @@ function reset(){
   // A restart after a collision must restore the resume control. Otherwise
   // the next pause opens an overlay with no way back into the run.
   document.getElementById('pauseTitle').textContent='ПАУЗА';
+  document.getElementById('result').style.display='none';
   document.getElementById('resume').style.display='block';
   document.getElementById('restartPause').textContent='↻ ЗАНОВО';
   document.getElementById('pause').textContent='Ⅱ ПАУЗА';
@@ -305,6 +308,8 @@ function finish(){
   active=false;dead=true;paused=false;
   const score=Math.floor(distance);if(score>record){record=score;try{localStorage.setItem('runnerBest',String(record))}catch(e){}document.getElementById('record').textContent='РЕКОРД: '+record+' м'}
   document.getElementById('pauseTitle').textContent='СТОЛКНОВЕНИЕ';
+  document.getElementById('result').innerHTML='ДИСТАНЦИЯ: <b>'+score+' м</b><br>ЛУЧШИЙ РЕЗУЛЬТАТ: <b>'+record+' м</b>';
+  document.getElementById('result').style.display='block';
   document.getElementById('resume').style.display='none';
   document.getElementById('restartPause').textContent='↻ ЗАНОВО';
   pauseLayer.style.display='flex';
@@ -377,6 +382,7 @@ window.handleAndroidBack=()=>{
   if(active&&!paused&&!dead){
     paused=true;pauseLayer.style.display='flex';
     document.getElementById('pauseTitle').textContent='ПАУЗА';
+    document.getElementById('result').style.display='none';
     document.getElementById('resume').style.display='block';
     document.getElementById('restartPause').textContent='↻ ЗАНОВО';
     return true;
