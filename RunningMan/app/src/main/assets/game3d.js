@@ -143,10 +143,10 @@ export function start(){
   const lead=new THREE.Mesh(new THREE.ConeGeometry(.025,.055,8),graphite);lead.position.y=h+.025;group.add(lead);
   const band=new THREE.Mesh(new THREE.CylinderGeometry(.078,.078,.07,12),eraser);band.position.y=.07;group.add(band);
   const rings=new THREE.Mesh(new THREE.CylinderGeometry(.079,.079,.018,12),mat(0xb9a88f,.45,.4));rings.position.y=.115;group.add(rings);
-  scene.add(group);addSketchOutlines(group);obstacles.push({mesh:group,x,z,w:.42,h,type:"pencil",passed:false});
+  scene.add(group);addSketchOutlines(group);obstacles.push({mesh:group,x,z,w:.42,h,depth:.16,type:"pencil",passed:false});
  }
  function boxObstacle(x,z,w,h,depth,color,type){
-  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,depth),mat(color));mesh.position.set(x,h/2,pathZ(x)+z);scene.add(mesh);addSketchOutlines(mesh);obstacles.push({mesh,x,z,w,h,type,passed:false});
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,depth),mat(color));mesh.position.set(x,h/2,pathZ(x)+z);scene.add(mesh);addSketchOutlines(mesh);obstacles.push({mesh,x,z,w,h,depth,type,passed:false});
  }
  function addGraphiteHatching(root,seed=1){
   // Fine, crossed graphite strokes follow each visible mesh surface.
@@ -361,7 +361,7 @@ export function start(){
   }else{
     w=.95;h=.35;depth=.7;add(new THREE.BoxGeometry(w,h,depth),paperMat,0,h/2,0);
   }
-  addSketchOutlines(group);addGraphiteHatching(group,variationSeed);obstacles.push({mesh:group,x,z,w:w*sx,h:h*sy,type,passed:false});
+  addSketchOutlines(group);addGraphiteHatching(group,variationSeed);obstacles.push({mesh:group,x,z,w:w*sx,h:h*sy,depth:depth*sz,type,passed:false});
  }
  // 100,000+ procedural combinations: 48 silhouettes, seeded scale, rotation,
  // lane placement and paired arrangements. The shuffled pool avoids short repeats.
@@ -499,7 +499,20 @@ export function start(){
 
    for(let i=obstacles.length-1;i>=0;i--){const o=obstacles[i];o.x-=velocity*dt;o.mesh.position.x=o.x;o.mesh.position.z=pathZ(o.x)+o.z;
     if(!o.passed&&o.x< -2.7){o.passed=true;streak++;aiDirector.recordPass()}
-    if(Math.abs(o.x+2.25)<(o.w*.5+.28)&&jumpY<o.h*.83&&Math.abs(o.z-laneZ)<.48){dead=true;impactSound();aiDirector.recordHit();best=Math.max(best,Math.floor(score));try{localStorage.setItem("rm3dBest",best)}catch(e){}msg.innerHTML="СТОЛКНОВЕНИЕ<br>СЧЁТ: "+Math.floor(score)+" · РЕКОРД: "+best+"<br><button id='retry'>ЕЩЁ РАЗ</button>";document.getElementById("retry").onclick=()=>{reset();started=true};break}
+    // Broad phase first, then test the real transformed 3D bounds.
+    const nearX=Math.abs(o.x+2.25)<(o.w*.5+.48),nearLane=Math.abs(o.z-laneZ)<((o.depth||.7)*.5+.62);
+    if(nearX&&nearLane){
+     runner.updateMatrixWorld(true);o.mesh.updateMatrixWorld(true);
+     const runnerBounds=new THREE.Box3().setFromObject(runner);
+     const obstacleBounds=new THREE.Box3().setFromObject(o.mesh);
+     obstacleBounds.expandByVector(new THREE.Vector3(.045,.025,.045));
+     if(runnerBounds.intersectsBox(obstacleBounds)){
+      dead=true;impactSound();aiDirector.recordHit();best=Math.max(best,Math.floor(score));
+      try{localStorage.setItem("rm3dBest",best)}catch(e){}
+      msg.innerHTML="СТОЛКНОВЕНИЕ<br>СЧЁТ: "+Math.floor(score)+" · РЕКОРД: "+best+"<br><button id='retry'>ЕЩЁ РАЗ</button>";
+      document.getElementById("retry").onclick=()=>{reset();started=true};break;
+     }
+    }
     if(o.x< -18){disposeTree(o.mesh);obstacles.splice(i,1)}
    }
    setText("score","СЧЁТ "+String(Math.floor(score)).padStart(6,"0")+" · РЕКОРД "+String(best).padStart(6,"0"));
