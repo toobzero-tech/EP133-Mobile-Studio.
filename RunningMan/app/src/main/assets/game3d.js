@@ -393,16 +393,19 @@ export function start(){
  function steer(dir){if(dead||paused||!started)return;targetLaneZ=clamp(Math.round(targetLaneZ/1.65+dir)*1.65,-1.65,1.65)}
  window.addEventListener("keydown",e=>{if(e.code==="ArrowLeft"||e.code==="KeyA"){e.preventDefault();steer(-1)}if(e.code==="ArrowRight"||e.code==="KeyD"){e.preventDefault();steer(1)}});
  function hitRunnerScreen(x,y){
-  const rect=canvas.getBoundingClientRect(),box=new THREE.Box3().setFromObject(runner);
+  const rect=canvas.getBoundingClientRect();
+  runner.updateMatrixWorld(true);camera.updateMatrixWorld(true);
+  const box=new THREE.Box3().setFromObject(runner);
   if(box.isEmpty())return false;
-  camera.updateMatrixWorld();runner.updateMatrixWorld(true);
-  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity,visibleCorners=0;
   for(let a=0;a<2;a++)for(let b=0;b<2;b++)for(let c=0;c<2;c++){
    const p=new THREE.Vector3(a?box.max.x:box.min.x,b?box.max.y:box.min.y,c?box.max.z:box.min.z).project(camera);
+   if(p.z< -1||p.z>1)continue;
    const sx=rect.left+(p.x+1)*.5*rect.width,sy=rect.top+(1-p.y)*.5*rect.height;
-   minX=Math.min(minX,sx);maxX=Math.max(maxX,sx);minY=Math.min(minY,sy);maxY=Math.max(maxY,sy);
+   minX=Math.min(minX,sx);maxX=Math.max(maxX,sx);minY=Math.min(minY,sy);maxY=Math.max(maxY,sy);visibleCorners++;
   }
-  const pad=26;
+  if(!visibleCorners)return false;
+  const pad=Math.max(28,rect.width*.025);
   return x>=minX-pad&&x<=maxX+pad&&y>=minY-pad&&y<=maxY+pad;
  }
  let swipeX=null,swipeY=null,swipePointer=null;
