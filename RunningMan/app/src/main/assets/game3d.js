@@ -201,7 +201,29 @@ export function start(){
    o.material=Array.isArray(o.material)?pencilMats:pencilMats[0];
   }});runner.add(model);addSketchOutlines(model);model.userData.ownedMaterials=[];addGraphiteHatching(model,0x13a5);
   runner.userData.model=model;runner.userData.modelBaseY=model.position.y;
-  if(g.animations.length){mixer=new THREE.AnimationMixer(model);const clip=g.animations.find(a=>/run|jog|sprint/i.test(a.name))||g.animations[0];runAction=mixer.clipAction(clip);runAction.play()}
+  if(g.animations.length){
+   mixer=new THREE.AnimationMixer(model);
+   // Prefer an actual locomotion cycle over an arbitrary first clip (often idle
+   // or a preview pose in downloaded character assets).
+   const ranked=g.animations.map(clip=>{
+    const name=clip.name||"";
+    const tracks=clip.tracks||[];
+    const locomotion=/run|running|jog|sprint|locomotion/i.test(name);
+    const idle=/idle|stand|rest|breath/i.test(name);
+    const hasRootMotion=tracks.some(t=>/\.position$/.test(t.name));
+    const duration=Number.isFinite(clip.duration)?clip.duration:0;
+    const score=(locomotion?100:0)+(idle?-80:0)+Math.min(tracks.length,40)*.35+
+     (duration>.45&&duration<2.8?12:0)+(hasRootMotion?-8:0);
+    return {clip,score};
+   }).sort((a,b)=>b.score-a.score);
+   const selected=ranked[0];
+   if(selected&&selected.clip.tracks.length&&selected.clip.duration>.12){
+    runAction=mixer.clipAction(selected.clip);
+    runAction.enabled=true;runAction.setLoop(THREE.LoopRepeat,Infinity);
+    runAction.clampWhenFinished=false;runAction.reset();runAction.play();
+    runner.userData.animationName=selected.clip.name||"unnamed";
+   }
+  }
   modelReady=true;
  },undefined,error=>{console.error("Runner model failed to load; using procedural runner",error);});
  const obstacles=[];let nextSpawn=1.2,elapsed=0,score=0,best=0,speed=5,paused=true,dead=false,jumpY=0,jumpV=0,grounded=true,skill=.3,streak=0,view=0,laneZ=0,targetLaneZ=0;
