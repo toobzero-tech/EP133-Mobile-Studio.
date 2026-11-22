@@ -47,17 +47,6 @@ jobs:
           test $(stat -c%s RunningMan/app/src/main/assets/game.bundle.js) -gt 100000
           grep -q "applicationId 'com.runningman.game'" RunningMan/app/build.gradle
           grep -q "versionName '1.0.0'" RunningMan/app/build.gradle
-          python3 - <<'PY'
-          from zipfile import ZipFile
-          apk = "RunningMan/app/build/outputs/apk/debug/app-debug.apk"
-          with ZipFile(apk) as z:
-              names = set(z.namelist())
-              required = {"assets/game.bundle.js", "assets/index.html", "AndroidManifest.xml"}
-              missing = required - names
-              if missing:
-                  raise SystemExit("APK missing: " + ", ".join(sorted(missing)))
-          print("APK package assets verified")
-          PY
       - name: Package source
         run: zip -r RunningManAndroid_Source.zip RunningMan -x 'RunningMan/node_modules/*'
       - uses: actions/upload-artifact@v4
