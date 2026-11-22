@@ -393,7 +393,7 @@ export function start(){
  document.getElementById("speed").addEventListener("input",e=>{speed=+e.target.value;setText("speedVal",speed+" / 10")});
  function steer(dir){if(dead||paused||!started)return;targetLaneZ=clamp(targetLaneZ+dir*1.05,-1.85,1.85)}
  window.addEventListener("keydown",e=>{if(e.code==="ArrowLeft"||e.code==="KeyA"){e.preventDefault();steer(-1)}if(e.code==="ArrowRight"||e.code==="KeyD"){e.preventDefault();steer(1)}});
- let swipeX=null;canvas.addEventListener("pointerdown",e=>{swipeX=e.clientX});canvas.addEventListener("pointerup",e=>{if(swipeX===null)return;const dx=e.clientX-swipeX;if(Math.abs(dx)>24)steer(dx>0?1:-1);swipeX=null});
+ let swipeX=null,swipePointer=null;canvas.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button!==0)return;swipeX=e.clientX;swipePointer=e.pointerId;try{canvas.setPointerCapture(e.pointerId)}catch(_){}});canvas.addEventListener("pointerup",e=>{if(swipeX===null||e.pointerId!==swipePointer)return;const dx=e.clientX-swipeX;if(Math.abs(dx)>24)steer(dx>0?1:-1);swipeX=null;swipePointer=null});canvas.addEventListener("pointercancel",e=>{if(e.pointerId===swipePointer){swipeX=null;swipePointer=null}});
  msg.addEventListener("click",e=>{if(e.target&&e.target.id==="play"){reset();started=true}});
  document.getElementById("sound").addEventListener("click",e=>{soundEnabled=!soundEnabled;e.currentTarget.textContent=soundEnabled?"♪":"×";if(soundEnabled){audioReady();tone(520,.07,"sine",.025)}});
  document.querySelectorAll("[data-view]").forEach((b,i)=>b.addEventListener("click",()=>{view=i;document.querySelectorAll("[data-view]").forEach(x=>x.classList.toggle("active",x===b))}));
