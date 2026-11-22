@@ -104,25 +104,49 @@ export function start(){
  const runner=new THREE.Group();runner.position.set(-2.25,0,0);scene.add(runner);
  let mixer=null,runAction=null,modelReady=false;
  function fallbackRunner(){
-  const skin=mat(0xc69d7d),shirt=mat(0x555b5c),pants=mat(0x34383a),shoe=mat(0x252525);
-  const sphere=(r,m,x,y,z)=>{const o=new THREE.Mesh(new THREE.SphereGeometry(r,20,16),m);o.position.set(x,y,z);runner.add(o);return o};
-  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.29,.62,7,14),shirt);torso.position.y=1.12;runner.add(torso);
-  // Small profile details keep the fallback silhouette readable at phone scale.
-  const neck=new THREE.Mesh(new THREE.CylinderGeometry(.085,.105,.17,10),skin);neck.position.set(0,1.58,0);runner.add(neck);
-  const head=sphere(.19,skin,0,1.78,0);head.scale.set(1,1.08,.92);
-  const hair=new THREE.Mesh(new THREE.SphereGeometry(.194,14,10,0,Math.PI*2,0,Math.PI*.58),shoe);
-  hair.position.set(-.018,1.815,0);hair.rotation.z=-.12;runner.add(hair);
-  const nose=new THREE.Mesh(new THREE.ConeGeometry(.045,.105,7),skin);nose.rotation.z=-Math.PI/2;nose.position.set(.185,1.77,0);runner.add(nose);
+  const skin=mat(0xb99b82),shirt=mat(0x55595a),pants=mat(0x343638),shoe=mat(0x252525),soleMat=mat(0x77736d),detail=mat(0x242424);
+  const mesh=(geo,material,parent,x=0,y=0,z=0)=>{const o=new THREE.Mesh(geo,material);o.position.set(x,y,z);parent.add(o);return o};
+  const sphere=(r,material,parent,x,y,z,sx=1,sy=1,sz=1)=>{const o=mesh(new THREE.SphereGeometry(r,18,14),material,parent,x,y,z);o.scale.set(sx,sy,sz);return o};
+  // Rib cage and pelvis use overlapping tapered forms for a more human silhouette.
+  const torso=new THREE.Group();torso.position.set(0,1.12,0);runner.add(torso);
+  const chest=mesh(new THREE.CapsuleGeometry(.255,.38,7,16),shirt,torso,0,.12,0);chest.scale.set(1.02,1.12,.82);
+  const pelvis=mesh(new THREE.SphereGeometry(.235,16,12),pants,torso,0,-.31,0);pelvis.scale.set(1.05,.72,.82);
+  const collar=mesh(new THREE.CylinderGeometry(.105,.13,.075,12),detail,torso,0,.39,0);
+  const neck=mesh(new THREE.CylinderGeometry(.078,.095,.17,12),skin,runner,0,1.57,0);
+  const headGroup=new THREE.Group();headGroup.position.set(0,1.77,0);runner.add(headGroup);
+  const head=sphere(.19,skin,headGroup,0,0,0,1,1.12,.91);
+  // Ear, jaw, nose and hairline details keep the profile readable from the rear camera.
+  sphere(.045,skin,headGroup,-.015,-.025,.177,.8,1,.65);
+  const hair=mesh(new THREE.SphereGeometry(.194,18,12,0,Math.PI*2,0,Math.PI*.62),detail,headGroup,-.012,.055,0);hair.scale.set(1.02,1.08,.96);
+  const nose=mesh(new THREE.ConeGeometry(.038,.09,8),skin,headGroup,.174,-.015,0);nose.rotation.z=-Math.PI/2;
+  // Back-of-head hair contour and a small graphite neck seam.
+  const hairline=mesh(new THREE.TorusGeometry(.155,.012,5,18,Math.PI),detail,headGroup,0,-.055,0);hairline.rotation.x=Math.PI/2;
   const limbs=[];
-  for(let side of [-1,1]){
-   let leg=new THREE.Mesh(new THREE.CapsuleGeometry(.105,.53,5,10),pants);leg.position.set(side*.14,.48,0);runner.add(leg);
-   let arm=new THREE.Mesh(new THREE.CapsuleGeometry(.075,.5,5,10),skin);arm.position.set(side*.34,1.18,0);runner.add(arm);
-   let hand=new THREE.Mesh(new THREE.SphereGeometry(.078,9,7),skin);hand.position.set(side*.34,.88,0);runner.add(hand);
-   let foot=new THREE.Mesh(new THREE.BoxGeometry(.2,.12,.36),shoe);foot.position.set(side*.14,.08,.09);runner.add(foot);
-   const sole=new THREE.Mesh(new THREE.BoxGeometry(.205,.035,.37),graphite);sole.position.set(side*.14,.025,.105);runner.add(sole);
-   limbs.push({leg,arm,foot,hand,side});
+  for(const side of [-1,1]){
+   const leg=new THREE.Group();leg.position.set(side*.145,.83,0);runner.add(leg);
+   mesh(new THREE.CapsuleGeometry(.112,.36,6,12),pants,leg,0,-.205,0);
+   const knee=sphere(.108,pants,leg,0,-.405,0,1,.92,.9);
+   const shin=mesh(new THREE.CapsuleGeometry(.083,.34,6,12),pants,leg,0,-.625,0);shin.rotation.z=side*.025;
+   const ankle=sphere(.078,pants,leg,0,-.81,0);
+   const foot=new THREE.Group();foot.position.set(0,-.83,.025);leg.add(foot);
+   mesh(new THREE.BoxGeometry(.19,.115,.34),shoe,foot,0,-.015,.105);
+   mesh(new THREE.BoxGeometry(.195,.028,.345),soleMat,foot,0,-.075,.105);
+   // Toe cap and heel seam are fine, low-contrast pencil details.
+   mesh(new THREE.BoxGeometry(.15,.035,.105),detail,foot,0,.018,.245);
+   const arm=new THREE.Group();arm.position.set(side*.285,1.43,0);runner.add(arm);
+   mesh(new THREE.CapsuleGeometry(.086,.29,6,12),shirt,arm,0,-.17,0);
+   const elbow=sphere(.075,skin,arm,0,-.345,0);
+   const forearm=mesh(new THREE.CapsuleGeometry(.066,.27,6,12),skin,arm,0,-.51,0);
+   const hand=sphere(.073,skin,arm,0,-.685,.012,.86,1,.78);
+   // Subtle shirt cuff and trouser seam, kept monochrome.
+   mesh(new THREE.TorusGeometry(.067,.008,4,12),detail,arm,0,-.405,0);
+   limbs.push({leg,arm,foot,hand,side,knee,elbow,forearm});
   }
-  runner.userData.limbs=limbs;runner.userData.torso=torso;runner.userData.head=head;
+  // Shoulder blades and two restrained folds add depth without visual clutter.
+  for(const side of [-1,1]){
+   const fold=mesh(new THREE.BoxGeometry(.012,.22,.012),detail,torso,side*.17,.05,-.205);fold.rotation.z=side*.32;
+  }
+  runner.userData.limbs=limbs;runner.userData.torso=torso;runner.userData.head=headGroup;
  }
  fallbackRunner();addSketchOutlines(runner);addGraphiteHatching(runner,0x13a5);runner.userData.ownedMaterials=[];
  // Soft pencil contact shadow: a small mark on the paper, never a floor or scenery.
