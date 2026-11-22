@@ -69,7 +69,9 @@ function makePaper(){
   paper=document.createElement('canvas');paper.width=256;paper.height=256;
   const p=paper.getContext('2d');p.fillStyle='#f8f6f0';p.fillRect(0,0,256,256);
   let seed=9137;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};
-  for(let i=0;i<1100;i++){const a=.018+rnd()*.045;p.fillStyle='rgba(65,59,48,'+a+')';p.fillRect(rnd()*256,rnd()*256,.5+rnd()*1.2,.5+rnd()*1.2)}
+  for(let i=0;i<1900;i++){const a=.012+rnd()*.036;p.fillStyle='rgba(65,59,48,'+a+')';p.fillRect(rnd()*256,rnd()*256,.35+rnd()*1.1,.35+rnd()*1.1)}
+  // Sparse paper fibers, barely visible unless the screen is large.
+  for(let i=0;i<115;i++){const x=rnd()*256,y=rnd()*256;p.strokeStyle='rgba(90,82,68,'+(.025+rnd()*.035)+')';p.lineWidth=.35;p.beginPath();p.moveTo(x,y);p.lineTo(x+1+rnd()*4,y-.4-rnd()*1.4);p.stroke()}
   const g=p.createLinearGradient(0,0,256,256);g.addColorStop(0,'rgba(255,255,255,.16)');g.addColorStop(1,'rgba(120,110,90,.025)');p.fillStyle=g;p.fillRect(0,0,256,256);
 }
 function line(x1,y1,x2,y2,width=1,alpha=.45,color='#34312b'){
@@ -101,12 +103,27 @@ function drawTrack(){
     line(vanish-spread,y,vanish-spread-5,y+8,.7,.10);
     line(vanish+spread,y,vanish+spread+5,y+8,.7,.10);
   }
-  // Fine, broken graphite scuffs on the paper road.
-  for(let i=0;i<34;i++){
+  // Layered graphite perspective: soft ground grain, broken wheel/running scuffs and hand-drawn edge strokes.
+  for(let i=0;i<58;i++){
     const t=((i*.618+clock*.0018*speed)%1),y=horizon+Math.pow(t,1.7)*(H-horizon);
     const x=vanish+(Math.sin(i*17.31)*.78)*Math.pow(t,1.2)*W*.42;
-    const len=2+Math.pow(t,1.4)*9;
-    line(x,y,x+len,y-1.4,.55,.075);
+    const len=2+Math.pow(t,1.4)*13;
+    line(x,y,x+len,y-1.4,.55,.055);
+    if(i%3===0)line(x+len*.4,y+1,x+len*.4+len*.55,y+.1,.45,.045);
+  }
+  // Faint, irregular center guide fades into the paper rather than looking like a road marking.
+  for(let i=0;i<15;i++){
+    const t=((i/15+clock*.004*speed)%1),y=horizon+Math.pow(t,1.65)*(H-horizon);
+    const x=vanish+Math.sin(i*2.17+clock*.004)*Math.pow(t,1.4)*W*.018;
+    const w=.4+Math.pow(t,1.3)*1.1;
+    line(x-w,y,x+w,y,.55,.10);
+  }
+  // Short cross-hatching along the near track edges, scaled with perspective.
+  for(let i=0;i<26;i++){
+    const t=((i/26+clock*.008*speed)%1),y=horizon+Math.pow(t,1.55)*(H-horizon);
+    const spread=7+Math.pow(t,1.25)*W*.44, h=2+Math.pow(t,1.2)*7;
+    line(vanish-spread,y,vanish-spread-h,y-h,.55,.09);
+    line(vanish+spread,y,vanish+spread+h,y-h,.55,.09);
   }
 }
 function limb(ax,ay,bx,by,r1,r2,shade=.1){
@@ -160,21 +177,37 @@ function runner(px,py,zoom=1){
 }
 function obstacle(o){
   const s=.22+o.z*1.42,y=H*.255+Math.pow(o.z,1.55)*H*.53,px=W*.5+o.lane*s;
-  ctx.save();ctx.translate(px,y);ctx.scale(s,s);ctx.strokeStyle='#302e29';ctx.lineWidth=2.7;ctx.lineJoin='round';ctx.fillStyle='rgba(55,51,43,.07)';
+  ctx.save();ctx.translate(px,y);
+  // Contact shadow and soft graphite underdrawing.
+  ctx.scale(s,s);ctx.fillStyle='rgba(35,32,27,.10)';ctx.beginPath();ctx.ellipse(0,7,54,7,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(35,32,27,.24)';ctx.lineWidth=5;ctx.lineJoin='round';ctx.lineCap='round';
+  ctx.strokeStyle='#302e29';ctx.lineWidth=2.35;ctx.lineJoin='round';ctx.fillStyle='rgba(55,51,43,.075)';
   if(o.kind===0){
-    // low fallen timber
+    // Fallen timber with bark ridges and broken end grain.
     ctx.beginPath();ctx.moveTo(-54,-2);ctx.quadraticCurveTo(-42,-12,-25,-8);ctx.lineTo(45,-7);ctx.quadraticCurveTo(58,-4,52,5);ctx.lineTo(-48,8);ctx.closePath();ctx.fill();ctx.stroke();
-    for(let i=0;i<8;i++)line(-38+i*11,-5,-41+i*11,-15,1.1,.38);
-    hatch(-42,-2,43,2,10,.2);
+    for(let i=0;i<12;i++){
+      const x=-43+i*7.6;line(x,-5-(i%3),x+5,-10-(i%4),.8,.30);
+      if(i%2===0)line(x+1,2,x+7,4,.6,.22);
+    }
+    ctx.beginPath();ctx.ellipse(-49,1,4,7,-.2,0,Math.PI*2);ctx.stroke();
+    hatch(-42,-2,43,2,13,.22);
   }else if(o.kind===1){
-    // rough triangular barrier
+    // Three-dimensional hand-built hurdle with side braces and worn edges.
     ctx.beginPath();ctx.moveTo(-38,0);ctx.lineTo(-17,-51);ctx.quadraticCurveTo(0,-57,18,-49);ctx.lineTo(39,0);ctx.closePath();ctx.fill();ctx.stroke();
-    line(-24,-17,25,-17,2,.42);line(-30,-4,31,-4,2,.42);hatch(-15,-42,14,-42,5,.25);
+    line(-17,-50,-10,-4,1.1,.30);line(18,-49,10,-4,1.1,.28);
+    line(-24,-17,25,-17,2,.42);line(-30,-4,31,-4,2,.42);
+    line(-17,-28,0,-25,1,.25);line(2,-27,17,-30,1,.24);
+    hatch(-15,-42,14,-42,7,.27);hatch(-28,-8,28,-8,9,.18);
+    line(-39,1,-31,4,.9,.25);line(31,4,40,1,.9,.25);
   }else{
-    // low stone / broken block
+    // Irregular chipped stone with layered facets.
     ctx.beginPath();ctx.moveTo(-34,-4);ctx.lineTo(-27,-25);ctx.lineTo(-10,-30);ctx.lineTo(2,-24);ctx.lineTo(23,-27);ctx.lineTo(35,-7);ctx.lineTo(28,3);ctx.lineTo(-27,4);ctx.closePath();ctx.fill();ctx.stroke();
-    line(-17,-20,-3,-9,1,.3);line(10,-22,22,-10,1,.3);hatch(-22,-3,23,-2,7,.22);
+    ctx.beginPath();ctx.moveTo(-27,-23);ctx.lineTo(-8,-18);ctx.lineTo(2,-24);ctx.lineTo(8,-7);ctx.lineTo(-12,-4);ctx.closePath();ctx.stroke();
+    line(-17,-20,-3,-9,.9,.32);line(10,-22,22,-10,.9,.30);line(-7,-4,5,2,.7,.25);
+    hatch(-22,-3,23,-2,9,.24);hatch(-18,-22,18,-22,6,.15);
   }
+  // Loose graphite fragments and ground contact marks.
+  for(let i=0;i<5;i++){const x=-28+i*13;line(x,8,x+3,10,.55,.18)}
   ctx.restore();
 }
 function firstPerson(){
