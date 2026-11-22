@@ -234,14 +234,70 @@ export function start(){
     w=1.25;h=.18;depth=.86;add(new THREE.BoxGeometry(w,.045,depth),paperMat,0,.06,0,(variation%7-3)*.045);for(let a=0;a<5;a++)add(new THREE.BoxGeometry(.16,.008,.018),darkMat,-.42+a*.2,.088,(a%2)*.2-.1);
   }else if(type==="sign"){
     w=.78;h=1.05;depth=.18;add(new THREE.BoxGeometry(.68,.58,.07),paperMat,0,.72,0);add(new THREE.CylinderGeometry(.035,.045,.72,7),darkMat,0,.36,0);add(new THREE.BoxGeometry(.82,.06,.24),woodMat,0,.04,0);
+  }else if(type==="backpack"){
+    w=.72;h=.82;depth=.48;add(new THREE.BoxGeometry(w,h,depth),darkMat,0,h/2,0);
+    add(new THREE.BoxGeometry(.5,.36,.08),paperMat,0,.58,.25);add(new THREE.TorusGeometry(.15,.035,6,12),woodMat,0,h+.03,0);
+  }else if(type==="helmet"){
+    w=.72;h=.55;depth=.72;add(new THREE.SphereGeometry(.34,12,8,0,Math.PI*2,0,Math.PI/2),paperMat,0,.28,0);
+    add(new THREE.BoxGeometry(.72,.09,.48),darkMat,0,.12,0);
+  }else if(type==="skateboard"){
+    w=1.35;h=.2;depth=.48;add(new THREE.BoxGeometry(w,.09,depth),woodMat,0,.13,0);
+    for(let a of [-1,1])for(let b of [-1,1])add(new THREE.CylinderGeometry(.075,.075,.06,10),darkMat,a*.43,.055,b*.19,Math.PI/2);
+  }else if(type==="ball"){
+    w=.62;h=.62;depth=.62;add(new THREE.SphereGeometry(.3,12,10),paperMat,0,.31,0);
+    for(let a=0;a<3;a++){const seam=add(new THREE.TorusGeometry(.22,.012,5,16),darkMat,0,.31,0);seam.rotation.set(a*.8,a*1.1,a*.55)}
+  }else if(type==="bottle"){
+    w=.34;h=.82;depth=.34;add(new THREE.CylinderGeometry(.15,.18,.58,10),paperMat,0,.31,0);
+    add(new THREE.CylinderGeometry(.075,.09,.18,9),darkMat,0,.69,0);add(new THREE.CylinderGeometry(.07,.07,.07,8),woodMat,0,.815,0);
+  }else if(type==="bin"){
+    w=.72;h=.82;depth=.68;add(new THREE.BoxGeometry(w,h,depth),darkMat,0,h/2,0);
+    add(new THREE.BoxGeometry(.82,.09,.76),woodMat,0,h+.035,0);
+    for(let a=-1;a<=1;a++)add(new THREE.BoxGeometry(.035,.55,.02),paperMat,a*.2,.4,.35);
+  }else if(type==="stool"){
+    w=.72;h=.62;depth=.72;add(new THREE.CylinderGeometry(.34,.34,.12,10),woodMat,0,.56,0);
+    for(let a=0;a<4;a++){const t=a*Math.PI/2;add(new THREE.BoxGeometry(.07,.52,.07),darkMat,Math.cos(t)*.23,.27,Math.sin(t)*.23)}
+  }else if(type==="basket"){
+    w=.72;h=.52;depth=.72;add(new THREE.CylinderGeometry(.32,.25,.46,10,1,true),woodMat,0,.24,0);
+    add(new THREE.TorusGeometry(.29,.035,6,14),darkMat,0,.49,0);
+    for(let a=0;a<6;a++){const t=a*Math.PI/3;add(new THREE.BoxGeometry(.025,.42,.025),darkMat,Math.cos(t)*.27,.24,Math.sin(t)*.27)}
+  }else if(type==="guitar"){
+    w=.72;h=1.05;depth=.3;add(new THREE.SphereGeometry(.32,12,9),woodMat,0,.3,0);
+    add(new THREE.SphereGeometry(.23,12,9),woodMat,0,.57,0);
+    add(new THREE.BoxGeometry(.12,.72,.1),darkMat,0,.88,0);
+    add(new THREE.BoxGeometry(.17,.14,.13),paperMat,0,1.27,0);
+  }else if(type==="flowerpot"){
+    w=.62;h=.62;depth=.62;add(new THREE.CylinderGeometry(.2,.29,.52,10),paperMat,0,.26,0);
+    add(new THREE.CylinderGeometry(.31,.31,.07,10),darkMat,0,.55,0);
+    for(let a=0;a<3;a++){const leaf=add(new THREE.SphereGeometry(.13,8,6),woodMat,(a-1)*.16,.72+(a%2)*.08,0);leaf.scale.set(.7,1.5,.6)}
+  }else if(type==="toycar"){
+    w=.9;h=.42;depth=.58;add(new THREE.BoxGeometry(.88,.23,.52),paperMat,0,.2,0);
+    add(new THREE.BoxGeometry(.42,.2,.42),woodMat,0,.4,0);
+    for(let a of [-1,1])for(let b of [-1,1]){const wheel=add(new THREE.CylinderGeometry(.09,.09,.07,9),darkMat,a*.29,.1,b*.25);wheel.rotation.z=Math.PI/2}
+  }else if(type==="foldedchair"){
+    w=.78;h=.98;depth=.48;add(new THREE.BoxGeometry(.65,.08,.48),woodMat,0,.38,0);
+    add(new THREE.BoxGeometry(.65,.58,.07),paperMat,0,.68,-.2);
+    for(let a of [-1,1]){add(new THREE.BoxGeometry(.055,.92,.055),darkMat,a*.28,.47,0);add(new THREE.BoxGeometry(.055,.55,.055),darkMat,a*.28,.29,.28)}
+  }else if(type==="fan"){
+    w=.72;h=1.02;depth=.42;add(new THREE.BoxGeometry(.48,.08,.38),darkMat,0,.04,0);
+    add(new THREE.CylinderGeometry(.045,.045,.58,8),woodMat,0,.36,0);
+    add(new THREE.TorusGeometry(.31,.035,7,16),darkMat,0,.76,0);
+    for(let a=0;a<5;a++){const t=a*Math.PI*2/5;add(new THREE.BoxGeometry(.1,.42,.045),paperMat,Math.cos(t)*.12,.76+Math.sin(t)*.12,0,t)}
+  }else if(type==="telescope"){
+    w=1.05;h=.95;depth=.65;add(new THREE.CylinderGeometry(.12,.16,.72,10),darkMat,0,.76,0,Math.PI/2);
+    for(let a of [-1,1])add(new THREE.BoxGeometry(.06,.66,.06),woodMat,a*.28,.33,0);
+    add(new THREE.BoxGeometry(.72,.06,.62),paperMat,0,.06,0);
+  }else if(type==="rolledpaper"){
+    w=1.05;h=.32;depth=.55;add(new THREE.CylinderGeometry(.16,.16,w,10),paperMat,0,.17,0,Math.PI/2);
+    add(new THREE.TorusGeometry(.16,.025,5,12),darkMat,-.36,.17,0,Math.PI/2);
+    add(new THREE.TorusGeometry(.16,.025,5,12),darkMat,.36,.17,0,Math.PI/2);
   }else{
     w=.95;h=.35;depth=.7;add(new THREE.BoxGeometry(w,h,depth),paperMat,0,h/2,0);
   }
   addSketchOutlines(group);addGraphiteHatching(group,variationSeed);obstacles.push({mesh:group,x,z,w:w*sx,h:h*sy,type,passed:false});
  }
- // 1,000+ procedural combinations: shape, scale, lane offset, stacked variants,
- // rotations and paired/triple arrangements. The pool cycles in shuffled order.
- const obstacleCatalog=["branch","log","rock","crate","barrier","stump","bucket","cone","pencil","books","rubble","chair","umbrella","ladder","wheel","suitcase","lamp","hoop","cans","newspaper","sign"];
+ // 10,000+ procedural combinations: 36 silhouettes, seeded scale, rotation,
+ // lane placement and paired arrangements. The shuffled pool avoids short repeats.
+ const obstacleCatalog=["branch","log","rock","crate","barrier","stump","bucket","cone","pencil","books","rubble","chair","umbrella","ladder","wheel","suitcase","lamp","hoop","cans","newspaper","sign","backpack","helmet","skateboard","ball","bottle","bin","stool","basket","guitar","flowerpot","toycar","foldedchair","fan","telescope","rolledpaper"];
  // Offline adaptive AI director: no network, API key or gameplay latency.
  let patternIndex=0,randomState=0x13a5c79,shapeBag=[],recentShapes=[];
  const aiRandom=()=>{randomState^=randomState<<13;randomState^=randomState>>>17;randomState^=randomState<<5;return (randomState>>>0)/4294967296};
