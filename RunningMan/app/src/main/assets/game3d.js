@@ -290,14 +290,66 @@ export function start(){
     w=1.05;h=.32;depth=.55;add(new THREE.CylinderGeometry(.16,.16,w,10),paperMat,0,.17,0,Math.PI/2);
     add(new THREE.TorusGeometry(.16,.025,5,12),darkMat,-.36,.17,0,Math.PI/2);
     add(new THREE.TorusGeometry(.16,.025,5,12),darkMat,.36,.17,0,Math.PI/2);
+  }else if(type==="mug"){
+    w=.52;h=.48;depth=.48;add(new THREE.CylinderGeometry(.22,.19,h,12),paperMat,0,h/2,0);
+    const handle=add(new THREE.TorusGeometry(.14,.035,7,14),darkMat,.22,.27,0);handle.rotation.y=Math.PI/2;
+  }else if(type==="kettle"){
+    w=.82;h=.72;depth=.68;add(new THREE.SphereGeometry(.31,12,9),paperMat,0,.34,0);
+    add(new THREE.ConeGeometry(.12,.28,8),darkMat,.34,.48,0,-Math.PI/2);
+    add(new THREE.TorusGeometry(.17,.035,7,12),woodMat,-.02,.66,0);
+    add(new THREE.CylinderGeometry(.045,.045,.12,8),darkMat,0,.72,0);
+  }else if(type==="headphones"){
+    w=.82;h=.72;depth=.34;const arc=add(new THREE.TorusGeometry(.29,.045,7,18,Math.PI),darkMat,0,.42,0);arc.rotation.z=Math.PI;
+    for(let a of [-1,1])add(new THREE.BoxGeometry(.18,.25,.16),paperMat,a*.28,.25,0);
+  }else if(type==="lantern"){
+    w=.58;h=.92;depth=.58;add(new THREE.BoxGeometry(.42,.55,.42),paperMat,0,.36,0);
+    for(let a of [-1,1])add(new THREE.BoxGeometry(.055,.68,.055),darkMat,a*.23,.36,0);
+    add(new THREE.ConeGeometry(.32,.18,8),woodMat,0,.73,0);
+    add(new THREE.TorusGeometry(.14,.025,6,12),darkMat,0,.91,0);
+  }else if(type==="wrench"){
+    w=1.15;h=.22;depth=.3;add(new THREE.BoxGeometry(.78,.12,.12),darkMat,-.12,.11,0);
+    add(new THREE.TorusGeometry(.13,.045,6,12),woodMat,.42,.11,0);
+    add(new THREE.BoxGeometry(.16,.12,.12),darkMat,-.56,.11,0);
+  }else if(type==="toolbox"){
+    w=.92;h=.55;depth=.58;add(new THREE.BoxGeometry(w*.9,.42,depth),darkMat,0,.22,0);
+    add(new THREE.BoxGeometry(.36,.08,.08),woodMat,0,.49,0);
+    add(new THREE.BoxGeometry(.12,.12,.04),paperMat,0,.28,.3);
+  }else if(type==="frisbee"){
+    w=.78;h=.14;depth=.78;add(new THREE.CylinderGeometry(.39,.35,.11,16),paperMat,0,.07,0);
+    add(new THREE.TorusGeometry(.34,.025,6,16),darkMat,0,.12,0);
+  }else if(type==="boot"){
+    w=.72;h=.48;depth=.42;add(new THREE.BoxGeometry(.28,.32,.34),darkMat,-.12,.24,0);
+    add(new THREE.BoxGeometry(.48,.14,.38),woodMat,.08,.08,.02);
+    add(new THREE.BoxGeometry(.08,.24,.34),paperMat,-.22,.35,0);
+  }else if(type==="birdcage"){
+    w=.68;h=.9;depth=.68;add(new THREE.CylinderGeometry(.28,.28,.58,12,1,true),paperMat,0,.36,0);
+    for(let a=0;a<8;a++){const t=a*Math.PI/4;add(new THREE.CylinderGeometry(.012,.012,.62,5),darkMat,Math.cos(t)*.27,.36,Math.sin(t)*.27)}
+    add(new THREE.ConeGeometry(.34,.2,10),woodMat,0,.75,0);
+    add(new THREE.CylinderGeometry(.32,.32,.05,12),darkMat,0,.06,0);
+  }else if(type==="paintcan"){
+    w=.58;h=.62;depth=.58;add(new THREE.CylinderGeometry(.26,.26,h,12),paperMat,0,h/2,0);
+    add(new THREE.TorusGeometry(.26,.025,6,12),darkMat,0,h,0);
+    add(new THREE.TorusGeometry(.31,.018,5,12),woodMat,0,.55,0);
+  }else if(type==="dumbbell"){
+    w=.82;h=.32;depth=.32;add(new THREE.CylinderGeometry(.045,.045,.48,8),woodMat,0,.16,0,Math.PI/2);
+    for(let a of [-1,1])add(new THREE.CylinderGeometry(.16,.16,.16,10),darkMat,a*.28,.16,0,Math.PI/2);
+  }else if(type==="wateringcan"){
+    w=.82;h=.55;depth=.48;add(new THREE.BoxGeometry(.48,.38,.42),paperMat,-.04,.2,0);
+    add(new THREE.TorusGeometry(.16,.035,6,12),darkMat,-.02,.42,0);
+    add(new THREE.CylinderGeometry(.045,.09,.38,8),woodMat,.3,.32,0,-Math.PI/2);
+    add(new THREE.CylinderGeometry(.12,.16,.08,8),darkMat,.48,.32,0,-Math.PI/2);
+  }else if(type==="alarmclock"){
+    w=.62;h=.72;depth=.28;add(new THREE.CylinderGeometry(.28,.28,.14,14),paperMat,0,.36,0,Math.PI/2);
+    add(new THREE.TorusGeometry(.27,.025,6,14),darkMat,0,.36,.08);
+    for(let a of [-1,1])add(new THREE.ConeGeometry(.1,.16,8),woodMat,a*.2,.68,0);
   }else{
     w=.95;h=.35;depth=.7;add(new THREE.BoxGeometry(w,h,depth),paperMat,0,h/2,0);
   }
   addSketchOutlines(group);addGraphiteHatching(group,variationSeed);obstacles.push({mesh:group,x,z,w:w*sx,h:h*sy,type,passed:false});
  }
- // 10,000+ procedural combinations: 36 silhouettes, seeded scale, rotation,
+ // 100,000+ procedural combinations: 48 silhouettes, seeded scale, rotation,
  // lane placement and paired arrangements. The shuffled pool avoids short repeats.
- const obstacleCatalog=["branch","log","rock","crate","barrier","stump","bucket","cone","pencil","books","rubble","chair","umbrella","ladder","wheel","suitcase","lamp","hoop","cans","newspaper","sign","backpack","helmet","skateboard","ball","bottle","bin","stool","basket","guitar","flowerpot","toycar","foldedchair","fan","telescope","rolledpaper"];
+ const obstacleCatalog=["branch","log","rock","crate","barrier","stump","bucket","cone","pencil","books","rubble","chair","umbrella","ladder","wheel","suitcase","lamp","hoop","cans","newspaper","sign","backpack","helmet","skateboard","ball","bottle","bin","stool","basket","guitar","flowerpot","toycar","foldedchair","fan","telescope","rolledpaper","mug","kettle","headphones","lantern","wrench","toolbox","frisbee","boot","birdcage","paintcan","dumbbell","wateringcan","alarmclock"];
  // Offline adaptive AI director: no network, API key or gameplay latency.
  let patternIndex=0,randomState=0x13a5c79,shapeBag=[],recentShapes=[];
  const aiRandom=()=>{randomState^=randomState<<13;randomState^=randomState>>>17;randomState^=randomState<<5;return (randomState>>>0)/4294967296};
