@@ -243,7 +243,7 @@ export function start(){
   }
   modelReady=true;
  },undefined,error=>{console.error("Runner model failed to load; using procedural runner",error);});
- const obstacles=[];let nextSpawn=1.2,elapsed=0,score=0,best=0,speed=5,paused=true,dead=false,jumpY=0,jumpV=0,grounded=true,skill=.3,streak=0,view=0,laneZ=0,targetLaneZ=0;
+ const obstacles=[];let nextSpawn=1.2,elapsed=0,score=0,best=0,speed=5,paused=true,dead=false,jumpY=0,jumpV=0,grounded=true,landTimer=0,skill=.3,streak=0,view=0,laneZ=0,targetLaneZ=0;
  try{best=+(localStorage.getItem("rm3dBest")||0)}catch(e){best=0}
  let audio=null,soundEnabled=true,lastStep=0;
  function audioReady(){if(!soundEnabled)return null;try{if(!audio){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;audio=new AC()}if(audio.state==="suspended")audio.resume();return audio}catch(e){return null}}
@@ -562,7 +562,7 @@ export function start(){
   for(const m of materials)m.dispose();
   scene.remove(root);
  }
- function reset(){obstacles.splice(0).forEach(o=>disposeTree(o.mesh));score=0;elapsed=0;lastStep=0;nextSpawn=.8;jumpY=0;jumpV=0;grounded=true;skill=.3;streak=0;travelDistance=0;laneZ=0;targetLaneZ=0;runner.position.set(-2.25,0,0);runnerShadow.position.set(-2.17,.012,0);runnerShadow.scale.setScalar(1);runnerShadow.material.opacity=.72;runner.rotation.set(0,0,0);if(runAction)runAction.paused=false;updateTrack();dead=false;paused=false;msg.innerHTML="";setText("pause","Ⅱ")}
+ function reset(){obstacles.splice(0).forEach(o=>disposeTree(o.mesh));score=0;elapsed=0;lastStep=0;nextSpawn=.8;jumpY=0;jumpV=0;grounded=true;landTimer=0;skill=.3;streak=0;travelDistance=0;laneZ=0;targetLaneZ=0;runner.position.set(-2.25,0,0);runnerShadow.position.set(-2.17,.012,0);runnerShadow.scale.setScalar(1);runnerShadow.material.opacity=.72;runner.rotation.set(0,0,0);if(runAction)runAction.paused=false;updateTrack();dead=false;paused=false;msg.innerHTML="";setText("pause","Ⅱ")}
  function jump(){if(dead||paused){if(dead||!started){reset();started=true}return}if(grounded){jumpV=8.6;grounded=false;runner.rotation.z=-.12;tone(260,.12,"triangle",.04,180)}}
  let started=false;const msg=document.getElementById("message");
  document.getElementById("pause").addEventListener("click",()=>{if(dead||!started){reset();started=true;return}paused=!paused;setText("pause",paused?"▶":"Ⅱ");msg.textContent=paused?"ПАУЗА":""});
@@ -639,7 +639,7 @@ export function start(){
    else if(runner.userData.model){const p=elapsed*velocity*3.2;runner.userData.model.position.y=runner.userData.modelBaseY+Math.abs(Math.sin(p))*.025;runner.userData.model.rotation.z=Math.sin(p)*.018}
    if(!grounded){
     jumpV-=21*dt;jumpY+=jumpV*dt;
-    if(jumpY<=0){jumpY=0;jumpV=0;grounded=true;tone(92,.07,"triangle",.022,-24)}
+    if(jumpY<=0){jumpY=0;jumpV=0;grounded=true;landTimer=.24;tone(92,.07,"triangle",.022,-24)}
    }
    // Keep the authored rig updating so each frame starts from its clean
    // keyframed pose before the procedural airborne joint offsets are layered on.
@@ -669,6 +669,22 @@ export function start(){
      }
     }
    }
+   // Brief compression on touchdown, with a smooth return to the run pose.
+   if(landTimer>0){
+    landTimer=Math.max(0,landTimer-dt);
+    const crouch=Math.sin((landTimer/.24)*Math.PI)*.12;
+    runner.rotation.x=-crouch*.22;
+    if(runner.userData.limbs)runner.userData.limbs.forEach(l=>{
+     l.leg.rotation.x+=(l.side<0?1:-1)*crouch;
+     l.arm.rotation.x-=(l.side<0?1:-1)*crouch*.45;
+    });
+    if(runner.userData.jumpBones)runner.userData.jumpBones.forEach(item=>{
+     const sign=item.side||1;
+     if(item.joint==="thigh")item.bone.rotation.x+=sign*crouch*.55;
+     else if(item.joint==="calf")item.bone.rotation.x-=sign*crouch*.35;
+     else if(item.joint==="spine")item.bone.rotation.x+=crouch*.22;
+    });
+   }else if(grounded){runner.rotation.x=THREE.MathUtils.damp(runner.rotation.x,0,12,dt)}
    if(grounded&&elapsed-lastStep>Math.max(.22,.48/(.5+speed*.14))){tone(68,.045,"sine",.012,-12);lastStep=elapsed}
    runner.position.y=jumpY;runner.position.x=-2.25;
    runnerShadow.position.x=runner.position.x+.08;runnerShadow.position.z=laneZ+pathZ(-2.25);runnerShadow.scale.setScalar(1-Math.min(.42,jumpY*.12));runnerShadow.material.opacity=.72*(1-Math.min(.72,jumpY*.22));
@@ -685,7 +701,24 @@ export function start(){
      const obstacleBounds=new THREE.Box3().setFromObject(o.mesh);
      obstacleBounds.expandByVector(new THREE.Vector3(.045,.025,.045));
      if(runnerBounds.intersectsBox(obstacleBounds)){
-      dead=true;impactSound();aiDirector.recordHit();best=Math.max(best,Math.floor(score));
+      dead=true;landTimer=0;impactSound();aiDirector.recordHit();
+      // A readable impact pose: pitch forward and fold the limbs rather than
+      // leaving the runner frozen in a perfectly upright running silhouette.
+      runner.rotation.x=-.16;runner.rotation.z=.24;
+      if(runner.userData.limbs)runner.userData.limbs.forEach(l=>{
+       l.leg.rotation.x=(l.side<0?1:-1)*.72;
+       l.arm.rotation.x=(l.side<0?-1:1)*1.05;
+       l.foot.rotation.x=-.28;
+      });
+      if(runner.userData.jumpBones)runner.userData.jumpBones.forEach(item=>{
+       const sign=item.side||1;
+       if(item.joint==="thigh")item.bone.rotation.x+=sign*.42;
+       else if(item.joint==="calf")item.bone.rotation.x-=sign*.3;
+       else if(item.joint==="upperArm")item.bone.rotation.x-=sign*.62;
+       else if(item.joint==="forearm")item.bone.rotation.x+=sign*.38;
+       else if(item.joint==="spine")item.bone.rotation.x-=.12;
+      });
+      best=Math.max(best,Math.floor(score));
       try{localStorage.setItem("rm3dBest",best)}catch(e){}
       msg.innerHTML="СТОЛКНОВЕНИЕ<br>СЧЁТ: "+Math.floor(score)+" · РЕКОРД: "+best+"<br><button id='retry'>ЕЩЁ РАЗ</button>";
       document.getElementById("retry").onclick=()=>{reset();started=true};break;
