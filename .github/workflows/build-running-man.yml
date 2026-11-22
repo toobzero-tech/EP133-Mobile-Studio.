@@ -51,7 +51,7 @@ jobs:
           html = Path("RunningMan/app/src/main/assets/index.html").read_text(encoding="utf-8")
           scripts = re.findall(r"<script>(.*?)</script>", html, flags=re.S)
           assert scripts, "Inline startup script missing"
-          Path("/tmp/running-man-start.js").write_text("\\n".join(scripts), encoding="utf-8")
+          Path("/tmp/running-man-start.js").write_text("\n".join(scripts), encoding="utf-8")
           PY
           node --check /tmp/running-man-start.js
           test -s RunningMan/app/src/main/assets/game3d.bundle.js
