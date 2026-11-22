@@ -19,7 +19,7 @@ export function start(){
  function addSketchOutlines(root){
   root.traverse(o=>{if(!o.isMesh||o.userData.sketchOutline)return;o.userData.sketchOutline=true;
    const edges=new THREE.EdgesGeometry(o.geometry,24);
-   const ink=new THREE.LineBasicMaterial({color:0x37332e,transparent:true,opacity:.52,depthWrite:false});
+   const ink=new THREE.LineBasicMaterial({color:0x37332e,transparent:true,opacity:.30,depthWrite:false});
    const lines=new THREE.LineSegments(edges,ink);lines.renderOrder=2;o.add(lines);
   });
  }
@@ -70,7 +70,33 @@ export function start(){
  paperTexture.wrapS=paperTexture.wrapT=THREE.ClampToEdgeWrapping;
  paperTexture.repeat.set(1,1);
  scene.background=paperTexture;
- function updateTrack(){ /* Logical path only; intentionally no visible track. */ }
+ // Visible track is drawn as broken graphite strokes directly on the paper.
+ // It gives the runner depth without adding scenery, a floor mesh or heavy effects.
+ const trackPositions=new Float32Array(2*2*92*3);
+ const trackGeometry=new THREE.BufferGeometry();
+ trackGeometry.setAttribute("position",new THREE.BufferAttribute(trackPositions,3));
+ const trackInk=new THREE.LineBasicMaterial({color:0x77716a,transparent:true,opacity:.24,depthWrite:false,toneMapped:false});
+ const trackLines=new THREE.LineSegments(trackGeometry,trackInk);
+ trackLines.frustumCulled=false;trackLines.renderOrder=1;scene.add(trackLines);
+ const trackTicks=[];
+ for(let i=0;i<18;i++)trackTicks.push({x:-10+i*2.8,j:(i%3)*.025});
+ function updateTrack(){
+  let n=0;
+  // Two irregular, lightly broken edges create a hand-drawn perspective path.
+  for(let side of [-1,1]){
+   for(let i=0;i<46;i++){
+    const x=-17+i*1.28, x2=x+.58+(i%3)*.07;
+    const wobble=Math.sin(i*1.71+side)*.045;
+    const z=pathZ(x)+side*(2.48+wobble);
+    const z2=pathZ(x2)+side*(2.48+Math.sin(i*1.31+side)*.045);
+    trackPositions[n++]=x;trackPositions[n++]=.009;trackPositions[n++]=z;
+    trackPositions[n++]=x2;trackPositions[n++]=.009;trackPositions[n++]=z2;
+   }
+  }
+  trackGeometry.attributes.position.needsUpdate=true;
+  trackGeometry.setDrawRange(0,n/3);
+ }
+
  const runner=new THREE.Group();runner.position.set(-2.25,0,0);scene.add(runner);
  let mixer=null,runAction=null,modelReady=false;
  function fallbackRunner(){
