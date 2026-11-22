@@ -35,7 +35,7 @@ jobs:
       - name: Validate bundled engine
         run: |
           node --check RunningMan/app/src/main/assets/game.bundle.js
-          test -s RunningMan/app/src/main/assets/game.bundle.js
+          test $(stat -c%s RunningMan/app/src/main/assets/game.bundle.js) -gt 100000
           grep -q 'game.bundle.js' RunningMan/app/src/main/assets/index.html
       - name: Build APK
         working-directory: RunningMan
