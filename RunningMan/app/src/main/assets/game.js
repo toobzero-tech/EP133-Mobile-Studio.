@@ -1,6 +1,7 @@
+import * as THREE from 'three';
 (()=>{
 'use strict';
-const T=window.THREE,$=id=>document.getElementById(id),canvas=$('game'),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const T=THREE,$=id=>document.getElementById(id),canvas=$('game'),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const mat=(c)=>new T.MeshStandardMaterial({color:c,roughness:1}),ink=mat(0x34312b),gray=mat(0x8d877b),light=mat(0xb6afa2),dark=mat(0x292720);
 let scene,camera,renderer,runner,clock=new T.Clock(),active=false,paused=false,dead=false,score=0,best=0,streak=0,speed=5,jump=0,elapsed=0,spawn=1.2,items=[],dust=[],view=0,shake=0,fpArms=[];
 function texture(){let c=document.createElement('canvas');c.width=c.height=512;let x=c.getContext('2d');x.fillStyle='#f7f5ef';x.fillRect(0,0,512,512);let s=7813,r=()=>((s=s*16807%2147483647)/2147483647);for(let i=0;i<4200;i++){x.fillStyle='rgba(60,54,43,'+(.01+r()*.035)+')';x.fillRect(r()*512,r()*512,.5+r(),.5+r()*1.3)}for(let i=0;i<180;i++){let a=r()*512,b=r()*512;x.strokeStyle='rgba(60,54,43,.04)';x.beginPath();x.moveTo(a,b);x.lineTo(a+2+r()*7,b-r()*2);x.stroke()}let t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(14,28);t.colorSpace=T.SRGBColorSpace;return t}
