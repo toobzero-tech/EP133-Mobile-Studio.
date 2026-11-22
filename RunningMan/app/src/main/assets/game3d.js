@@ -15,11 +15,15 @@ export function start(){
  const sun=new THREE.DirectionalLight(0xffffff,1.25);sun.position.set(-5,10,7);scene.add(sun);
  const fillLight=new THREE.DirectionalLight(0xffffff,.32);fillLight.position.set(4,3,-6);scene.add(fillLight);
  const grayColor=color=>{const c=new THREE.Color(color);const y=.299*c.r+.587*c.g+.114*c.b;return new THREE.Color().setRGB(y,y,y)};
- const mat=(color,roughness=.94,metalness=0)=>new THREE.MeshStandardMaterial({color:grayColor(color),map:graphiteTexture,roughness,metalness});
+ // Four-step grayscale ramp: clear illustrated light/shadow planes instead of plastic PBR shading.
+ const toonRampData=new Uint8Array([38,38,38,255,92,92,92,255,166,166,166,255,232,232,232,255]);
+ const toonRamp=new THREE.DataTexture(toonRampData,4,1,THREE.RGBAFormat);
+ toonRamp.magFilter=THREE.NearestFilter;toonRamp.minFilter=THREE.NearestFilter;toonRamp.generateMipmaps=false;toonRamp.needsUpdate=true;
+ const mat=(color,roughness=.94,metalness=0)=>new THREE.MeshToonMaterial({color:grayColor(color),map:graphiteTexture,gradientMap:toonRamp});
  function addSketchOutlines(root){
   root.traverse(o=>{if(!o.isMesh||o.userData.sketchOutline)return;o.userData.sketchOutline=true;
-   const edges=new THREE.EdgesGeometry(o.geometry,24);
-   const ink=new THREE.LineBasicMaterial({color:0x37332e,transparent:true,opacity:.30,depthWrite:false});
+   const edges=new THREE.EdgesGeometry(o.geometry,42);
+   const ink=new THREE.LineBasicMaterial({color:0x37332e,transparent:true,opacity:.20,depthWrite:false});
    const lines=new THREE.LineSegments(edges,ink);lines.renderOrder=2;o.add(lines);
   });
  }
@@ -147,7 +151,7 @@ export function start(){
      for(const key of ["map","normalMap","roughnessMap","metalnessMap","emissiveMap","aoMap","alphaMap","bumpMap","displacementMap"])if(m[key])m[key].dispose();
      m.dispose();
     }
-    return new THREE.MeshStandardMaterial({color,map:graphiteTexture,roughness:1,metalness:0});
+    return new THREE.MeshToonMaterial({color,map:graphiteTexture,gradientMap:toonRamp});
    });
    o.material=Array.isArray(o.material)?pencilMats:pencilMats[0];
   }});runner.add(model);addSketchOutlines(model);model.userData.ownedMaterials=[];addGraphiteHatching(model,0x13a5);
