@@ -641,8 +641,9 @@ export function start(){
     jumpV-=21*dt;jumpY+=jumpV*dt;
     if(jumpY<=0){jumpY=0;jumpV=0;grounded=true;tone(92,.07,"triangle",.022,-24)}
    }
-   // Freeze the run cycle in mid-air and tilt the silhouette through takeoff and landing.
-   if(runAction)runAction.paused=!grounded;
+   // Keep the authored rig updating so each frame starts from its clean
+   // keyframed pose before the procedural airborne joint offsets are layered on.
+   if(runAction)runAction.paused=false;
    runner.rotation.z=grounded?0:clamp(-jumpV*.018,-.18,.16);
    if(!grounded){
     const tuck=clamp(jumpY*.34,0,.48);
