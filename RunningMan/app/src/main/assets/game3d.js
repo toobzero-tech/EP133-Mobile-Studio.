@@ -170,12 +170,23 @@ export function start(){
   const model=g.scene;const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());const scale=1.78/Math.max(size.y,.01);model.scale.setScalar(scale);const b2=new THREE.Box3().setFromObject(model);model.position.y-=b2.min.y;model.traverse(o=>{if(o.isMesh){
    const source=Array.isArray(o.material)?o.material:[o.material];
    const pencilMats=source.map(m=>{
+    // Keep the licensed model's own surface maps and grayscale material identity.
+    // The former pass disposed these maps and then ignored grayColor(), flattening
+    // skin, clothes and shoes into one repeated graphite swatch.
     const color=grayColor(m?.color??0x777777);
-    if(m){
-     for(const key of ["map","normalMap","roughnessMap","metalnessMap","emissiveMap","aoMap","alphaMap","bumpMap","displacementMap"])if(m[key])m[key].dispose();
-     m.dispose();
-    }
-    return new THREE.MeshToonMaterial({color,map:graphiteTexture,gradientMap:toonRamp});
+    const map=m?.map||graphiteTexture;
+    const bumpMap=m?.bumpMap||graphiteTexture;
+    const material=new THREE.MeshToonMaterial({
+     color,map,gradientMap:toonRamp,
+     bumpMap,bumpScale:m?.bumpMap?.bumpScale??.018,
+     alphaMap:m?.alphaMap||null,
+     transparent:!!m?.transparent,
+     opacity:m?.opacity??1,
+     side:m?.side??THREE.FrontSide,
+     vertexColors:!!m?.vertexColors
+    });
+    if(m)m.dispose();
+    return material;
    });
    o.material=Array.isArray(o.material)?pencilMats:pencilMats[0];
   }});runner.add(model);addSketchOutlines(model);model.userData.ownedMaterials=[];addGraphiteHatching(model,0x13a5);
