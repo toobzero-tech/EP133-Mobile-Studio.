@@ -264,6 +264,11 @@ function draw(){
 function reset(){
   active=true;paused=false;dead=false;clock=0;distance=0;jump=0;hitFlash=0;objects=[];spawnClock=.65;lastFrame=0;
   metersEl.textContent='0 м';menu.style.display='none';pauseLayer.style.display='none';
+  // A restart after a collision must restore the resume control. Otherwise
+  // the next pause opens an overlay with no way back into the run.
+  document.getElementById('pauseTitle').textContent='ПАУЗА';
+  document.getElementById('resume').style.display='block';
+  document.getElementById('restartPause').textContent='↻ ЗАНОВО';
   document.getElementById('pause').textContent='Ⅱ ПАУЗА';
 }
 function finish(){
