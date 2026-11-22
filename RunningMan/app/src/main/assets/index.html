@@ -246,7 +246,7 @@ function firstPerson(){
   const swing=Math.sin(clock*speed*.105),lift=jump>0?Math.sin(jump*Math.PI):0;
   ctx.save();
   const arm=(side)=>{
-    ctx.save();ctx.translate(W*.5+side*W*.31,H*.91-lift*H*.07);ctx.rotate(side*(.18+swing*.08));
+    ctx.save();ctx.translate(W*.5+side*W*.31+side*swing*5,H*.91-lift*H*.07+Math.abs(swing)*2);ctx.rotate(side*(.18+swing*.13));
     ctx.beginPath();ctx.moveTo(side*-7,-5);ctx.quadraticCurveTo(side*-24,-42,side*-17,-75);
     ctx.lineTo(side*-4,-82);ctx.quadraticCurveTo(side*3,-55,side*8,-34);ctx.lineTo(side*17,0);ctx.closePath();
     ctx.fillStyle='rgba(55,52,45,.19)';ctx.fill();ctx.strokeStyle='#302e29';ctx.lineWidth=2;ctx.stroke();
@@ -302,7 +302,7 @@ function draw(){
   drawParticles();ctx.restore();
 }
 function reset(){
-  active=true;paused=false;dead=false;clock=0;distance=0;jump=0;hitFlash=0;objects=[];particles=[];cameraKick=0;spawnClock=.65;lastFrame=0;
+  active=true;paused=false;dead=false;clock=0;distance=0;jump=0;hitFlash=0;objects=[];particles=[];cameraKick=0;spawnClock=.65;lastFrame=0;lastFoot=0;lastObstacleKind=-1;repeatObstacle=0;
   metersEl.textContent='0 м';menu.style.display='none';pauseLayer.style.display='none';
   // A restart after a collision must restore the resume control. Otherwise
   // the next pause opens an overlay with no way back into the run.
@@ -370,7 +370,7 @@ function frame(ts){
 }
 canvas.addEventListener('pointerdown',e=>{
   if(e.cancelable)e.preventDefault();
-  if(active&&!paused&&!dead&&jump===0){jump=1;sound('jump');burst(W*.5,H*.775+8,9,1.25);try{if(navigator.vibrate)navigator.vibrate(8)}catch(e){}}
+  if(active&&!paused&&!dead&&jump===0){jump=1;sound('jump');burst(W*.5,viewMode===2?H*.88:H*.775+8,9,1.25);try{if(navigator.vibrate)navigator.vibrate(8)}catch(e){}}
 },{passive:false});
 speedEl.addEventListener('input',e=>{
   speed=Number(e.target.value);speedLabel.textContent=speed+'/10';
