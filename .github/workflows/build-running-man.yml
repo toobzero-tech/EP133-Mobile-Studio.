@@ -30,6 +30,18 @@ jobs:
           fi
           yes | "$SDKMANAGER" --licenses >/dev/null
           "$SDKMANAGER" 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Validate game JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('RunningMan/app/src/main/assets/index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>(.*?)</script>', html, re.S)
+          if len(scripts) != 1:
+              raise SystemExit(f'Expected one inline game script, found {len(scripts)}')
+          Path('/tmp/running-man.js').write_text(scripts[0], encoding='utf-8')
+          PY
+          node --check /tmp/running-man.js
       - name: Build debug APK
         working-directory: RunningMan
         run: gradle --no-daemon assembleDebug
