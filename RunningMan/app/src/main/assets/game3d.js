@@ -4,7 +4,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function start(){
  const canvas=document.querySelector("#stage"),scene=new THREE.Scene();
- scene.background=new THREE.Color(0xfaf9f6);
+ scene.background=null; // Paper-only scene, no environmental backdrop.
  let travelDistance=0;
  const rawPathZ=x=>1.35*Math.sin(x*.052)+.48*Math.sin(x*.117+.6);
  // Advance the curve profile beneath the fixed runner for endless forward travel.
@@ -64,45 +64,12 @@ export function start(){
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2.5,2.5);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=1;return t;
  }
  const graphiteTexture=makeGraphiteTexture();
- const floorMat=mat(0xbcb4a6);floorMat.map=paperTexture;floorMat.needsUpdate=true;
  const lineMat=mat(0x777064),wood=mat(0xc99a55),graphite=mat(0x302d29),eraser=mat(0xb97875),paper=mat(0xe5ddce);
- const floor=new THREE.Mesh(new THREE.PlaneGeometry(200,200),floorMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.08;scene.add(floor);
- const trackPositions=[],trackIndices=[],leftEdge=[],rightEdge=[];
- const trackSegments=180,trackStart=-35,trackEnd=45,trackWidth=5.2;
- for(let i=0;i<=trackSegments;i++){
-  const x=trackStart+(trackEnd-trackStart)*i/trackSegments,center=pathZ(x);
-  trackPositions.push(x,-.012,center-trackWidth/2,x,-.012,center+trackWidth/2);
-  leftEdge.push(new THREE.Vector3(x,.006,center-trackWidth/2));rightEdge.push(new THREE.Vector3(x,.006,center+trackWidth/2));
-  if(i<trackSegments){const n=i*2;trackIndices.push(n,n+1,n+2,n+1,n+3,n+2)}
- }
- const trackGeometry=new THREE.BufferGeometry();trackGeometry.setAttribute("position",new THREE.Float32BufferAttribute(trackPositions,3));trackGeometry.setIndex(trackIndices);trackGeometry.computeVertexNormals();
- const trackMaterial=mat(0xe4e0d8);trackMaterial.side=THREE.DoubleSide;scene.add(new THREE.Mesh(trackGeometry,trackMaterial));
- const trackInk=new THREE.LineBasicMaterial({color:0x77716a,transparent:true,opacity:.42});
- const leftEdgeGeometry=new THREE.BufferGeometry().setFromPoints(leftEdge),rightEdgeGeometry=new THREE.BufferGeometry().setFromPoints(rightEdge);
- scene.add(new THREE.Line(leftEdgeGeometry,trackInk));scene.add(new THREE.Line(rightEdgeGeometry,trackInk));
- function updateTrack(){
-  const positions=trackGeometry.attributes.position,left=leftEdgeGeometry.attributes.position,right=rightEdgeGeometry.attributes.position;
-  for(let i=0;i<=trackSegments;i++){
-   const x=trackStart+(trackEnd-trackStart)*i/trackSegments,c=pathZ(x);
-   positions.setXYZ(i*2,x,-.012,c-trackWidth/2);positions.setXYZ(i*2+1,x,-.012,c+trackWidth/2);
-   left.setXYZ(i,x,.006,c-trackWidth/2);right.setXYZ(i,x,.006,c+trackWidth/2);
-  }
-  positions.needsUpdate=true;left.needsUpdate=true;right.needsUpdate=true;trackGeometry.computeVertexNormals();
- }
- // Recycled graphite scuffs give the paper track visible forward motion.
- const roadMarks=[],roadMarkInk=new THREE.LineBasicMaterial({color:0x625d56,transparent:true,opacity:.16,depthWrite:false});
- for(let i=0;i<28;i++){
-  const geo=new THREE.BufferGeometry();
-  const p=[];
-  for(let j=0;j<3;j++){
-   const z=-1.8+j*1.15,dx=.16+(j%2)*.08;
-   p.push(-dx,.003,z,dx,.003,z+.12);
-  }
-  geo.setAttribute("position",new THREE.Float32BufferAttribute(p,3));
-  const mark=new THREE.LineSegments(geo,roadMarkInk);
-  const x=-12+i*2;mark.position.set(x,0,pathZ(x));scene.add(mark);roadMarks.push(mark);
- }
-
+ // The paper sheet is the complete backdrop. No floor, road, borders or scenery.
+ paperTexture.wrapS=paperTexture.wrapT=THREE.ClampToEdgeWrapping;
+ paperTexture.repeat.set(1,1);
+ scene.background=paperTexture;
+ function updateTrack(){ /* Logical path only; intentionally no visible track. */ }
  const runner=new THREE.Group();runner.position.set(-2.25,0,0);scene.add(runner);
  let mixer=null,runAction=null,modelReady=false;
  function fallbackRunner(){
@@ -344,11 +311,7 @@ export function start(){
    runner.position.y=jumpY;runner.position.x=-2.25;
 
    nextSpawn-=dt;if(nextSpawn<=0)spawn();
-   for(const mark of roadMarks){
-    let x=mark.position.x-velocity*dt;
-    if(x< -15)x+=56;
-    mark.position.set(x,0,pathZ(x));
-   }
+
    for(let i=obstacles.length-1;i>=0;i--){const o=obstacles[i];o.x-=velocity*dt;o.mesh.position.x=o.x;o.mesh.position.z=pathZ(o.x)+o.z;
     if(!o.passed&&o.x< -2.7){o.passed=true;streak++;aiDirector.recordPass()}
     if(Math.abs(o.x+2.25)<(o.w*.5+.28)&&jumpY<o.h*.83&&Math.abs(o.z-laneZ)<.48){dead=true;impactSound();aiDirector.recordHit();best=Math.max(best,Math.floor(score));try{localStorage.setItem("rm3dBest",best)}catch(e){}msg.innerHTML="СТОЛКНОВЕНИЕ<br>СЧЁТ: "+Math.floor(score)+" · РЕКОРД: "+best+"<br><button id='retry'>ЕЩЁ РАЗ</button>";document.getElementById("retry").onclick=()=>{reset();started=true};break}
