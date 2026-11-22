@@ -76,14 +76,21 @@ export function start(){
  function fallbackRunner(){
   const skin=mat(0xc69d7d),shirt=mat(0x555b5c),pants=mat(0x34383a),shoe=mat(0x252525);
   const sphere=(r,m,x,y,z)=>{const o=new THREE.Mesh(new THREE.SphereGeometry(r,20,16),m);o.position.set(x,y,z);runner.add(o);return o};
-  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.29,.62,6,12),shirt);torso.position.y=1.12;runner.add(torso);
-  sphere(.19,skin,0,1.78,0);
+  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.29,.62,7,14),shirt);torso.position.y=1.12;runner.add(torso);
+  // Small profile details keep the fallback silhouette readable at phone scale.
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry(.085,.105,.17,10),skin);neck.position.set(0,1.58,0);runner.add(neck);
+  const head=sphere(.19,skin,0,1.78,0);head.scale.set(1,1.08,.92);
+  const hair=new THREE.Mesh(new THREE.SphereGeometry(.194,14,10,0,Math.PI*2,0,Math.PI*.58),shoe);
+  hair.position.set(-.018,1.815,0);hair.rotation.z=-.12;runner.add(hair);
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(.045,.105,7),skin);nose.rotation.z=-Math.PI/2;nose.position.set(.185,1.77,0);runner.add(nose);
   const limbs=[];
   for(let side of [-1,1]){
    let leg=new THREE.Mesh(new THREE.CapsuleGeometry(.105,.53,5,10),pants);leg.position.set(side*.14,.48,0);runner.add(leg);
    let arm=new THREE.Mesh(new THREE.CapsuleGeometry(.075,.5,5,10),skin);arm.position.set(side*.34,1.18,0);runner.add(arm);
+   let hand=new THREE.Mesh(new THREE.SphereGeometry(.078,9,7),skin);hand.position.set(side*.34,.88,0);runner.add(hand);
    let foot=new THREE.Mesh(new THREE.BoxGeometry(.2,.12,.36),shoe);foot.position.set(side*.14,.08,.09);runner.add(foot);
-   limbs.push({leg,arm,foot,side});
+   const sole=new THREE.Mesh(new THREE.BoxGeometry(.205,.035,.37),graphite);sole.position.set(side*.14,.025,.105);runner.add(sole);
+   limbs.push({leg,arm,foot,hand,side});
   }
   runner.userData.limbs=limbs;
  }
