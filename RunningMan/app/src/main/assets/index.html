@@ -120,8 +120,9 @@ function limb(ax,ay,bx,by,r1,r2,shade=.1){
 }
 function runner(px,py,zoom=1){
   const phase=clock*speed*.105,sw=Math.sin(phase),stride=Math.cos(phase);
-  const lift=jump>0?Math.sin((1-jump)*Math.PI)*H*.145:0;
-  ctx.save();ctx.translate(px,py-lift);ctx.scale(zoom,zoom);
+  const lift=jump>0?Math.sin(jump*Math.PI)*H*.145:0;
+  const landing=jump>0?Math.pow(1-Math.sin(jump*Math.PI),5):0;
+  ctx.save();ctx.translate(px,py-lift);ctx.scale(zoom*(1+landing*.035),zoom*(1-landing*.045));
   // soft graphite shadow
   ctx.fillStyle='rgba(35,32,27,'+(jump>0?.07:.15)+')';ctx.beginPath();ctx.ellipse(0,5+jump*15,22+jump*15,5,0,0,Math.PI*2);ctx.fill();
   // back leg and shoe
@@ -175,7 +176,7 @@ function obstacle(o){
   ctx.restore();
 }
 function firstPerson(){
-  const swing=Math.sin(clock*speed*.105),lift=jump>0?Math.sin((1-jump)*Math.PI):0;
+  const swing=Math.sin(clock*speed*.105),lift=jump>0?Math.sin(jump*Math.PI):0;
   ctx.save();
   const arm=(side)=>{
     ctx.save();ctx.translate(W*.5+side*W*.31,H*.91-lift*H*.07);ctx.rotate(side*(.18+swing*.08));
@@ -230,7 +231,9 @@ function frame(ts){
       // Collision is evaluated at the runner's actual contact line.
       if(!o.checked&&o.z>=.875){
         o.checked=true;
-        const cleared=jump>.28;
+        const arc=Math.sin(clamp(jump,0,1)*Math.PI);
+        const clearance=o.kind===1?.68:.46;
+        const cleared=arc>clearance;
         if(Math.abs(o.lane)<.05&&!cleared){hitFlash=1;finish();break}
       }
     }
