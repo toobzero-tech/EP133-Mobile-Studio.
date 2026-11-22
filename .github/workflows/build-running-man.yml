@@ -33,6 +33,7 @@ jobs:
           npm install --prefix "$TOOLING" --no-save three esbuild
           "$TOOLING/node_modules/.bin/esbuild" "$ASSETS/game3d.js" --bundle --format=iife --global-name=RunningMan3D --outfile="$ASSETS/game3d.bundle.js"
           rm -rf "$ASSETS/node_modules" "$ASSETS/package.json" "$ASSETS/package-lock.json"
+          cd "$ASSETS"
           curl -fL --retry 3 --retry-delay 2 -A "RunningMan-Game-Build/1.0" "https://www.innerscene.com/api/library/run-maya-3d-person-animated-eebf24b9/download" -o runner.glb
           test "$(stat -c%s runner.glb)" -gt 1000000
           file runner.glb
