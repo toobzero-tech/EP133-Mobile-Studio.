@@ -277,9 +277,17 @@ function frame(ts){
     clock+=dt;distance+=speed*.012*dt;
     spawnClock-=dt;
     if(spawnClock<=0){
-      const r=Math.random(),lane=r<.68?0:(r<.84?-0.34:0.34);
-      objects.push({z:0,lane,kind:Math.floor(Math.random()*3),checked:false});
-      spawnClock=clamp(1.65-speed*.085,.72,1.55)*(0.82+Math.random()*.38);
+      // There is no lateral steering in this control scheme: every obstacle
+      // belongs to the runner's lane. Side-lane spawns were visual noise that
+      // could never be dodged or collided with.
+      const kindRoll=Math.random();
+      const kind=kindRoll<.38?0:(kindRoll<.70?1:2);
+      objects.push({z:0,lane:0,kind,checked:false});
+      // Keep a readable reaction window at high speed and avoid overlapping
+      // obstacle silhouettes. Difficulty comes from travel speed, not unfair
+      // random clusters.
+      const reactionGap=1.82-speed*.065;
+      spawnClock=clamp(reactionGap,1.12,1.75)*(0.92+Math.random()*.16);
     }
     for(const o of objects){
       o.z+=speed*.00155*dt;
