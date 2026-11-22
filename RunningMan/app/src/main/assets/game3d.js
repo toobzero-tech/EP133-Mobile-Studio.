@@ -430,7 +430,7 @@ export function start(){
  msg.addEventListener("click",e=>{if(e.target&&e.target.id==="play"){reset();started=true}});
  document.getElementById("sound").addEventListener("click",e=>{soundEnabled=!soundEnabled;e.currentTarget.textContent=soundEnabled?"♪":"×";if(soundEnabled){audioReady();tone(520,.07,"sine",.025)}});
  document.querySelectorAll("[data-view]").forEach((b,i)=>b.addEventListener("click",()=>{view=i;document.querySelectorAll("[data-view]").forEach(x=>x.classList.toggle("active",x===b))}));
- window.addEventListener("keydown",e=>{if(e.code==="ArrowLeft"||e.code==="KeyA"){e.preventDefault();steer(-1)}if(e.code==="ArrowRight"||e.code==="KeyD"){e.preventDefault();steer(1)}if(e.code==="Escape"&&started&&!dead){paused=!paused;setText("pause",paused?"▶":"Ⅱ");msg.textContent=paused?"ПАУЗА":""}});
+ window.addEventListener("keydown",e=>{if(e.code==="Escape"&&started&&!dead){paused=!paused;setText("pause",paused?"▶":"Ⅱ");msg.textContent=paused?"ПАУЗА":""}});
  document.addEventListener("visibilitychange",()=>{if(document.hidden&&started&&!dead){paused=true;setText("pause","▶");msg.textContent="ПАУЗА"}});
  window.addEventListener("pagehide",()=>{try{localStorage.setItem("rm3dBest",String(Math.max(best,Math.floor(score))))}catch(e){}});
  const clock=new THREE.Clock();let frameAccumulator=0;
