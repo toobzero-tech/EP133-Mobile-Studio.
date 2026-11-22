@@ -22,8 +22,10 @@ export function start(){
  const mat=(color,roughness=.94,metalness=0)=>new THREE.MeshToonMaterial({color:grayColor(color),map:graphiteTexture,gradientMap:toonRamp});
  function addSketchOutlines(root){
   root.traverse(o=>{if(!o.isMesh||o.userData.sketchOutline)return;o.userData.sketchOutline=true;
-   const edges=new THREE.EdgesGeometry(o.geometry,42);
-   const ink=new THREE.LineBasicMaterial({color:0x37332e,transparent:true,opacity:.20,depthWrite:false});
+   // A slightly finer crease threshold preserves clothing folds and limb
+   // separation without outlining every polygon of the low-poly rig.
+   const edges=new THREE.EdgesGeometry(o.geometry,31);
+   const ink=new THREE.LineBasicMaterial({color:0x37332e,transparent:true,opacity:.235,depthWrite:false});
    const lines=new THREE.LineSegments(edges,ink);lines.renderOrder=2;o.add(lines);
   });
  }
@@ -282,7 +284,9 @@ export function start(){
    const triCount=idx?idx.count/3:Math.floor(pos.count/3);
    if(!triCount)return;
    const pts=[];
-   const strokeCount=Math.min(34,Math.max(7,Math.floor(triCount*.42)));
+   // Add detail in proportion to surface complexity, with a strict per-mesh
+   // cap so mobile fill-rate and geometry costs stay predictable.
+   const strokeCount=Math.min(48,Math.max(10,Math.floor(triCount*.58)));
    for(let k=0;k<strokeCount;k++){
     const tri=Math.floor(rand()*triCount),ia=idx?idx.getX(tri*3):tri*3,ib=idx?idx.getX(tri*3+1):tri*3+1,ic=idx?idx.getX(tri*3+2):tri*3+2;
     vA.fromBufferAttribute(pos,ia);vB.fromBufferAttribute(pos,ib);vC.fromBufferAttribute(pos,ic);
@@ -293,7 +297,7 @@ export function start(){
     normal.copy(nA).multiplyScalar(w).addScaledVector(nB,u).addScaledVector(nC,v).normalize();
     const edge=rand()<.5?vB.clone().sub(vA):vC.clone().sub(vA);
     edge.addScaledVector(normal,-edge.dot(normal)).normalize();
-    const len=.018+rand()*.065;
+    const len=.016+rand()*.072;
     q.copy(p).addScaledVector(edge,len);
     const lift=.0025;
     p.addScaledVector(normal,lift);q.addScaledVector(normal,lift);
