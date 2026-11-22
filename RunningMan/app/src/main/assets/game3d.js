@@ -391,7 +391,7 @@ export function start(){
  document.getElementById("jump").addEventListener("pointerdown",e=>{e.preventDefault();jump()});
  document.getElementById("pause").addEventListener("click",()=>{if(dead||!started){reset();started=true;return}paused=!paused;setText("pause",paused?"▶":"Ⅱ");msg.textContent=paused?"ПАУЗА":""});
  document.getElementById("speed").addEventListener("input",e=>{speed=+e.target.value;setText("speedVal",speed+" / 10")});
- function steer(dir){if(dead||paused||!started)return;targetLaneZ=clamp(targetLaneZ+dir*1.05,-1.85,1.85)}
+ function steer(dir){if(dead||paused||!started)return;targetLaneZ=clamp(Math.round(targetLaneZ/1.65+dir)*1.65,-1.65,1.65)}
  window.addEventListener("keydown",e=>{if(e.code==="ArrowLeft"||e.code==="KeyA"){e.preventDefault();steer(-1)}if(e.code==="ArrowRight"||e.code==="KeyD"){e.preventDefault();steer(1)}});
  let swipeX=null,swipePointer=null;canvas.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button!==0)return;swipeX=e.clientX;swipePointer=e.pointerId;try{canvas.setPointerCapture(e.pointerId)}catch(_){}});canvas.addEventListener("pointerup",e=>{if(swipeX===null||e.pointerId!==swipePointer)return;const dx=e.clientX-swipeX;if(Math.abs(dx)>24)steer(dx>0?1:-1);swipeX=null;swipePointer=null});canvas.addEventListener("pointercancel",e=>{if(e.pointerId===swipePointer){swipeX=null;swipePointer=null}});
  msg.addEventListener("click",e=>{if(e.target&&e.target.id==="play"){reset();started=true}});
