@@ -283,7 +283,7 @@ function draw(){
   ctx.save();ctx.translate(sway+cameraKick*(Math.random()-.5),Math.abs(Math.sin(clock*.21))*1.0);
   drawTrack();
   objects.slice().sort((a,b)=>a.z-b.z).forEach(obstacle);
-  const warningStart=clamp(.95-speed*.049,.45,.90);
+  const warningStart=clamp(1-speed*.00155*38,.35,.94);
   const warning=objects.find(o=>!o.checked&&o.lane===0&&o.z>warningStart&&o.z<.99);
   if(warning){const pulse=.45+.35*Math.sin(clock*.22);ctx.fillStyle='rgba(55,50,42,'+pulse+')';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(warning.kind===1?'ВЫСОКИЙ ПРЫЖОК':'ПРЫЖОК',W*.5,H*.34)}
   if(hitFlash>0){ctx.fillStyle='rgba(80,45,35,'+(hitFlash*.12)+')';ctx.fillRect(0,0,W,H)}
@@ -341,7 +341,7 @@ function frame(ts){
     }
     objects=objects.filter(o=>o.z<1.16);
     const wasJumping=jump>0;
-    if(jump>0)jump=Math.max(0,jump-.021*dt);
+    if(jump>0)jump=Math.max(0,jump-.018*dt);
     if(wasJumping&&jump===0){burst(W*.5,H*.775+4,24,2.7);sound('land');cameraKick=5;try{if(navigator.vibrate)navigator.vibrate(18)}catch(e){}}
     for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=.12*dt;p.vx*=Math.pow(.985,dt);p.life-=dt;}
     particles=particles.filter(p=>p.life>0);cameraKick=Math.max(0,cameraKick-.42*dt);
