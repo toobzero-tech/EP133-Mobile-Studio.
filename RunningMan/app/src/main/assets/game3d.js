@@ -392,7 +392,19 @@ export function start(){
  document.getElementById("speed").addEventListener("input",e=>{speed=+e.target.value;setText("speedVal",speed+" / 10")});
  function steer(dir){if(dead||paused||!started)return;targetLaneZ=clamp(Math.round(targetLaneZ/1.65+dir)*1.65,-1.65,1.65)}
  window.addEventListener("keydown",e=>{if(e.code==="ArrowLeft"||e.code==="KeyA"){e.preventDefault();steer(-1)}if(e.code==="ArrowRight"||e.code==="KeyD"){e.preventDefault();steer(1)}});
- const tapRaycaster=new THREE.Raycaster(),tapPoint=new THREE.Vector2();
+ function hitRunnerScreen(x,y){
+  const rect=canvas.getBoundingClientRect(),box=new THREE.Box3().setFromObject(runner);
+  if(box.isEmpty())return false;
+  camera.updateMatrixWorld();runner.updateMatrixWorld(true);
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  for(let a=0;a<2;a++)for(let b=0;b<2;b++)for(let c=0;c<2;c++){
+   const p=new THREE.Vector3(a?box.max.x:box.min.x,b?box.max.y:box.min.y,c?box.max.z:box.min.z).project(camera);
+   const sx=rect.left+(p.x+1)*.5*rect.width,sy=rect.top+(1-p.y)*.5*rect.height;
+   minX=Math.min(minX,sx);maxX=Math.max(maxX,sx);minY=Math.min(minY,sy);maxY=Math.max(maxY,sy);
+  }
+  const pad=26;
+  return x>=minX-pad&&x<=maxX+pad&&y>=minY-pad&&y<=maxY+pad;
+ }
  let swipeX=null,swipeY=null,swipePointer=null;
  canvas.addEventListener("pointerdown",e=>{
   if(e.pointerType==="mouse"&&e.button!==0)return;
@@ -405,10 +417,7 @@ export function start(){
   if(Math.hypot(dx,dy)>26){
    if(Math.abs(dx)>Math.abs(dy)*.85)steer(dx>0?1:-1);
   }else if(started&&!paused&&!dead){
-   const rect=canvas.getBoundingClientRect();
-   tapPoint.set(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
-   tapRaycaster.setFromCamera(tapPoint,camera);
-   if(tapRaycaster.intersectObject(runner,true).length)jump();
+   if(hitRunnerScreen(e.clientX,e.clientY))jump();
   }
   swipeX=null;swipeY=null;swipePointer=null;
  });
