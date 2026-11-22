@@ -255,7 +255,7 @@ function draw(){
   drawTrack();
   objects.slice().sort((a,b)=>a.z-b.z).forEach(obstacle);
   const warningStart=clamp(.95-speed*.049,.45,.90);
-  const warning=objects.find(o=>!o.checked&&o.lane===0&&o.z>warningStart&&o.z<.95);
+  const warning=objects.find(o=>!o.checked&&o.lane===0&&o.z>warningStart&&o.z<.99);
   if(warning){const pulse=.45+.35*Math.sin(clock*.22);ctx.fillStyle='rgba(55,50,42,'+pulse+')';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(warning.kind===1?'ВЫСОКИЙ ПРЫЖОК':'ПРЫЖОК',W*.5,H*.34)}
   if(hitFlash>0){ctx.fillStyle='rgba(80,45,35,'+(hitFlash*.12)+')';ctx.fillRect(0,0,W,H)}
   if(viewMode===2)firstPerson();
@@ -300,8 +300,8 @@ function frame(ts){
     }
     for(const o of objects){
       o.z+=speed*.00155*dt;
-      // Collision is evaluated at the runner's actual contact line.
-      if(!o.checked&&o.z>=.95){
+      // Collision is evaluated when the obstacle reaches the runner's foot plane (z=1.0).
+      if(!o.checked&&o.z>=1.0){
         o.checked=true;
         const arc=Math.sin(clamp(jump,0,1)*Math.PI);
         const clearance=o.kind===1?.68:.46;
