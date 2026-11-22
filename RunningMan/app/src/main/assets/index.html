@@ -74,7 +74,14 @@ function hatch(x1,y1,x2,y2,count=5,alpha=.18){
 }
 function drawTrack(){
   const horizon=H*.255,vanish=W*.5,edgeL=W*.035,edgeR=W*.965;
-  line(vanish-2,horizon,edgeL,H,1.2,.26);line(vanish+2,horizon,edgeR,H,1.2,.26);
+  // Slightly winding hand-drawn path, with perspective curvature.
+  const bend=Math.sin(clock*.003)*W*.035;
+  ctx.beginPath();ctx.moveTo(vanish-2,horizon);
+  ctx.bezierCurveTo(vanish-bend*.35,H*.48,edgeL+bend,H*.72,edgeL,H);
+  ctx.strokeStyle='rgba(48,45,38,.28)';ctx.lineWidth=1.25;ctx.stroke();
+  ctx.beginPath();ctx.moveTo(vanish+2,horizon);
+  ctx.bezierCurveTo(vanish+bend*.35,H*.48,edgeR+bend,H*.72,edgeR,H);
+  ctx.stroke();
   line(vanish-5,horizon+5,edgeL+13,H,1,.12);line(vanish+5,horizon+5,edgeR-13,H,1,.12);
   for(let i=0;i<11;i++){
     const t=((i/11)+(clock*.012*speed/5))%1;
@@ -83,10 +90,17 @@ function drawTrack(){
     line(vanish-half,y,vanish+half,y,.8,.10);
   }
   // graphite road-edge hatching, deliberately sparse for mobile performance
-  for(let i=0;i<16;i++){
-    const t=(i/16+clock*.006*speed/5)%1,y=horizon+Math.pow(t,1.55)*(H-horizon),spread=8+Math.pow(t,1.25)*W*.45;
+  for(let i=0;i<22;i++){
+    const t=(i/22+clock*.006*speed/5)%1,y=horizon+Math.pow(t,1.55)*(H-horizon),spread=8+Math.pow(t,1.25)*W*.45;
     line(vanish-spread,y,vanish-spread-5,y+8,.7,.10);
     line(vanish+spread,y,vanish+spread+5,y+8,.7,.10);
+  }
+  // Fine, broken graphite scuffs on the paper road.
+  for(let i=0;i<34;i++){
+    const t=((i*.618+clock*.0018*speed)%1),y=horizon+Math.pow(t,1.7)*(H-horizon);
+    const x=vanish+(Math.sin(i*17.31)*.78)*Math.pow(t,1.2)*W*.42;
+    const len=2+Math.pow(t,1.4)*9;
+    line(x,y,x+len,y-1.4,.55,.075);
   }
 }
 function limb(ax,ay,bx,by,r1,r2,shade=.1){
@@ -125,8 +139,14 @@ function runner(px,py){
   ctx.fillRect(-4,-69,8,9);ctx.strokeRect(-4,-69,8,9);
   ctx.beginPath();ctx.ellipse(0,-80,9.2,12,-.08,0,Math.PI*2);ctx.fill();ctx.stroke();
   line(-7,-83,-3,-87,.8,.3);line(2,-88,6,-84,.7,.25);line(-5,-75,4,-73,.65,.2);
-  // graphite contour accents
+  // Graphite contour accents, fabric seams and shoe tread.
   line(-17,-49,-13,-34,.65,.28);line(17,-49,13,-34,.65,.28);
+  line(-7,-63,0,-60,.6,.24);line(7,-63,1,-59,.6,.24);
+  line(-10,-27,-2,-24,.7,.3);line(2,-24,10,-27,.7,.3);
+  for(let i=0;i<4;i++){
+    line(-29+i*2,19,-27+i*2,21,.55,.34);
+    line(25+i*1.5,19,27+i*1.5,21,.55,.34);
+  }
   ctx.restore();
 }
 function obstacle(o){
@@ -181,9 +201,11 @@ function frame(ts){
     }
     for(const o of objects){
       o.z+=speed*.00155*dt;
+      // Collision is evaluated at the runner's actual contact line.
       if(!o.checked&&o.z>=.875){
         o.checked=true;
-        if(Math.abs(o.lane)<.05&&jump<.34){finish();break}
+        const cleared=jump>.28;
+        if(Math.abs(o.lane)<.05&&!cleared){finish();break}
       }
     }
     objects=objects.filter(o=>o.z<1.12);
