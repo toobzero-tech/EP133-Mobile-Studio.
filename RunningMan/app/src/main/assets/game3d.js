@@ -199,8 +199,25 @@ export function start(){
     return material;
    });
    o.material=Array.isArray(o.material)?pencilMats:pencilMats[0];
-  }});runner.add(model);addSketchOutlines(model);model.userData.ownedMaterials=[];addGraphiteHatching(model,0x13a5);
-  runner.userData.model=model;runner.userData.modelBaseY=model.position.y;
+  }});
+  // Cache recognizable skeletal joints for a small procedural jump pose.
+  // The offsets are applied after the authored run clip, so the original
+  // animation remains in charge of the gait while the airborne pose bends joints.
+  const jumpBones=[];
+  model.traverse(o=>{
+   if(!o.isBone)return;
+   const n=(o.name||"").toLowerCase().replace(/[. _-]/g,"");
+   const side=/left|\bl\b|\bleft/.test(n)?-1:/right|\br\b|\bright/.test(n)?1:0;
+   let joint="";
+   if(/upleg|thigh|femur/.test(n))joint="thigh";
+   else if(/leg|calf|shin|knee/.test(n)&&!/upleg/.test(n))joint="calf";
+   else if(/upperarm|arm|shoulder/.test(n))joint="upperArm";
+   else if(/forearm|lowerarm|elbow/.test(n))joint="forearm";
+   else if(/spine|chest/.test(n))joint="spine";
+   if(joint)jumpBones.push({bone:o,joint,side});
+  });
+  runner.add(model);addSketchOutlines(model);model.userData.ownedMaterials=[];addGraphiteHatching(model,0x13a5);
+  runner.userData.model=model;runner.userData.jumpBones=jumpBones;runner.userData.modelBaseY=model.position.y;
   if(g.animations.length){
    mixer=new THREE.AnimationMixer(model);
    // Prefer an actual locomotion cycle over an arbitrary first clip (often idle
@@ -627,13 +644,29 @@ export function start(){
    // Freeze the run cycle in mid-air and tilt the silhouette through takeoff and landing.
    if(runAction)runAction.paused=!grounded;
    runner.rotation.z=grounded?0:clamp(-jumpV*.018,-.18,.16);
-   if(!grounded&&runner.userData.limbs){
+   if(!grounded){
     const tuck=clamp(jumpY*.34,0,.48);
-    runner.userData.limbs.forEach(l=>{
-     l.leg.rotation.x=(l.side<0?1:-1)*(.42+tuck);
-     l.arm.rotation.x=(l.side<0?-1:1)*(.62+tuck*.35);
-     l.foot.rotation.x=-.18-tuck*.25;
-    });
+    if(runner.userData.limbs){
+     runner.userData.limbs.forEach(l=>{
+      l.leg.rotation.x=(l.side<0?1:-1)*(.42+tuck);
+      l.arm.rotation.x=(l.side<0?-1:1)*(.62+tuck*.35);
+      l.foot.rotation.x=-.18-tuck*.25;
+     });
+    }
+    // Add a compact airborne pose to the downloaded rig as well as the fallback.
+    // Mixer updates happen earlier in the frame, so these offsets layer over its
+    // current keyframed rotations and disappear naturally when the run resumes.
+    if(runner.userData.jumpBones){
+     const phase=clamp(jumpY/.85,0,1);
+     for(const item of runner.userData.jumpBones){
+      const sign=item.side||1, b=item.bone;
+      if(item.joint==="thigh")b.rotation.x+=sign*(.22+phase*.38);
+      else if(item.joint==="calf")b.rotation.x-=sign*(.18+phase*.42);
+      else if(item.joint==="upperArm")b.rotation.x-=sign*(.16+phase*.28);
+      else if(item.joint==="forearm")b.rotation.x+=sign*(.12+phase*.2);
+      else if(item.joint==="spine")b.rotation.x-=.035+phase*.045;
+     }
+    }
    }
    if(grounded&&elapsed-lastStep>Math.max(.22,.48/(.5+speed*.14))){tone(68,.045,"sine",.012,-12);lastStep=elapsed}
    runner.position.y=jumpY;runner.position.x=-2.25;
