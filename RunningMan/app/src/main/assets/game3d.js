@@ -11,8 +11,9 @@ export function start(){
  const pathZ=x=>rawPathZ(x+travelDistance)-rawPathZ(-2.25+travelDistance);
  const camera=new THREE.PerspectiveCamera(54,1,.1,140);camera.position.set(-10,3.35,0);camera.lookAt(5.5,1.05,0);
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:"high-performance"});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.shadowMap.enabled=false;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
- scene.add(new THREE.HemisphereLight(0xffffff,0xb8b2a8,2.2));
- const sun=new THREE.DirectionalLight(0xffffff,1.15);sun.position.set(-5,10,7);scene.add(sun);
+ scene.add(new THREE.HemisphereLight(0xffffff,0xaaa49a,1.85));
+ const sun=new THREE.DirectionalLight(0xffffff,1.25);sun.position.set(-5,10,7);scene.add(sun);
+ const fillLight=new THREE.DirectionalLight(0xffffff,.32);fillLight.position.set(4,3,-6);scene.add(fillLight);
  const grayColor=color=>{const c=new THREE.Color(color);const y=.299*c.r+.587*c.g+.114*c.b;return new THREE.Color().setRGB(y,y,y)};
  const mat=(color,roughness=.94,metalness=0)=>new THREE.MeshStandardMaterial({color:grayColor(color),map:graphiteTexture,roughness,metalness});
  function addSketchOutlines(root){
@@ -86,7 +87,7 @@ export function start(){
   }
   runner.userData.limbs=limbs;
  }
- fallbackRunner();addSketchOutlines(runner);runner.userData.ownedMaterials=[];
+ fallbackRunner();addSketchOutlines(runner);addGraphiteHatching(runner,0x13a5);runner.userData.ownedMaterials=[];
  const loader=new GLTFLoader();
  loader.load("./runner.glb",g=>{
   const oldGeometry=new Set(),oldMaterials=new Set();
@@ -130,12 +131,10 @@ export function start(){
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,depth),mat(color));mesh.position.set(x,h/2,pathZ(x)+z);scene.add(mesh);addSketchOutlines(mesh);obstacles.push({mesh,x,z,w,h,type,passed:false});
  }
  function addGraphiteHatching(root,seed=1){
-  // Draw separate, irregular graphite strokes on each mesh's camera-facing
-  // surface. This follows the runner's limbs and clothing instead of laying
-  // one flat hatch sheet across the entire character.
+  // Fine, crossed graphite strokes follow each visible mesh surface.
   let state=(seed>>>0)||1;
   const rand=()=>{state^=state<<13;state^=state>>>17;state^=state<<5;return (state>>>0)/4294967296};
-  const ink=new THREE.LineBasicMaterial({color:0x393632,transparent:true,opacity:.19,depthWrite:false});
+  const ink=new THREE.LineBasicMaterial({color:0x393632,transparent:true,opacity:.22,depthWrite:false});
   let meshIndex=0;
   root.traverse(mesh=>{
    if(!mesh.isMesh||!mesh.geometry)return;
@@ -145,18 +144,19 @@ export function start(){
    if(!bounds||!Number.isFinite(bounds.min.x)||!Number.isFinite(bounds.max.y))return;
    const width=bounds.max.z-bounds.min.z,height=bounds.max.y-bounds.min.y;
    if(width<.025||height<.025)return;
-   const front=bounds.min.x-.003;
-   const pts=[];
-   const count=Math.min(15,5+Math.floor(rand()*8));
+   const front=bounds.min.x-.005,pts=[];
+   const count=Math.min(22,9+Math.floor(rand()*11));
+   // Main pencil grain: short, uneven strokes with varied pressure.
    for(let i=0;i<count;i++){
     const y=bounds.min.y+rand()*height,z=bounds.min.z+rand()*width;
-    const len=Math.min(width*.28,.025+rand()*.085),dy=(rand()-.5)*Math.min(height*.06,.018);
+    const len=Math.min(width*.3,.018+rand()*.105),dy=(rand()-.5)*Math.min(height*.075,.025);
     pts.push(front,y,z,front,y+dy,z+len);
    }
-   for(let i=0;i<Math.floor(count*.45);i++){
+   // Sparse cross-hatching adds volume without turning the model into a dark mesh.
+   for(let i=0;i<Math.floor(count*.42);i++){
     const y=bounds.min.y+rand()*height,z=bounds.min.z+rand()*width;
-    const len=Math.min(height*.22,.025+rand()*.07);
-    pts.push(front,y,z,front,y+len,z-len*.35);
+    const len=Math.min(height*.2,.018+rand()*.075);
+    pts.push(front-.001,y,z,front-.001,y+len,z-len*.32);
    }
    const hatchGeometry=new THREE.BufferGeometry();
    hatchGeometry.setAttribute("position",new THREE.Float32BufferAttribute(pts,3));
