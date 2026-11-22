@@ -40,6 +40,14 @@ jobs:
       - name: Build APK
         working-directory: RunningMan
         run: gradle --no-daemon assembleDebug
+      - name: Verify APK contents and app identity
+        run: |
+          APK=RunningMan/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          test $(stat -c%s RunningMan/app/src/main/assets/game.bundle.js) -gt 100000
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep "package: name='com.runningman.game' versionName='1.0.0'"
+          unzip -l "$APK" | grep -q 'assets/game.bundle.js'
+          unzip -l "$APK" | grep -q 'assets/index.html'
       - name: Package source
         run: zip -r RunningManAndroid_Source.zip RunningMan -x 'RunningMan/node_modules/*'
       - uses: actions/upload-artifact@v4
