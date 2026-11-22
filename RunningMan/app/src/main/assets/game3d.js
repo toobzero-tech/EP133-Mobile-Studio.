@@ -92,7 +92,7 @@ export function start(){
    const sole=new THREE.Mesh(new THREE.BoxGeometry(.205,.035,.37),graphite);sole.position.set(side*.14,.025,.105);runner.add(sole);
    limbs.push({leg,arm,foot,hand,side});
   }
-  runner.userData.limbs=limbs;
+  runner.userData.limbs=limbs;runner.userData.torso=torso;runner.userData.head=head;
  }
  fallbackRunner();addSketchOutlines(runner);addGraphiteHatching(runner,0x13a5);runner.userData.ownedMaterials=[];
  // Soft pencil contact shadow: a small mark on the paper, never a floor or scenery.
@@ -463,7 +463,18 @@ export function start(){
    travelDistance+=velocity*dt;updateTrack();
    laneZ+=(targetLaneZ-laneZ)*(1-Math.exp(-8*dt));runner.position.z=laneZ;
    if(mixer){mixer.timeScale=.35+speed*.19;mixer.update(dt)}
-   else if(runner.userData.limbs&&runner.userData.limbs[0]?.leg?.parent){const p=elapsed*velocity*1.8;runner.userData.limbs.forEach((l,i)=>{l.leg.rotation.x=Math.sin(p+i*Math.PI)*.75;l.arm.rotation.x=-Math.sin(p+i*Math.PI)*.65;l.foot.rotation.x=l.leg.rotation.x*.25})}
+   else if(runner.userData.limbs&&runner.userData.limbs[0]?.leg?.parent){
+    const p=elapsed*velocity*1.8,cycle=Math.sin(p),bob=Math.abs(Math.sin(p*2));
+    runner.userData.limbs.forEach(l=>{
+     const swing=Math.sin(p+(l.side<0?0:Math.PI));
+     l.leg.rotation.x=swing*.78;
+     l.arm.rotation.x=-swing*.72;
+     l.hand.position.set(l.side*.34,.88+Math.sin(p+(l.side<0?0:Math.PI))*.055,Math.cos(p+(l.side<0?0:Math.PI))*.045);
+     l.foot.rotation.x=swing*.22;
+    });
+    if(runner.userData.torso){runner.userData.torso.position.y=1.12+bob*.025;runner.userData.torso.rotation.z=cycle*.018}
+    if(runner.userData.head)runner.userData.head.rotation.z=-cycle*.012;
+   }
    else if(runner.userData.model){const p=elapsed*velocity*3.2;runner.userData.model.position.y=runner.userData.modelBaseY+Math.abs(Math.sin(p))*.025;runner.userData.model.rotation.z=Math.sin(p)*.018}
    if(!grounded){jumpV-=21*dt;jumpY+=jumpV*dt;if(jumpY<=0){jumpY=0;jumpV=0;grounded=true;runner.rotation.z=0;tone(92,.07,"triangle",.022,-24)}}
    if(grounded&&elapsed-lastStep>Math.max(.22,.48/(.5+speed*.14))){tone(68,.045,"sine",.012,-12);lastStep=elapsed}
