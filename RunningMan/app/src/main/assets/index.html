@@ -196,7 +196,7 @@ function draw(){
   if(paper){ctx.fillStyle=ctx.createPattern(paper,'repeat');ctx.fillRect(0,0,W,H)}
   drawTrack();
   objects.slice().sort((a,b)=>a.z-b.z).forEach(obstacle);
-  const warning=objects.find(o=>!o.checked&&o.lane===0&&o.z>.68&&o.z<.94);
+  const warningStart=clamp(.95-speed*.049,.45,.90);\n  const warning=objects.find(o=>!o.checked&&o.lane===0&&o.z>warningStart&&o.z<.95);
   if(warning){const pulse=.45+.35*Math.sin(clock*.22);ctx.fillStyle='rgba(55,50,42,'+pulse+')';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(warning.kind===1?'ВЫСОКИЙ ПРЫЖОК':'ПРЫЖОК',W*.5,H*.34)}
   if(hitFlash>0){ctx.fillStyle='rgba(80,45,35,'+(hitFlash*.12)+')';ctx.fillRect(0,0,W,H)}
   if(viewMode===2)firstPerson();
