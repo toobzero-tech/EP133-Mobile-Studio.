@@ -169,7 +169,12 @@ export function start(){
   while(runner.children.length)runner.remove(runner.children[0]);
   oldGeometry.forEach(v=>v.dispose());oldMaterials.forEach(v=>v.dispose());
   runner.userData.limbs=null;
-  const model=g.scene;const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());const scale=1.78/Math.max(size.y,.01);model.scale.setScalar(scale);const b2=new THREE.Box3().setFromObject(model);model.position.y-=b2.min.y;model.traverse(o=>{if(o.isMesh){
+  const model=g.scene;const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());const scale=1.78/Math.max(size.y,.01);model.scale.setScalar(scale);const b2=new THREE.Box3().setFromObject(model),center=b2.getCenter(new THREE.Vector3());
+  // Normalize the imported asset around the runner's ground-plane origin.
+  // Marketplace rigs often arrive with an arbitrary X/Z offset; leaving it
+  // untouched makes feet miss the lane and causes the chase camera to frame
+  // empty space even though the model's height is correct.
+  model.position.x-=center.x;model.position.z-=center.z;model.position.y-=b2.min.y;model.traverse(o=>{if(o.isMesh){
    const source=Array.isArray(o.material)?o.material:[o.material];
    const pencilMats=source.map(m=>{
     // Keep the licensed model's own surface maps and grayscale material identity.
