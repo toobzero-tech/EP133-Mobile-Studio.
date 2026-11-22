@@ -10,26 +10,26 @@ export function start(){
  // Advance the curve profile beneath the fixed runner for endless forward travel.
  const pathZ=x=>rawPathZ(x+travelDistance)-rawPathZ(-2.25+travelDistance);
  const camera=new THREE.PerspectiveCamera(54,1,.1,140);camera.position.set(-10,3.35,0);camera.lookAt(5.5,1.05,0);
- const renderer=new THREE.WebGLRenderer({canvas,antialias:false,alpha:false,powerPreference:"high-performance"});renderer.setPixelRatio(Math.min(devicePixelRatio,1.2));renderer.shadowMap.enabled=false;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
+ const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:"high-performance"});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.shadowMap.enabled=false;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
  scene.add(new THREE.HemisphereLight(0xffffff,0xb8b2a8,2.2));
  const sun=new THREE.DirectionalLight(0xffffff,1.15);sun.position.set(-5,10,7);scene.add(sun);
  const grayColor=color=>{const c=new THREE.Color(color);const y=.299*c.r+.587*c.g+.114*c.b;return new THREE.Color().setRGB(y,y,y)};
  const mat=(color,roughness=.94,metalness=0)=>new THREE.MeshStandardMaterial({color:grayColor(color),map:graphiteTexture,roughness,metalness});
  function addSketchOutlines(root){
   root.traverse(o=>{if(!o.isMesh||o.userData.sketchOutline)return;o.userData.sketchOutline=true;
-   const edges=new THREE.EdgesGeometry(o.geometry,18);
-   const ink=new THREE.LineBasicMaterial({color:0x37332e,transparent:true,opacity:.68,depthWrite:false});
+   const edges=new THREE.EdgesGeometry(o.geometry,24);
+   const ink=new THREE.LineBasicMaterial({color:0x37332e,transparent:true,opacity:.52,depthWrite:false});
    const lines=new THREE.LineSegments(edges,ink);lines.renderOrder=2;o.add(lines);
   });
  }
  function makePaperTexture(){
-  const c=document.createElement("canvas");c.width=c.height=512;const ctx=c.getContext("2d");
-  ctx.fillStyle="#faf9f6";ctx.fillRect(0,0,512,512);
-  for(let i=0;i<32;i++){const x=Math.random()*512,y=Math.random()*512;const g=ctx.createLinearGradient(x-35,y-20,x+45,y+30);g.addColorStop(0,"rgba(90,85,78,.015)");g.addColorStop(.5,"rgba(255,255,255,.28)");g.addColorStop(1,"rgba(80,74,68,.045)");ctx.strokeStyle=g;ctx.lineWidth=1+Math.random()*3;ctx.beginPath();ctx.moveTo(x-35,y-20);ctx.quadraticCurveTo(x+5,y+35,x+45,y+30);ctx.stroke()}
-  for(let i=0;i<11000;i++){const x=Math.random()*512,y=Math.random()*512,a=.025+Math.random()*.07;ctx.fillStyle="rgba(55,49,42,"+a+")";ctx.fillRect(x,y,Math.random()*1.5+.3,.5)}
+  const c=document.createElement("canvas");c.width=c.height=1024;const ctx=c.getContext("2d");
+  ctx.fillStyle="#faf9f6";ctx.fillRect(0,0,1024,1024);
+  for(let i=0;i<58;i++){const x=Math.random()*1024,y=Math.random()*1024;const g=ctx.createLinearGradient(x-35,y-20,x+45,y+30);g.addColorStop(0,"rgba(90,85,78,.015)");g.addColorStop(.5,"rgba(255,255,255,.28)");g.addColorStop(1,"rgba(80,74,68,.045)");ctx.strokeStyle=g;ctx.lineWidth=1+Math.random()*3;ctx.beginPath();ctx.moveTo(x-35,y-20);ctx.quadraticCurveTo(x+5,y+35,x+45,y+30);ctx.stroke()}
+  for(let i=0;i<26000;i++){const x=Math.random()*1024,y=Math.random()*1024,a=.018+Math.random()*.055;ctx.fillStyle="rgba(55,49,42,"+a+")";ctx.fillRect(x,y,Math.random()*1.5+.3,.5)}
   ctx.strokeStyle="rgba(65,59,51,.10)";ctx.lineWidth=.6;
-  for(let i=0;i<95;i++){const x=Math.random()*512,y=Math.random()*512;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+5+Math.random()*24,y-2+Math.random()*4);ctx.stroke()}
-  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(18,18);t.colorSpace=THREE.SRGBColorSpace;return t;
+  for(let i=0;i<180;i++){const x=Math.random()*1024,y=Math.random()*1024;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+5+Math.random()*24,y-2+Math.random()*4);ctx.stroke()}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(14,14);t.colorSpace=THREE.SRGBColorSpace;return t;
  }
  const paperTexture=makePaperTexture();
  function makeGraphiteTexture(){
@@ -61,7 +61,7 @@ export function start(){
    g.addColorStop(0,"rgba(45,42,38,.09)");g.addColorStop(1,"rgba(45,42,38,0)");
    ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
   }
-  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2.5,2.5);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=1;return t;
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2.5,2.5);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());return t;
  }
  const graphiteTexture=makeGraphiteTexture();
  const lineMat=mat(0x777064),wood=mat(0xc99a55),graphite=mat(0x302d29),eraser=mat(0xb97875),paper=mat(0xe5ddce);
