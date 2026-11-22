@@ -157,7 +157,7 @@ function runner(px,py,zoom=1){
   ctx.restore();
 }
 function obstacle(o){
-  const s=.22+o.z*1.42,y=H*.705-o.z*H*.445,px=W*.5+o.lane*s;
+  const s=.22+o.z*1.42,y=H*.255+Math.pow(o.z,1.55)*H*.53,px=W*.5+o.lane*s;
   ctx.save();ctx.translate(px,y);ctx.scale(s,s);ctx.strokeStyle='#302e29';ctx.lineWidth=2.7;ctx.lineJoin='round';ctx.fillStyle='rgba(55,51,43,.07)';
   if(o.kind===0){
     // low fallen timber
@@ -196,8 +196,8 @@ function draw(){
   if(paper){ctx.fillStyle=ctx.createPattern(paper,'repeat');ctx.fillRect(0,0,W,H)}
   drawTrack();
   objects.slice().sort((a,b)=>a.z-b.z).forEach(obstacle);
-  const warning=objects.find(o=>!o.checked&&o.lane===0&&o.z>.58&&o.z<.86);
-  if(warning){const pulse=.45+.35*Math.sin(clock*.22);ctx.fillStyle='rgba(55,50,42,'+pulse+')';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText('ПРЫЖОК',W*.5,H*.34)}
+  const warning=objects.find(o=>!o.checked&&o.lane===0&&o.z>.68&&o.z<.94);
+  if(warning){const pulse=.45+.35*Math.sin(clock*.22);ctx.fillStyle='rgba(55,50,42,'+pulse+')';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText(warning.kind===1?'ВЫСОКИЙ ПРЫЖОК':'ПРЫЖОК',W*.5,H*.34)}
   if(hitFlash>0){ctx.fillStyle='rgba(80,45,35,'+(hitFlash*.12)+')';ctx.fillRect(0,0,W,H)}
   if(viewMode===2)firstPerson();
   else runner(W*.5,H*(viewMode===1?.82:.77),viewMode===1?1.34:.82);
@@ -229,7 +229,7 @@ function frame(ts){
     for(const o of objects){
       o.z+=speed*.00155*dt;
       // Collision is evaluated at the runner's actual contact line.
-      if(!o.checked&&o.z>=.875){
+      if(!o.checked&&o.z>=.95){
         o.checked=true;
         const arc=Math.sin(clamp(jump,0,1)*Math.PI);
         const clearance=o.kind===1?.68:.46;
@@ -237,7 +237,7 @@ function frame(ts){
         if(Math.abs(o.lane)<.05&&!cleared){hitFlash=1;finish();break}
       }
     }
-    objects=objects.filter(o=>o.z<1.12);
+    objects=objects.filter(o=>o.z<1.16);
     if(jump>0)jump=Math.max(0,jump-.021*dt);
     hitFlash=Math.max(0,hitFlash-.055*dt);
     metersEl.textContent=Math.floor(distance)+' м';
