@@ -27,10 +27,12 @@ jobs:
           java-version: '17'
       - name: Prepare 3D engine and licensed character
         run: |
-          cd RunningMan/app/src/main/assets
-          npm init -y
-          npm install --no-save three esbuild
-          npx esbuild game3d.js --bundle --format=iife --global-name=RunningMan3D --outfile=game3d.bundle.js
+          ASSETS="$GITHUB_WORKSPACE/RunningMan/app/src/main/assets"
+          TOOLING="/tmp/runningman-tooling"
+          mkdir -p "$TOOLING"
+          npm install --prefix "$TOOLING" --no-save three esbuild
+          "$TOOLING/node_modules/.bin/esbuild" "$ASSETS/game3d.js" --bundle --format=iife --global-name=RunningMan3D --outfile="$ASSETS/game3d.bundle.js"
+          rm -rf "$ASSETS/node_modules" "$ASSETS/package.json" "$ASSETS/package-lock.json"
           curl -fL --retry 3 --retry-delay 2 -A "RunningMan-Game-Build/1.0" "https://www.innerscene.com/api/library/run-maya-3d-person-animated-eebf24b9/download" -o runner.glb
           test "$(stat -c%s runner.glb)" -gt 1000000
           file runner.glb
@@ -66,8 +68,14 @@ jobs:
           unzip -l "$APK" | grep -q 'assets/index.html'
           unzip -l "$APK" | grep -q 'assets/game3d.bundle.js'
           unzip -l "$APK" | grep -q 'assets/runner.glb'
+          if unzip -l "$APK" | grep -q 'assets/node_modules/'; then
+            echo "Unexpected build tooling leaked into APK assets"
+            exit 1
+          fi
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "package: name='com.toobzero.runningman'"
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "sdkVersion:'28'"
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -v 4 "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
           ls -lh "$APK"
       - name: Upload APK
         uses: actions/upload-artifact@v4
