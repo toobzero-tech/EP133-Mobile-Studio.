@@ -59,6 +59,39 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onPause() {
+        if (webView != null) {
+            webView.onPause();
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        applyImmersiveMode();
+        if (webView != null) {
+            webView.onResume();
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (webView == null) {
+            super.onBackPressed();
+            return;
+        }
+        webView.evaluateJavascript(
+            "window.handleAndroidBack ? window.handleAndroidBack() : false",
+            value -> {
+                if (!"true".equals(value)) {
+                    MainActivity.super.onBackPressed();
+                }
+            }
+        );
+    }
+
+    @Override
     protected void onDestroy() {
         if (webView != null) {
             webView.stopLoading();
