@@ -221,6 +221,7 @@ export function start(){
    else if(/upperarm|arm|shoulder/.test(n))joint="upperArm";
    else if(/forearm|lowerarm|elbow/.test(n))joint="forearm";
    else if(/foot|ankle|toe/.test(n))joint="foot";
+   else if(/hips|pelvis|root/.test(n))joint="pelvis";
    else if(/spine|chest/.test(n))joint="spine";
    if(joint)jumpBones.push({bone:o,joint,side,offsetX:0});
   });
@@ -651,6 +652,7 @@ export function start(){
       else if(item.joint==="upperArm")offset=-wave*.065;
       else if(item.joint==="forearm")offset=Math.max(0,wave)*.035;
       else if(item.joint==="foot")offset=-wave*.095;
+      else if(item.joint==="pelvis")offset=Math.sin(phase*2)*.022;
       else if(item.joint==="spine")offset=Math.sin(phase*2)*.018;
       item.bone.rotation.x+=offset;item.offsetX=offset;
      });
@@ -698,6 +700,7 @@ export function start(){
       else if(item.joint==="calf")offset=-sign*(.18+phase*.42);
       else if(item.joint==="upperArm")offset=-sign*(.16+phase*.28);
       else if(item.joint==="forearm")offset=sign*(.12+phase*.2);
+      else if(item.joint==="pelvis")offset=-.025-phase*.035;
       else if(item.joint==="spine")offset=-.035-phase*.045;
       b.rotation.x+=offset;item.offsetX=offset;
      }
@@ -716,6 +719,7 @@ export function start(){
      const sign=item.side||1;let offset=0;
      if(item.joint==="thigh")offset=sign*crouch*.55;
      else if(item.joint==="calf")offset=-sign*crouch*.35;
+     else if(item.joint==="pelvis")offset=-crouch*.16;
      else if(item.joint==="spine")offset=crouch*.22;
      item.bone.rotation.x+=offset;item.offsetX+=offset;
     });
