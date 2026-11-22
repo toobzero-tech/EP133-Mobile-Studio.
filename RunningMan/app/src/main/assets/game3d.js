@@ -213,6 +213,7 @@ export function start(){
    else if(/leg|calf|shin|knee/.test(n)&&!/upleg/.test(n))joint="calf";
    else if(/upperarm|arm|shoulder/.test(n))joint="upperArm";
    else if(/forearm|lowerarm|elbow/.test(n))joint="forearm";
+   else if(/foot|ankle|toe/.test(n))joint="foot";
    else if(/spine|chest/.test(n))joint="spine";
    if(joint)jumpBones.push({bone:o,joint,side,offsetX:0});
   });
@@ -630,6 +631,21 @@ export function start(){
      if(item.offsetX){item.bone.rotation.x-=item.offsetX;item.offsetX=0}
     });
     mixer.timeScale=.35+speed*.19;mixer.update(dt);
+    // Small stride accents supplement rigs with stiff feet or weak arm swing.
+    if(runner.userData.jumpBones&&grounded){
+     const phase=elapsed*velocity*1.8;
+     runner.userData.jumpBones.forEach(item=>{
+      const side=item.side||1,wave=Math.sin(phase+(side<0?0:Math.PI));
+      let offset=0;
+      if(item.joint==="thigh")offset=wave*.075;
+      else if(item.joint==="calf")offset=Math.max(0,-wave)*.105*side;
+      else if(item.joint==="upperArm")offset=-wave*.065;
+      else if(item.joint==="forearm")offset=Math.max(0,wave)*.035;
+      else if(item.joint==="foot")offset=-wave*.095;
+      else if(item.joint==="spine")offset=Math.sin(phase*2)*.018;
+      item.bone.rotation.x+=offset;item.offsetX=offset;
+     });
+    }
    }
    else if(runner.userData.limbs&&runner.userData.limbs[0]?.leg?.parent){
     const p=elapsed*velocity*1.8,cycle=Math.sin(p),bob=Math.abs(Math.sin(p*2));
