@@ -337,6 +337,36 @@ document.getElementById('view').addEventListener('click',()=>{viewMode=(viewMode
 document.getElementById('exit').addEventListener('click',()=>{
   active=false;paused=false;dead=false;objects=[];pauseLayer.style.display='none';menu.style.display='flex';
 });
+// Android system Back: pause during a run; a second press from pause
+// returns to the title screen. From the title screen Android handles Back.
+window.handleAndroidBack=()=>{
+  if(active&&!paused&&!dead){
+    paused=true;pauseLayer.style.display='flex';
+    document.getElementById('pauseTitle').textContent='ПАУЗА';
+    document.getElementById('resume').style.display='block';
+    document.getElementById('restartPause').textContent='↻ ЗАНОВО';
+    return true;
+  }
+  if(active&&paused){
+    active=false;paused=false;pauseLayer.style.display='none';menu.style.display='flex';
+    return true;
+  }
+  if(dead){
+    dead=false;pauseLayer.style.display='none';menu.style.display='flex';
+    return true;
+  }
+  return false;
+};
+// Do not let a backgrounded app silently advance or resume a run.
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden&&active&&!paused&&!dead){
+    paused=true;pauseLayer.style.display='flex';
+    document.getElementById('pauseTitle').textContent='ПАУЗА';
+    document.getElementById('resume').style.display='block';
+    document.getElementById('restartPause').textContent='↻ ЗАНОВО';
+  }
+  lastFrame=0;
+});
 window.addEventListener('resize',resize,{passive:true});
 resize();requestAnimationFrame(frame);
 })();
