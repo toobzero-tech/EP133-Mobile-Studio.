@@ -1,0 +1,14 @@
+{
+  "name": "running-man-threejs",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "esbuild app/src/main/assets/game.js --bundle --format=iife --outfile=app/src/main/assets/game.bundle.js"
+  },
+  "dependencies": {
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.11"
+  }
+}
