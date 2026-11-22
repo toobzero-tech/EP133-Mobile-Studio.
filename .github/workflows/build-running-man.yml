@@ -45,7 +45,10 @@ jobs:
           APK=RunningMan/app/build/outputs/apk/debug/app-debug.apk
           test -s "$APK"
           test $(stat -c%s RunningMan/app/src/main/assets/game.bundle.js) -gt 100000
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -E "package: name='com.runningman.game'.*versionName='1.0.0'"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" > /tmp/apk-badging.txt
+          cat /tmp/apk-badging.txt
+          grep -q "com.runningman.game" /tmp/apk-badging.txt
+          grep -q "1.0.0" /tmp/apk-badging.txt
           unzip -l "$APK" | grep -q 'assets/game.bundle.js'
           unzip -l "$APK" | grep -q 'assets/index.html'
       - name: Package source
