@@ -388,12 +388,33 @@ export function start(){
  function reset(){obstacles.splice(0).forEach(o=>disposeTree(o.mesh));score=0;elapsed=0;lastStep=0;nextSpawn=.8;jumpY=0;jumpV=0;grounded=true;skill=.3;streak=0;travelDistance=0;laneZ=0;targetLaneZ=0;runner.position.set(-2.25,0,0);runner.rotation.set(0,0,0);updateTrack();dead=false;paused=false;msg.innerHTML="";setText("pause","Ⅱ")}
  function jump(){if(dead||paused){if(dead||!started){reset();started=true}return}if(grounded){jumpV=8.6;grounded=false;runner.rotation.z=-.12;tone(260,.12,"triangle",.04,180)}}
  let started=false;const msg=document.getElementById("message");
- document.getElementById("jump").addEventListener("pointerdown",e=>{e.preventDefault();jump()});
  document.getElementById("pause").addEventListener("click",()=>{if(dead||!started){reset();started=true;return}paused=!paused;setText("pause",paused?"▶":"Ⅱ");msg.textContent=paused?"ПАУЗА":""});
  document.getElementById("speed").addEventListener("input",e=>{speed=+e.target.value;setText("speedVal",speed+" / 10")});
  function steer(dir){if(dead||paused||!started)return;targetLaneZ=clamp(Math.round(targetLaneZ/1.65+dir)*1.65,-1.65,1.65)}
  window.addEventListener("keydown",e=>{if(e.code==="ArrowLeft"||e.code==="KeyA"){e.preventDefault();steer(-1)}if(e.code==="ArrowRight"||e.code==="KeyD"){e.preventDefault();steer(1)}});
- let swipeX=null,swipePointer=null;canvas.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button!==0)return;swipeX=e.clientX;swipePointer=e.pointerId;try{canvas.setPointerCapture(e.pointerId)}catch(_){}});canvas.addEventListener("pointerup",e=>{if(swipeX===null||e.pointerId!==swipePointer)return;const dx=e.clientX-swipeX;if(Math.abs(dx)>24)steer(dx>0?1:-1);swipeX=null;swipePointer=null});canvas.addEventListener("pointercancel",e=>{if(e.pointerId===swipePointer){swipeX=null;swipePointer=null}});
+ const tapRaycaster=new THREE.Raycaster(),tapPoint=new THREE.Vector2();
+ let swipeX=null,swipeY=null,swipePointer=null;
+ canvas.addEventListener("pointerdown",e=>{
+  if(e.pointerType==="mouse"&&e.button!==0)return;
+  swipeX=e.clientX;swipeY=e.clientY;swipePointer=e.pointerId;
+  try{canvas.setPointerCapture(e.pointerId)}catch(_){}
+ });
+ canvas.addEventListener("pointerup",e=>{
+  if(swipeX===null||e.pointerId!==swipePointer)return;
+  const dx=e.clientX-swipeX,dy=e.clientY-swipeY;
+  if(Math.hypot(dx,dy)>26){
+   if(Math.abs(dx)>Math.abs(dy)*.85)steer(dx>0?1:-1);
+  }else if(started&&!paused&&!dead){
+   const rect=canvas.getBoundingClientRect();
+   tapPoint.set(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
+   tapRaycaster.setFromCamera(tapPoint,camera);
+   if(tapRaycaster.intersectObject(runner,true).length)jump();
+  }
+  swipeX=null;swipeY=null;swipePointer=null;
+ });
+ canvas.addEventListener("pointercancel",e=>{
+  if(e.pointerId===swipePointer){swipeX=null;swipeY=null;swipePointer=null}
+ });
  msg.addEventListener("click",e=>{if(e.target&&e.target.id==="play"){reset();started=true}});
  document.getElementById("sound").addEventListener("click",e=>{soundEnabled=!soundEnabled;e.currentTarget.textContent=soundEnabled?"♪":"×";if(soundEnabled){audioReady();tone(520,.07,"sine",.025)}});
  document.querySelectorAll("[data-view]").forEach((b,i)=>b.addEventListener("click",()=>{view=i;document.querySelectorAll("[data-view]").forEach(x=>x.classList.toggle("active",x===b))}));
