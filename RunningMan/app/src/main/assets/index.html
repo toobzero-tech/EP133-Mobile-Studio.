@@ -13,6 +13,7 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #hud{position:absolute;inset:0;pointer-events:none}
 #pause{position:absolute;top:max(12px,env(safe-area-inset-top));left:12px;padding:9px 13px;pointer-events:auto;font-size:13px;letter-spacing:.5px}
 #meters{position:absolute;top:58px;left:14px;font-size:14px;font-weight:bold;letter-spacing:.5px;text-shadow:0 1px #fff}
+#record{position:absolute;top:80px;left:14px;font-size:11px;color:rgba(45,42,35,.65)}
 #view{position:absolute;top:max(12px,env(safe-area-inset-top));right:12px;padding:9px 11px;pointer-events:auto;font-size:12px;letter-spacing:.4px}
 #speedbox{position:absolute;right:8px;top:22%;height:46%;width:46px;pointer-events:auto;display:flex;align-items:center;justify-content:center}
 #speed{height:100%;width:30px;writing-mode:vertical-lr;direction:rtl;accent-color:#3a3832;touch-action:pan-y}
@@ -35,6 +36,7 @@ h1{font-size:clamp(34px,9vw,54px);line-height:.98;letter-spacing:2px;margin:0 0 
 <div id="hud">
 <button id="pause">Ⅱ ПАУЗА</button>
 <div id="meters">0 м</div>
+<div id="record">РЕКОРД: 0 м</div>
 <button id="view">ВИД: СЗАДИ</button>
 <div id="speedbox"><span id="speedlabel">5/10</span><input id="speed" type="range" min="1" max="10" value="5" aria-label="Скорость бега"></div>
 <div id="hint">ТАП ПО ЛИСТУ — ПРЫЖОК</div>
@@ -53,7 +55,9 @@ h1{font-size:clamp(34px,9vw,54px);line-height:.98;letter-spacing:2px;margin:0 0 
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d',{alpha:false});
 const menu=document.getElementById('menu'),pauseLayer=document.getElementById('paused');
 const metersEl=document.getElementById('meters'),speedEl=document.getElementById('speed'),speedLabel=document.getElementById('speedlabel');
-let W=0,H=0,DPR=1,active=false,paused=false,dead=false,speed=5,clock=0,distance=0,jump=0,objects=[],spawnClock=0,lastFrame=0,paper=null,viewMode=0;
+let W=0,H=0,DPR=1,active=false,paused=false,dead=false,speed=5,clock=0,distance=0,jump=0,objects=[],spawnClock=0,lastFrame=0,paper=null,viewMode=0,record=0,hitFlash=0;
+try{record=Number(localStorage.getItem('runnerBest')||0)}catch(e){}
+document.getElementById('record').textContent='РЕКОРД: '+record+' м';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function resize(){
   DPR=Math.min(window.devicePixelRatio||1,2);W=window.innerWidth;H=window.innerHeight;
@@ -191,16 +195,20 @@ function draw(){
   if(paper){ctx.fillStyle=ctx.createPattern(paper,'repeat');ctx.fillRect(0,0,W,H)}
   drawTrack();
   objects.slice().sort((a,b)=>a.z-b.z).forEach(obstacle);
+  const warning=objects.find(o=>!o.checked&&o.lane===0&&o.z>.58&&o.z<.86);
+  if(warning){const pulse=.45+.35*Math.sin(clock*.22);ctx.fillStyle='rgba(55,50,42,'+pulse+')';ctx.font='bold 12px Georgia';ctx.textAlign='center';ctx.fillText('ПРЫЖОК',W*.5,H*.34)}
+  if(hitFlash>0){ctx.fillStyle='rgba(80,45,35,'+(hitFlash*.12)+')';ctx.fillRect(0,0,W,H)}
   if(viewMode===2)firstPerson();
   else runner(W*.5,H*(viewMode===1?.82:.77),viewMode===1?1.34:.82);
 }
 function reset(){
-  active=true;paused=false;dead=false;clock=0;distance=0;jump=0;objects=[];spawnClock=.65;
+  active=true;paused=false;dead=false;clock=0;distance=0;jump=0;hitFlash=0;objects=[];spawnClock=.65;lastFrame=0;
   metersEl.textContent='0 м';menu.style.display='none';pauseLayer.style.display='none';
   document.getElementById('pause').textContent='Ⅱ ПАУЗА';
 }
 function finish(){
   active=false;dead=true;paused=false;
+  const score=Math.floor(distance);if(score>record){record=score;try{localStorage.setItem('runnerBest',String(record))}catch(e){}document.getElementById('record').textContent='РЕКОРД: '+record+' м'}
   document.getElementById('pauseTitle').textContent='СТОЛКНОВЕНИЕ';
   document.getElementById('resume').style.display='none';
   document.getElementById('restartPause').textContent='↻ ЗАНОВО';
@@ -223,11 +231,12 @@ function frame(ts){
       if(!o.checked&&o.z>=.875){
         o.checked=true;
         const cleared=jump>.28;
-        if(Math.abs(o.lane)<.05&&!cleared){finish();break}
+        if(Math.abs(o.lane)<.05&&!cleared){hitFlash=1;finish();break}
       }
     }
     objects=objects.filter(o=>o.z<1.12);
     if(jump>0)jump=Math.max(0,jump-.021*dt);
+    hitFlash=Math.max(0,hitFlash-.055*dt);
     metersEl.textContent=Math.floor(distance)+' м';
   }
   draw();requestAnimationFrame(frame);
@@ -245,7 +254,7 @@ document.getElementById('pause').addEventListener('click',()=>{
   document.getElementById('restartPause').textContent='↻ ЗАНОВО';
 });
 document.getElementById('resume').addEventListener('click',()=>{
-  if(dead)return;paused=false;pauseLayer.style.display='none';
+  if(dead)return;paused=false;lastFrame=0;pauseLayer.style.display='none';
 });
 document.getElementById('restartPause').addEventListener('click',reset);
 document.getElementById('start').addEventListener('click',reset);
