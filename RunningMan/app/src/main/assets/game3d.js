@@ -179,37 +179,49 @@ export function start(){
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,depth),mat(color));mesh.position.set(x,h/2,pathZ(x)+z);scene.add(mesh);addSketchOutlines(mesh);obstacles.push({mesh,x,z,w,h,depth,type,passed:false});
  }
  function addGraphiteHatching(root,seed=1){
-  // Fine, crossed graphite strokes follow each visible mesh surface.
+  // Surface-conforming graphite: strokes are interpolated on real triangles,
+  // not placed on an arbitrary bounding-box plane.
   let state=(seed>>>0)||1;
   const rand=()=>{state^=state<<13;state^=state>>>17;state^=state<<5;return (state>>>0)/4294967296};
-  const ink=new THREE.LineBasicMaterial({color:0x393632,transparent:true,opacity:.22,depthWrite:false});
+  const ink=new THREE.LineBasicMaterial({color:0x393632,transparent:true,opacity:.19,depthWrite:false,toneMapped:false});
+  const vA=new THREE.Vector3(),vB=new THREE.Vector3(),vC=new THREE.Vector3();
+  const nA=new THREE.Vector3(),nB=new THREE.Vector3(),nC=new THREE.Vector3();
+  const p=new THREE.Vector3(),q=new THREE.Vector3(),normal=new THREE.Vector3();
+  root.updateMatrixWorld(true);
   root.traverse(mesh=>{
    if(!mesh.isMesh||!mesh.geometry)return;
-   const geometry=mesh.geometry;
-   if(!geometry.boundingBox)geometry.computeBoundingBox();
-   const bounds=geometry.boundingBox;
-   if(!bounds||!Number.isFinite(bounds.min.x)||!Number.isFinite(bounds.max.y))return;
-   const width=bounds.max.z-bounds.min.z,height=bounds.max.y-bounds.min.y;
-   if(width<.025||height<.025)return;
-   const front=bounds.min.x-.005,pts=[];
-   const count=Math.min(22,9+Math.floor(rand()*11));
-   // Main pencil grain: short, uneven strokes with varied pressure.
-   for(let i=0;i<count;i++){
-    const y=bounds.min.y+rand()*height,z=bounds.min.z+rand()*width;
-    const len=Math.min(width*.3,.018+rand()*.105),dy=(rand()-.5)*Math.min(height*.075,.025);
-    pts.push(front,y,z,front,y+dy,z+len);
+   const g=mesh.geometry,pos=g.attributes.position;
+   if(!pos||pos.count<3)return;
+   if(!g.attributes.normal)g.computeVertexNormals();
+   const normals=g.attributes.normal,idx=g.index;
+   const triCount=idx?idx.count/3:Math.floor(pos.count/3);
+   if(!triCount)return;
+   const pts=[];
+   const strokeCount=Math.min(34,Math.max(7,Math.floor(triCount*.42)));
+   for(let k=0;k<strokeCount;k++){
+    const tri=Math.floor(rand()*triCount),ia=idx?idx.getX(tri*3):tri*3,ib=idx?idx.getX(tri*3+1):tri*3+1,ic=idx?idx.getX(tri*3+2):tri*3+2;
+    vA.fromBufferAttribute(pos,ia);vB.fromBufferAttribute(pos,ib);vC.fromBufferAttribute(pos,ic);
+    nA.fromBufferAttribute(normals,ia);nB.fromBufferAttribute(normals,ib);nC.fromBufferAttribute(normals,ic);
+    let u=rand()*.62+.08,v=rand()*.62+.08;if(u+v>.88){u=.88-u*.45;v=.88-v*.45}
+    const w=1-u-v;
+    p.copy(vA).multiplyScalar(w).addScaledVector(vB,u).addScaledVector(vC,v);
+    normal.copy(nA).multiplyScalar(w).addScaledVector(nB,u).addScaledVector(nC,v).normalize();
+    const edge=rand()<.5?vB.clone().sub(vA):vC.clone().sub(vA);
+    edge.addScaledVector(normal,-edge.dot(normal)).normalize();
+    const len=.018+rand()*.065;
+    q.copy(p).addScaledVector(edge,len);
+    const lift=.0025;
+    p.addScaledVector(normal,lift);q.addScaledVector(normal,lift);
+    pts.push(p.x,p.y,p.z,q.x,q.y,q.z);
+    // A shorter, lighter second pass gives a hand-worked pencil grain.
+    if(rand()<.38){
+     const side=new THREE.Vector3().crossVectors(normal,edge).normalize();
+     const a=p.clone().addScaledVector(side,-len*.22),b=p.clone().addScaledVector(side,len*.22);
+     pts.push(a.x,a.y,a.z,b.x,b.y,b.z);
+    }
    }
-   // Sparse cross-hatching adds volume without turning the model into a dark mesh.
-   for(let i=0;i<Math.floor(count*.42);i++){
-    const y=bounds.min.y+rand()*height,z=bounds.min.z+rand()*width;
-    const len=Math.min(height*.2,.018+rand()*.075);
-    pts.push(front-.001,y,z,front-.001,y+len,z-len*.32);
-   }
-   const hatchGeometry=new THREE.BufferGeometry();
-   hatchGeometry.setAttribute("position",new THREE.Float32BufferAttribute(pts,3));
-   const strokes=new THREE.LineSegments(hatchGeometry,ink);
-   strokes.renderOrder=3;
-   mesh.add(strokes);
+   const hg=new THREE.BufferGeometry();hg.setAttribute("position",new THREE.Float32BufferAttribute(pts,3));
+   const strokes=new THREE.LineSegments(hg,ink);strokes.renderOrder=3;mesh.add(strokes);
   });
   if(root.userData.ownedMaterials)root.userData.ownedMaterials.push(ink);
  }
