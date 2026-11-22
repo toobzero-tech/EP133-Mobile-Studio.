@@ -55,7 +55,7 @@ h1{font-size:clamp(34px,9vw,54px);line-height:.98;letter-spacing:2px;margin:0 0 
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d',{alpha:false});
 const menu=document.getElementById('menu'),pauseLayer=document.getElementById('paused');
 const metersEl=document.getElementById('meters'),speedEl=document.getElementById('speed'),speedLabel=document.getElementById('speedlabel');
-let W=0,H=0,DPR=1,active=false,paused=false,dead=false,speed=5,clock=0,distance=0,jump=0,objects=[],spawnClock=0,lastFrame=0,paper=null,viewMode=0,record=0,hitFlash=0;
+let W=0,H=0,DPR=1,active=false,paused=false,dead=false,speed=5,clock=0,distance=0,jump=0,objects=[],spawnClock=0,lastFrame=0,paper=null,viewMode=0,record=0,hitFlash=0,particles=[],audioCtx=null,lastFoot=0,cameraKick=0;
 try{record=Number(localStorage.getItem('runnerBest')||0)}catch(e){}
 document.getElementById('record').textContent='РЕКОРД: '+record+' м';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -248,10 +248,39 @@ function firstPerson(){
   };
   arm(-1);arm(1);ctx.restore();
 }
+function drawParticles(){
+  for(const p of particles){
+    const a=clamp(p.life/p.maxLife,0,1);
+    ctx.globalAlpha=a*.42;ctx.strokeStyle='#38352e';ctx.lineWidth=p.width;
+    ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-p.vx*2.2,p.y-p.vy*2.2);ctx.stroke();
+    if(p.grain){ctx.globalAlpha=a*.22;ctx.fillStyle='#494438';ctx.beginPath();ctx.arc(p.x,p.y,p.width*1.2,0,Math.PI*2);ctx.fill()}
+  }
+  ctx.globalAlpha=1;
+}
+function burst(x,y,count,force){
+  for(let i=0;i<count;i++){
+    const angle=(-Math.PI*.92)+(Math.random()*Math.PI*.84);
+    const v=force*(.35+Math.random()*.85);
+    particles.push({x:x+(Math.random()-.5)*20,y:y+(Math.random()-.5)*4,vx:Math.cos(angle)*v,vy:Math.sin(angle)*v*.55,life:16+Math.random()*20,maxLife:36,width:.45+Math.random()*1.05,grain:Math.random()<.55});
+  }
+  if(particles.length>130)particles.splice(0,particles.length-130);
+}
+function sound(kind){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    if(!audioCtx)audioCtx=new AC();if(audioCtx.state==='suspended')audioCtx.resume();
+    const t=audioCtx.currentTime,o=audioCtx.createOscillator(),g=audioCtx.createGain(),f=audioCtx.createBiquadFilter();
+    o.type=kind==='jump'?'triangle':'sine';o.frequency.setValueAtTime(kind==='jump'?170:82,t);o.frequency.exponentialRampToValueAtTime(kind==='jump'?420:43,t+.11);
+    f.type='lowpass';f.frequency.value=kind==='jump'?1200:260;g.gain.setValueAtTime(kind==='jump'?.0001:.0001,t);g.gain.exponentialRampToValueAtTime(kind==='jump'?.045:.075,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+(kind==='jump'?.16:.22));
+    o.connect(f);f.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+.24);
+  }catch(e){}
+}
 function draw(){
   if(!W||!H)return;
   ctx.clearRect(0,0,W,H);
   if(paper){ctx.fillStyle=ctx.createPattern(paper,'repeat');ctx.fillRect(0,0,W,H)}
+  const sway=Math.sin(clock*.105)*Math.min(1,speed/7)*1.15;
+  ctx.save();ctx.translate(sway+cameraKick*(Math.random()-.5),Math.abs(Math.sin(clock*.21))*1.0);
   drawTrack();
   objects.slice().sort((a,b)=>a.z-b.z).forEach(obstacle);
   const warningStart=clamp(.95-speed*.049,.45,.90);
@@ -260,9 +289,10 @@ function draw(){
   if(hitFlash>0){ctx.fillStyle='rgba(80,45,35,'+(hitFlash*.12)+')';ctx.fillRect(0,0,W,H)}
   if(viewMode===2)firstPerson();
   else runner(W*.5,H*(viewMode===1?.82:.775),viewMode===1?1.38:.98);
+  drawParticles();ctx.restore();
 }
 function reset(){
-  active=true;paused=false;dead=false;clock=0;distance=0;jump=0;hitFlash=0;objects=[];spawnClock=.65;lastFrame=0;
+  active=true;paused=false;dead=false;clock=0;distance=0;jump=0;hitFlash=0;objects=[];particles=[];cameraKick=0;spawnClock=.65;lastFrame=0;
   metersEl.textContent='0 м';menu.style.display='none';pauseLayer.style.display='none';
   // A restart after a collision must restore the resume control. Otherwise
   // the next pause opens an overlay with no way back into the run.
@@ -310,7 +340,11 @@ function frame(ts){
       }
     }
     objects=objects.filter(o=>o.z<1.16);
+    const wasJumping=jump>0;
     if(jump>0)jump=Math.max(0,jump-.021*dt);
+    if(wasJumping&&jump===0){burst(W*.5,H*.775+4,24,2.7);sound('land');cameraKick=5;try{if(navigator.vibrate)navigator.vibrate(18)}catch(e){}}
+    for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=.12*dt;p.vx*=Math.pow(.985,dt);p.life-=dt;}
+    particles=particles.filter(p=>p.life>0);cameraKick=Math.max(0,cameraKick-.42*dt);
     hitFlash=Math.max(0,hitFlash-.055*dt);
     metersEl.textContent=Math.floor(distance)+' м';
   }
@@ -318,7 +352,7 @@ function frame(ts){
 }
 canvas.addEventListener('pointerdown',e=>{
   if(e.cancelable)e.preventDefault();
-  if(active&&!paused&&!dead&&jump===0){jump=1}
+  if(active&&!paused&&!dead&&jump===0){jump=1;sound('jump');burst(W*.5,H*.775+8,9,1.25);try{if(navigator.vibrate)navigator.vibrate(8)}catch(e){}}
 },{passive:false});
 speedEl.addEventListener('input',e=>{speed=Number(e.target.value);speedLabel.textContent=speed+'/10'});
 document.getElementById('pause').addEventListener('click',()=>{
