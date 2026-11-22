@@ -60,6 +60,14 @@ let W=0,H=0,DPR=1,active=false,paused=false,dead=false,speed=5,clock=0,distance=
 try{record=Number(localStorage.getItem('runnerBest')||0)}catch(e){}
 document.getElementById('record').textContent='РЕКОРД: '+record+' м';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+try{
+  const savedSpeed=Number(localStorage.getItem('runnerSpeed'));
+  const savedView=Number(localStorage.getItem('runnerView'));
+  if(Number.isFinite(savedSpeed)&&savedSpeed>=1&&savedSpeed<=10)speed=savedSpeed;
+  if(Number.isInteger(savedView)&&savedView>=0&&savedView<=2)viewMode=savedView;
+}catch(e){}
+speedEl.value=String(speed);speedLabel.textContent=speed+'/10';
+document.getElementById('view').textContent=['ВИД: СЗАДИ','ВИД: БЛИЖЕ','ВИД: ОТ 1 ЛИЦА'][viewMode];
 function resize(){
   DPR=Math.min(window.devicePixelRatio||1,2);W=window.innerWidth;H=window.innerHeight;
   canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);
@@ -359,7 +367,10 @@ canvas.addEventListener('pointerdown',e=>{
   if(e.cancelable)e.preventDefault();
   if(active&&!paused&&!dead&&jump===0){jump=1;sound('jump');burst(W*.5,H*.775+8,9,1.25);try{if(navigator.vibrate)navigator.vibrate(8)}catch(e){}}
 },{passive:false});
-speedEl.addEventListener('input',e=>{speed=Number(e.target.value);speedLabel.textContent=speed+'/10'});
+speedEl.addEventListener('input',e=>{
+  speed=Number(e.target.value);speedLabel.textContent=speed+'/10';
+  try{localStorage.setItem('runnerSpeed',String(speed))}catch(err){}
+});
 document.getElementById('pause').addEventListener('click',()=>{
   if(!active||dead)return;
   paused=!paused;pauseLayer.style.display=paused?'flex':'none';
@@ -372,7 +383,12 @@ document.getElementById('resume').addEventListener('click',()=>{
 });
 document.getElementById('restartPause').addEventListener('click',reset);
 document.getElementById('start').addEventListener('click',reset);
-document.getElementById('view').addEventListener('click',()=>{viewMode=(viewMode+1)%3;document.getElementById('view').textContent=['ВИД: СЗАДИ','ВИД: БЛИЖЕ','ВИД: ОТ 1 ЛИЦА'][viewMode];draw()});
+document.getElementById('view').addEventListener('click',()=>{
+  viewMode=(viewMode+1)%3;
+  document.getElementById('view').textContent=['ВИД: СЗАДИ','ВИД: БЛИЖЕ','ВИД: ОТ 1 ЛИЦА'][viewMode];
+  try{localStorage.setItem('runnerView',String(viewMode))}catch(err){}
+  draw();
+});
 document.getElementById('exit').addEventListener('click',()=>{
   active=false;paused=false;dead=false;objects=[];pauseLayer.style.display='none';menu.style.display='flex';
 });
