@@ -153,7 +153,6 @@ export function start(){
   let state=(seed>>>0)||1;
   const rand=()=>{state^=state<<13;state^=state>>>17;state^=state<<5;return (state>>>0)/4294967296};
   const ink=new THREE.LineBasicMaterial({color:0x393632,transparent:true,opacity:.22,depthWrite:false});
-  let meshIndex=0;
   root.traverse(mesh=>{
    if(!mesh.isMesh||!mesh.geometry)return;
    const geometry=mesh.geometry;
@@ -181,7 +180,6 @@ export function start(){
    const strokes=new THREE.LineSegments(hatchGeometry,ink);
    strokes.renderOrder=3;
    mesh.add(strokes);
-   meshIndex++;
   });
   if(root.userData.ownedMaterials)root.userData.ownedMaterials.push(ink);
  }
