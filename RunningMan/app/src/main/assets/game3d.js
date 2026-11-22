@@ -688,10 +688,11 @@ export function start(){
      l.arm.rotation.x-=(l.side<0?1:-1)*crouch*.45;
     });
     if(runner.userData.jumpBones)runner.userData.jumpBones.forEach(item=>{
-     const sign=item.side||1;
-     if(item.joint==="thigh")item.bone.rotation.x+=sign*crouch*.55;
-     else if(item.joint==="calf")item.bone.rotation.x-=sign*crouch*.35;
-     else if(item.joint==="spine")item.bone.rotation.x+=crouch*.22;
+     const sign=item.side||1;let offset=0;
+     if(item.joint==="thigh")offset=sign*crouch*.55;
+     else if(item.joint==="calf")offset=-sign*crouch*.35;
+     else if(item.joint==="spine")offset=crouch*.22;
+     item.bone.rotation.x+=offset;item.offsetX+=offset;
     });
    }else if(grounded){runner.rotation.x=THREE.MathUtils.damp(runner.rotation.x,0,12,dt)}
    if(grounded&&elapsed-lastStep>Math.max(.22,.48/(.5+speed*.14))){tone(68,.045,"sine",.012,-12);lastStep=elapsed}
