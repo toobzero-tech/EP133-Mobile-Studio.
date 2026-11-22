@@ -88,6 +88,17 @@ export function start(){
   runner.userData.limbs=limbs;
  }
  fallbackRunner();addSketchOutlines(runner);addGraphiteHatching(runner,0x13a5);runner.userData.ownedMaterials=[];
+ // Soft pencil contact shadow: a small mark on the paper, never a floor or scenery.
+ const shadowCanvas=document.createElement("canvas");shadowCanvas.width=128;shadowCanvas.height=128;
+ const shadowCtx=shadowCanvas.getContext("2d");
+ const shadowGradient=shadowCtx.createRadialGradient(64,64,5,64,64,60);
+ shadowGradient.addColorStop(0,"rgba(42,39,35,.30)");
+ shadowGradient.addColorStop(.48,"rgba(42,39,35,.16)");
+ shadowGradient.addColorStop(1,"rgba(42,39,35,0)");
+ shadowCtx.fillStyle=shadowGradient;shadowCtx.fillRect(0,0,128,128);
+ const shadowTexture=new THREE.CanvasTexture(shadowCanvas);shadowTexture.colorSpace=THREE.SRGBColorSpace;
+ const runnerShadow=new THREE.Mesh(new THREE.PlaneGeometry(1.15,.72),new THREE.MeshBasicMaterial({map:shadowTexture,transparent:true,opacity:.72,depthWrite:false,toneMapped:false}));
+ runnerShadow.rotation.x=-Math.PI/2;runnerShadow.position.set(-2.25,.012,0);runnerShadow.renderOrder=1;scene.add(runnerShadow);
  const loader=new GLTFLoader();
  loader.load("./runner.glb",g=>{
   const oldGeometry=new Set(),oldMaterials=new Set();
@@ -385,7 +396,7 @@ export function start(){
   for(const m of materials)m.dispose();
   scene.remove(root);
  }
- function reset(){obstacles.splice(0).forEach(o=>disposeTree(o.mesh));score=0;elapsed=0;lastStep=0;nextSpawn=.8;jumpY=0;jumpV=0;grounded=true;skill=.3;streak=0;travelDistance=0;laneZ=0;targetLaneZ=0;runner.position.set(-2.25,0,0);runner.rotation.set(0,0,0);updateTrack();dead=false;paused=false;msg.innerHTML="";setText("pause","Ⅱ")}
+ function reset(){obstacles.splice(0).forEach(o=>disposeTree(o.mesh));score=0;elapsed=0;lastStep=0;nextSpawn=.8;jumpY=0;jumpV=0;grounded=true;skill=.3;streak=0;travelDistance=0;laneZ=0;targetLaneZ=0;runner.position.set(-2.25,0,0);runnerShadow.position.set(-2.17,.012,0);runnerShadow.scale.setScalar(1);runnerShadow.material.opacity=.72;runner.rotation.set(0,0,0);updateTrack();dead=false;paused=false;msg.innerHTML="";setText("pause","Ⅱ")}
  function jump(){if(dead||paused){if(dead||!started){reset();started=true}return}if(grounded){jumpV=8.6;grounded=false;runner.rotation.z=-.12;tone(260,.12,"triangle",.04,180)}}
  let started=false;const msg=document.getElementById("message");
  document.getElementById("pause").addEventListener("click",()=>{if(dead||!started){reset();started=true;return}paused=!paused;setText("pause",paused?"▶":"Ⅱ");msg.textContent=paused?"ПАУЗА":""});
@@ -452,6 +463,7 @@ export function start(){
    if(!grounded){jumpV-=21*dt;jumpY+=jumpV*dt;if(jumpY<=0){jumpY=0;jumpV=0;grounded=true;runner.rotation.z=0;tone(92,.07,"triangle",.022,-24)}}
    if(grounded&&elapsed-lastStep>Math.max(.22,.48/(.5+speed*.14))){tone(68,.045,"sine",.012,-12);lastStep=elapsed}
    runner.position.y=jumpY;runner.position.x=-2.25;
+   runnerShadow.position.x=runner.position.x+.08;runnerShadow.position.z=laneZ+pathZ(-2.25);runnerShadow.scale.setScalar(1-Math.min(.42,jumpY*.12));runnerShadow.material.opacity=.72*(1-Math.min(.72,jumpY*.22));
 
    nextSpawn-=dt;if(nextSpawn<=0)spawn();
 
