@@ -214,7 +214,7 @@ export function start(){
    else if(/upperarm|arm|shoulder/.test(n))joint="upperArm";
    else if(/forearm|lowerarm|elbow/.test(n))joint="forearm";
    else if(/spine|chest/.test(n))joint="spine";
-   if(joint)jumpBones.push({bone:o,joint,side});
+   if(joint)jumpBones.push({bone:o,joint,side,offsetX:0});
   });
   runner.add(model);addSketchOutlines(model);model.userData.ownedMaterials=[];addGraphiteHatching(model,0x13a5);
   runner.userData.model=model;runner.userData.jumpBones=jumpBones;runner.userData.modelBaseY=model.position.y;
@@ -623,7 +623,14 @@ export function start(){
    elapsed+=dt;score+=dt*speed*2;const velocity=1.15+speed*1.08;
    travelDistance+=velocity*dt;updateTrack();
    laneZ+=(targetLaneZ-laneZ)*(1-Math.exp(-8*dt));runner.position.z=laneZ;
-   if(mixer){mixer.timeScale=.35+speed*.19;mixer.update(dt)}
+   if(mixer){
+    // Remove last frame's procedural offsets before evaluating the authored clip.
+    // This prevents unkeyed bones from accumulating rotation over long runs.
+    if(runner.userData.jumpBones)runner.userData.jumpBones.forEach(item=>{
+     if(item.offsetX){item.bone.rotation.x-=item.offsetX;item.offsetX=0}
+    });
+    mixer.timeScale=.35+speed*.19;mixer.update(dt);
+   }
    else if(runner.userData.limbs&&runner.userData.limbs[0]?.leg?.parent){
     const p=elapsed*velocity*1.8,cycle=Math.sin(p),bob=Math.abs(Math.sin(p*2));
     runner.userData.limbs.forEach(l=>{
@@ -661,11 +668,13 @@ export function start(){
      const phase=clamp(jumpY/.85,0,1);
      for(const item of runner.userData.jumpBones){
       const sign=item.side||1, b=item.bone;
-      if(item.joint==="thigh")b.rotation.x+=sign*(.22+phase*.38);
-      else if(item.joint==="calf")b.rotation.x-=sign*(.18+phase*.42);
-      else if(item.joint==="upperArm")b.rotation.x-=sign*(.16+phase*.28);
-      else if(item.joint==="forearm")b.rotation.x+=sign*(.12+phase*.2);
-      else if(item.joint==="spine")b.rotation.x-=.035+phase*.045;
+      let offset=0;
+      if(item.joint==="thigh")offset=sign*(.22+phase*.38);
+      else if(item.joint==="calf")offset=-sign*(.18+phase*.42);
+      else if(item.joint==="upperArm")offset=-sign*(.16+phase*.28);
+      else if(item.joint==="forearm")offset=sign*(.12+phase*.2);
+      else if(item.joint==="spine")offset=-.035-phase*.045;
+      b.rotation.x+=offset;item.offsetX=offset;
      }
     }
    }
