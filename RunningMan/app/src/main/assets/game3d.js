@@ -185,6 +185,16 @@ export function start(){
      side:m?.side??THREE.FrontSide,
      vertexColors:!!m?.vertexColors
     });
+    // Convert the final sampled surface to luminance in the shader. This keeps
+    // the licensed model's UV detail while preventing colored source maps from
+    // leaking color into the strict graphite-and-paper art direction.
+    material.onBeforeCompile=shader=>{
+     shader.fragmentShader=shader.fragmentShader.replace(
+      "#include <map_fragment>",
+      "#include <map_fragment>\n diffuseColor.rgb=vec3(dot(diffuseColor.rgb,vec3(0.299,0.587,0.114)));"
+     );
+    };
+    material.customProgramCacheKey=()=>"running-man-graphite-luminance-v1";
     if(m)m.dispose();
     return material;
    });
