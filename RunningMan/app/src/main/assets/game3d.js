@@ -241,20 +241,55 @@ export function start(){
     for(let k=0;k<2+variation%3;k++){const zoff=(k-1)*.23;add(new THREE.CylinderGeometry(.035,.07,.45,7),woodMat,.1,.48,zoff,Math.PI/3+(k%2)*.3)}
   }else if(type==="log"){
     w=1.5+variation*.1;h=.42;depth=.62;
-    add(new THREE.CylinderGeometry(.23,.24,w,10),woodMat,0,.23,0,Math.PI/2);
-    add(new THREE.CircleGeometry(.23,10),darkMat,w/2,.23,0,0);add(new THREE.CircleGeometry(.23,10),darkMat,-w/2,.23,0,0);
+    add(new THREE.CylinderGeometry(.23,.24,w,12,2),woodMat,0,.23,0,Math.PI/2);
+    for(const side of [-1,1]){
+     const end=add(new THREE.CircleGeometry(.225,18),paperMat,side*w/2,.23,0);end.rotation.y=Math.PI/2;
+     const ring=add(new THREE.TorusGeometry(.15,.009,4,22),darkMat,side*(w/2+.002),.23,0);ring.rotation.y=Math.PI/2;
+     const core=add(new THREE.CircleGeometry(.045,12),darkMat,side*(w/2+.003),.23,0);core.rotation.y=Math.PI/2;
+     for(let k=0;k<5;k++){const yy=.23+Math.cos(k*1.256)*.18,zz=Math.sin(k*1.256)*.18;
+      const grain=add(new THREE.BoxGeometry(.006,.008,.07+((k+variation)%3)*.025),darkMat,side*(w/2+.004),yy,zz);
+      grain.rotation.x=k*.31;
+     }
+    }
   }else if(type==="rock"){
     w=.65+variation*.12;h=.5+variation*.06;depth=.65;
-    add(new THREE.DodecahedronGeometry(.42+variation*.06,0),stoneMat,0,h*.45,0);
+    const stone=add(new THREE.DodecahedronGeometry(.42+variation*.06,1),stoneMat,0,h*.45,0);
+    stone.scale.set(1.05,.82,.94);
+    // Broken graphite planes and a few natural fracture strokes.
+    const crackPts=[];
+    for(let k=0;k<5;k++){const yy=.18+((variation*7+k*13)%31)/100,zz=-.24+((variation*11+k*17)%47)/100;
+     crackPts.push(-.34,yy,zz,-.18,yy+.035,zz+.025,-.08,yy+.012,zz+.08);
+    }
+    const cracks=new THREE.BufferGeometry();cracks.setAttribute("position",new THREE.Float32BufferAttribute(crackPts,3));
+    const crackInk=new THREE.LineSegments(cracks,new THREE.LineBasicMaterial({color:0x4b4741,transparent:true,opacity:.34,depthWrite:false}));crackInk.renderOrder=3;group.add(crackInk);
   }else if(type==="crate"){
-    w=.72;h=.72;depth=.72;add(new THREE.BoxGeometry(w,h,depth),woodMat,0,h/2,0);
-    for(let a=-1;a<=1;a+=2){add(new THREE.BoxGeometry(.08,h+.05,.78),darkMat,a*.27,h/2,0);add(new THREE.BoxGeometry(.78,.08,.08),darkMat,0,h/2+a*.27,0)}
+    w=.78;h=.72;depth=.72;
+    add(new THREE.BoxGeometry(w,h,depth),woodMat,0,h/2,0);
+    // Separate rough planks, corner joints and hand-drawn nail heads.
+    for(let y=.12;y<h;y+=.19){
+     add(new THREE.BoxGeometry(w-.035,.014,.012),darkMat,0,y,.367);
+     add(new THREE.BoxGeometry(w-.035,.014,.012),darkMat,0,y,-.367);
+    }
+    for(let a=-1;a<=1;a+=2){
+     add(new THREE.BoxGeometry(.075,h+.035,.78),darkMat,a*.30,h/2,0);
+     add(new THREE.BoxGeometry(.78,.075,.075),darkMat,0,h/2+a*.30,0);
+     for(let y of [.12,.36,.60]){const nail=add(new THREE.CircleGeometry(.018,8),paperMat,a*.30,y,.407);nail.rotation.x=0}
+    }
   }else if(type==="barrier"){
     w=1.8;h=.62;depth=.28;add(new THREE.BoxGeometry(w,h,depth),paperMat,0,h/2,0);
     for(let a=-1;a<=1;a+=.5)add(new THREE.BoxGeometry(.1,h+.04,.32),darkMat,a*.65,h/2,0);
   }else if(type==="stump"){
-    w=.65;h=.55;depth=.65;add(new THREE.CylinderGeometry(.25,.34,h,9),woodMat,0,h/2,0);
-    add(new THREE.CylinderGeometry(.26,.26,.06,9),paperMat,0,h+.02,0);
+    w=.65;h=.55;depth=.65;add(new THREE.CylinderGeometry(.25,.34,h,12,2),woodMat,0,h/2,0);
+    add(new THREE.CylinderGeometry(.26,.26,.055,14),paperMat,0,h+.02,0);
+    for(let r of [.075,.14,.205]){
+     const growth=add(new THREE.TorusGeometry(r,.006,4,24),darkMat,0,h+.051,0);growth.rotation.x=Math.PI/2;
+    }
+    const splitPts=[];
+    for(let k=0;k<7;k++){const t=k*Math.PI*2/7,r1=.04,r2=.23;
+     splitPts.push(Math.cos(t)*r1,h+.053,Math.sin(t)*r1,Math.cos(t+.08)*r2,h+.053,Math.sin(t+.08)*r2);
+    }
+    const splitGeo=new THREE.BufferGeometry();splitGeo.setAttribute("position",new THREE.Float32BufferAttribute(splitPts,3));
+    group.add(new THREE.LineSegments(splitGeo,new THREE.LineBasicMaterial({color:0x5b554e,transparent:true,opacity:.34,depthWrite:false})));
   }else if(type==="bucket"){
     w=.55;h=.65;depth=.55;add(new THREE.CylinderGeometry(.22,.3,h,10),darkMat,0,h/2,0);
     add(new THREE.TorusGeometry(.26,.035,6,12),woodMat,0,h,0);
