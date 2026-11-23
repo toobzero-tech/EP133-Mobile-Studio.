@@ -29,7 +29,7 @@ contracts = {
     "property comparable matcher": "function comparablePropertySales(x)",
     "property price per square metre": "sold_price)/propertyArea(z)",
     "property area tolerance": "Math.abs(za-area)/area<=.20",
-    "property sale currency restriction": "String(z.currency||'').toUpperCase())==='RUB'",
+    "property sale currency restriction": "String(z.currency||'').toUpperCase()==='RUB'",
 }
 missing = [label for label, token in contracts.items() if token not in source]
 if missing:
