@@ -98,6 +98,13 @@ def parse_feed(xml_bytes, source, location=""):
         rows.append(row)
     return rows
 
+def validate_feed_config(feed):
+    if feed.get("country_confirmed") is not True:
+        raise ValueError("Для фида требуется country_confirmed=true после проверки, что он содержит только предложения из РФ")
+    if not feed.get("source") or not feed.get("url"):
+        raise ValueError("У фида должны быть указаны source и url")
+    return True
+
 def fetch_feed(url, source, location=""):
     parsed = urlparse(url)
     if parsed.scheme != "https" or not parsed.hostname:
@@ -124,6 +131,7 @@ def main():
         if not feed.get("enabled", True):
             continue
         try:
+            validate_feed_config(feed)
             batch = fetch_feed(feed["url"], feed["source"], feed.get("location", ""))
             rows.extend(batch)
             print(f'{feed["source"]}: получено записей {len(batch)}')
