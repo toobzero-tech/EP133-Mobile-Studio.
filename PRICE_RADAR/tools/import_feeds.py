@@ -76,6 +76,10 @@ def parse_feed(xml_bytes, source, location=""):
                 continue
         else:
             for node in item.iter():
+                if local_name(node.tag) in {"currency", "currencyid"} and node.text:
+                    currency = node.text.strip()
+                    break
+            for node in item.iter():
                 if local_name(node.tag) in {"price", "amount"} and node.text:
                     price = node.text.strip()
                     break
