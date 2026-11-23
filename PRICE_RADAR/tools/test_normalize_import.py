@@ -30,6 +30,16 @@ class NormalizeTests(unittest.TestCase):
         row = normalize({"name": "Товар", "price": "100", "condition": "витринный образец"})
         self.assertEqual(row["condition"], "open_box")
 
+    def test_publication_and_observation_timestamps_are_separate(self):
+        row = normalize({"name": "Товар", "price": "100", "published_at": "2026-11-20T10:00:00Z", "observed_at": "2026-11-23T10:00:00Z"})
+        self.assertEqual(row["published_at"], "2026-11-20T10:00:00Z")
+        self.assertEqual(row["observed_at"], "2026-11-23T10:00:00Z")
+
+    def test_camel_case_timestamps_are_supported(self):
+        row = normalize({"name": "Товар", "price": "100", "publishedAt": "2026-11-20T10:00:00Z", "observedAt": "2026-11-23T10:00:00Z"})
+        self.assertEqual(row["published_at"], "2026-11-20T10:00:00Z")
+        self.assertEqual(row["observed_at"], "2026-11-23T10:00:00Z")
+
     def test_missing_url_and_id_has_stable_hash(self):
         a = normalize({"name":"Лот","price":"100","location":"Москва"})
         b = normalize({"name":"Лот","price":"100","location":"Москва"})
