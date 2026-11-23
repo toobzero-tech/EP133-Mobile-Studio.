@@ -20,8 +20,7 @@ jobs:
         run: |
           test -f PRICE_RADAR/index.html
           mkdir -p dist
-          cp PRICE_RADAR/index.html dist/index.html
-          cp PRICE_RADAR/README.md dist/README.md
+          cp -R PRICE_RADAR/. dist/
           cd dist
           zip -r ../PRICE_RADAR_MVP.zip .
       - name: Upload ZIP artifact
