@@ -10,6 +10,8 @@
 | title | string | да | Название |
 | description | string | нет | Описание |
 | category | string | нет | Категория |
+| brand | string | нет | Бренд для точного сопоставления товаров |
+| model | string | нет | Модель / артикул для точного сопоставления |
 | condition | string | да | new / used / refurbished / open_box / unknown |
 | price | number | да | Цена в RUB |
 | currency | string | да | Только RUB; предложения в другой валюте не попадают в российскую ленту |
