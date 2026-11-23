@@ -9,7 +9,7 @@ class NormalizeTests(unittest.TestCase):
         row = normalize({"name":"Фотоаппарат","price":"12 500","condition":"Б/У","marketplace":"Мешок","url":"https://meshok.net/item/1"})
         self.assertEqual(row["price"], 12500.0)
         self.assertEqual(row["condition"], "used")
-        self.assertEqual(row["source"], "мешок")
+        self.assertEqual(row["source"], "meshok")
 
     def test_russian_retail_source_aliases(self):
         for label, expected in [("Яндекс Маркет", "yandex_market"), ("Ozon", "ozon"),
