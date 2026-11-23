@@ -11,6 +11,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import urllib.error
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -37,8 +38,9 @@ def fetch_page(city, page=1, per_page=50):
     with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
         if response.status != 200:
             raise RuntimeError("Golova API HTTP " + str(response.status))
-        if urllib.parse.urlparse(response.geturl()).hostname != "golovamarket.ru":
-            raise RuntimeError("Unexpected API redirect host")
+        final_url = urllib.parse.urlparse(response.geturl())
+        if final_url.scheme != "https" or final_url.hostname != "golovamarket.ru":
+            raise RuntimeError("Unexpected API redirect host or scheme")
         raw = response.read(MAX_BYTES + 1)
     if len(raw) > MAX_BYTES:
         raise RuntimeError("Golova API response exceeds 2 MB")
@@ -121,13 +123,18 @@ def import_cities(config, delay=1.1, max_pages=2, per_page=50):
         raise ValueError("В конфиге нужен непустой список российских городов cities")
     unique = {}
     requests = 0
-    stats = {"received": 0, "accepted": 0, "rental_or_invalid": 0, "duplicates": 0}
+    stats = {"received": 0, "accepted": 0, "rental_or_invalid": 0, "duplicates": 0, "failed_cities": 0}
     for city in cities:
         city = str(city).strip()
         if not city:
             continue
         for page in range(1, max(1, max_pages) + 1):
-            payload = fetch_page(city, page=page, per_page=per_page)
+            try:
+                payload = fetch_page(city, page=page, per_page=per_page)
+            except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
+                stats["failed_cities"] += 1
+                print(f"Ошибка источника для города {city}, страница {page}: {exc}")
+                break
             requests += 1
             items = payload.get("data") or []
             stats["received"] += len(items)
@@ -173,6 +180,7 @@ def main():
     print("Продаж в RUB после фильтра:", stats["accepted"])
     print("Исключено (аренда/неполные/не RUB):", stats["rental_or_invalid"])
     print("Дубликатов:", stats["duplicates"])
+    print("Городов с ошибкой:", stats["failed_cities"])
     print("Файл:", args.output)
 
 
