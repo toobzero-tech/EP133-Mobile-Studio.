@@ -44,11 +44,31 @@ def main():
         raise RuntimeError("Unexpected JSON response type: " + type(payload).__name__)
     print("ITEM_COUNT:", len(items))
     if items:
-        sample = items[0]
-        if not isinstance(sample, dict):
-            raise RuntimeError("Listing record is not an object")
-        print("SAMPLE_KEYS:", sorted(sample.keys()))
-        print("SAMPLE:", json.dumps(sample, ensure_ascii=False)[:6000])
+        summaries = []
+        for item in items[:5]:
+            if isinstance(item, dict):
+                summaries.append({
+                    "slug": item.get("slug"),
+                    "title": item.get("title"),
+                    "price": item.get("price"),
+                    "currency": item.get("currency"),
+                    "city": item.get("city"),
+                    "type": item.get("type"),
+                    "condition": item.get("condition"),
+                })
+        print("SAMPLE_SUMMARIES:", json.dumps(summaries, ensure_ascii=False))
+        sample = next((x for x in items if isinstance(x, dict) and x.get("slug")), None)
+        if sample:
+            detail_url = "https://golovamarket.ru/api/public/listings/" + urllib.parse.quote(str(sample["slug"]), safe="")
+            detail_req = urllib.request.Request(detail_url, headers={"User-Agent": "PRICE-RADAR-source-probe/1.0", "Accept": "application/json"})
+            with urllib.request.urlopen(detail_req, timeout=20) as detail_response:
+                detail = json.loads(detail_response.read(2_000_001).decode("utf-8-sig"))
+            if isinstance(detail, dict):
+                print("DETAIL_TOP_LEVEL_KEYS:", sorted(detail.keys()))
+                detail_obj = detail.get("data") if isinstance(detail.get("data"), dict) else detail
+                print("DETAIL_KEYS:", sorted(detail_obj.keys()) if isinstance(detail_obj, dict) else type(detail_obj).__name__)
+                if isinstance(detail_obj, dict):
+                    print("DETAIL_SAFE_SAMPLE:", json.dumps({k:v for k,v in detail_obj.items() if k not in {"images","cover","seller","description"}}, ensure_ascii=False)[:4000])
     else:
         print("NO_LISTINGS_FOR_MOSCOW_QUERY")
     print("PROBE_OK")
