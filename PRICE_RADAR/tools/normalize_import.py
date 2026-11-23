@@ -2,7 +2,7 @@
 """Normalize PRICE RADAR JSON/CSV exports into one deduplicated JSON file.
 Standard library only. This is an import utility, not a marketplace scraper.
 """
-import argparse, csv, json, re, hashlib
+import argparse, csv, json, re, hashlib, io
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
@@ -50,8 +50,9 @@ def read_rows(path):
     if path.suffix.lower() == ".json":
         data = json.loads(path.read_text(encoding="utf-8-sig"))
         return data if isinstance(data, list) else data.get("items", [])
-    with path.open(encoding="utf-8-sig", newline="") as f:
-        return list(csv.DictReader(f, delimiter=";" if ";" in f.readline() else ","))
+    content = path.read_text(encoding="utf-8-sig")
+    first = content.splitlines()[0] if content.splitlines() else ""
+    return list(csv.DictReader(io.StringIO(content), delimiter=";" if first.count(";") > first.count(",") else ","))
 
 def main():
     ap = argparse.ArgumentParser()
