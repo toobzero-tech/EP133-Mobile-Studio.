@@ -20,7 +20,7 @@ contracts = {
     "completed-sale country restriction": "country!=='RU'",
     "completed-sale currency restriction": "['RUB','RUR','₽'].indexOf(currency)<0",
     "completed-sale age limit": "Date.now()-date>365*86400000",
-    "UTF-8 BOM handling": "replace(/^\\uFEFF/,'')",
+    "UTF-8 BOM handling": "replace(/^\uFEFF/,'')",
     "sales import deduplication": "var merged=sales.concat(valid)",
 }
 missing = [label for label, token in contracts.items() if token not in source]
