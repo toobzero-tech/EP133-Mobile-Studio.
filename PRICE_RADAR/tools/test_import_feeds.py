@@ -21,7 +21,7 @@ ATOM = """<?xml version="1.0"?>
 <feed xmlns="http://www.w3.org/2005/Atom"><entry>
 <title>Объектив</title><link href="https://shop.ru/lens"/>
 <summary>Комплект</summary><updated>2026-11-23T10:00:00Z</updated>
-<price>8900</price>
+<price>8900</price><currency>RUB</currency>
 </entry></feed>""".encode("utf-8")
 
 class FeedImportTests(unittest.TestCase):
@@ -38,6 +38,7 @@ class FeedImportTests(unittest.TestCase):
         self.assertEqual(rows[0]["title"], "Объектив")
         self.assertEqual(rows[0]["url"], "https://shop.ru/lens")
         self.assertEqual(rows[0]["price"], "8900")
+        self.assertEqual(rows[0]["currency"], "RUB")
 
     def test_yml_offers_and_unavailable_filter(self):
         rows = parse_feed(YML, "partner", "Россия")
@@ -46,6 +47,11 @@ class FeedImportTests(unittest.TestCase):
         self.assertEqual(rows[0]["title"], "Наушники")
         self.assertEqual(rows[0]["price"], "15990")
         self.assertEqual(rows[0]["currency"], "RUR")
+
+    def test_atom_without_currency_is_not_assumed_ruble(self):
+        xml = ATOM.replace(b"<currency>RUB</currency>", b"")
+        rows = parse_feed(xml, "partner")
+        self.assertEqual(rows[0]["currency"], "")
 
     def test_http_feed_url_is_rejected_before_network(self):
         with self.assertRaises(ValueError):
