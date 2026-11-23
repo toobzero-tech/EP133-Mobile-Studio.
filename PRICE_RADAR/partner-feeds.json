@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "notes": "Only add public HTTPS feeds explicitly authorized by their owners. Never commit credentials.",
+  "rss_atom_feeds": [],
+  "yml_feeds": [],
+  "json_feeds": []
+}
