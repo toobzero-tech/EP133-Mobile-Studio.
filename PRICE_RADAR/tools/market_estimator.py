@@ -47,9 +47,9 @@ def estimate(listings, sales, now=None, max_age_days=365):
         status = str(sale.get("status", "")).lower()
         if status not in {"sold", "completed", "finished"}:
             continue
-        if str(sale.get("country", "RU")).upper() != "RU":
+        if str(sale.get("country", "")).upper() != "RU":
             continue
-        if str(sale.get("currency", "RUB")).upper() not in {"RUB", "RUR", "₽"}:
+        if str(sale.get("currency", "")).upper() not in {"RUB", "RUR", "₽"}:
             continue
         amount = sale.get("sold_price", sale.get("price"))
         try:
