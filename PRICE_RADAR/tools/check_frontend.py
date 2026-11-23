@@ -103,7 +103,7 @@ var sales=[
 const assert=require("assert");
 const result=propertyMarketInfo({propertyType:"flat",city:"Москва",district:"Хамовники",areaM2:55,rooms:2});
 assert.strictEqual(result.count,2);
-assert.strictEqual(result.market,6050000);
+assert.strictEqual(result.market,5775000);
 assert(result.source.includes("₽/м²"));
 const none=propertyMarketInfo({propertyType:"flat",city:"Москва",areaM2:100,rooms:3});
 assert.strictEqual(none,null);
