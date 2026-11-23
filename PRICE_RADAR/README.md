@@ -1,4 +1,4 @@
-# PRICE RADAR MVP 0.6
+# PRICE RADAR MVP 0.7
 
 ## Запуск
 1. Скачайте ZIP-артефакт из GitHub Actions.
