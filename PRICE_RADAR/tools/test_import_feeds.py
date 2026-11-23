@@ -12,7 +12,7 @@ YML = """<?xml version="1.0" encoding="UTF-8"?>
 <yml_catalog date="2026-11-23 10:00"><shop><offers>
 <offer id="sku-77" available="true"><url>https://partner.ru/p/77</url>
 <price>15990</price><currencyId>RUR</currencyId><name>Наушники</name>
-<description>Новая модель</description></offer>
+<description>Новая модель</description><property_type>flat</property_type><city>Москва</city><district>Хамовники</district><area_m2>54.6</area_m2><rooms>2</rooms></offer>
 <offer id="sku-78" available="false"><url>https://partner.ru/p/78</url>
 <price>100</price><currencyId>RUR</currencyId><name>Нет в наличии</name></offer>
 </offers></shop></yml_catalog>""".encode("utf-8")
@@ -47,6 +47,11 @@ class FeedImportTests(unittest.TestCase):
         self.assertEqual(rows[0]["title"], "Наушники")
         self.assertEqual(rows[0]["price"], "15990")
         self.assertEqual(rows[0]["currency"], "RUR")
+        self.assertEqual(rows[0]["property_type"], "flat")
+        self.assertEqual(rows[0]["city"], "Москва")
+        self.assertEqual(rows[0]["district"], "Хамовники")
+        self.assertEqual(rows[0]["area_m2"], "54.6")
+        self.assertEqual(rows[0]["rooms"], "2")
 
     def test_atom_without_currency_is_not_assumed_ruble(self):
         xml = ATOM.replace(b"<currency>RUB</currency>", b"")
