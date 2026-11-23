@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "notes": "Добавляйте только публичные HTTPS-фиды, которые владелец источника разрешил использовать. Не помещайте сюда токены, пароли или приватные ссылки.",
+  "rss_atom_feeds": [
+    {
+      "source": "agency_rss",
+      "url": "https://partner.example.ru/public-feed.xml",
+      "enabled": false,
+      "country_confirmed": false,
+      "location": "Москва",
+      "comment": "Шаблон RSS/Atom. Укажите реальный URL и подтвердите, что фид содержит только объекты РФ."
+    }
+  ],
+  "yml_feeds": [
+    {
+      "source": "retailer_yml",
+      "url": "https://partner.example.ru/public-yml.xml",
+      "enabled": false,
+      "country_confirmed": false,
+      "location": "Россия",
+      "comment": "Шаблон YML. Используйте только фид, выданный владельцем магазина/площадки."
+    }
+  ],
+  "json_feeds": [
+    {
+      "source": "partner_json",
+      "url": "https://partner.example.ru/api/public/offers",
+      "enabled": false,
+      "country_confirmed": false,
+      "currency_confirmed": false,
+      "currency_constant": "RUB",
+      "items_path": "items",
+      "location": "Москва",
+      "fields": {
+        "title": "title",
+        "url": "url",
+        "price": "price",
+        "currency": "currency",
+        "source_id": "id",
+        "category": "category",
+        "condition": "condition",
+        "description": "description",
+        "published_at": "published_at",
+        "location": "location"
+      },
+      "comment": "Шаблон JSON API. Настройте items_path и fields по документации поставщика."
+    }
+  ]
+}
