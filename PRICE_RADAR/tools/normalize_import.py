@@ -59,6 +59,8 @@ def normalize(row):
     source = SOURCE_ALIASES.get(raw_source, raw_source.replace(" ", "_"))
     currency = str(row.get("currency") or "").strip().upper()
     currency_ok = currency in ALLOWED_CURRENCIES
+    country = str(row.get("country") or "").strip().upper()
+    country_ok = country == "RU"
     source_id = str(row.get("source_id") or row.get("id") or "").strip()
     key = f"{source}:{source_id}" if source_id else (url or hashlib.sha256(
         f"{norm_title(title)}|{price}|{row.get('location','')}".encode()).hexdigest())
@@ -67,13 +69,15 @@ def normalize(row):
         "url": url, "title": title, "description": row.get("description", ""),
         "category": row.get("category", ""), "condition": condition,
         "price": price, "currency": "RUB" if currency_ok else "UNSUPPORTED",
-        "country": "RU", "location": row.get("location", ""),
+        "country": "RU" if country_ok else "UNSUPPORTED", "location": row.get("location", ""),
+        "brand": row.get("brand", ""), "model": row.get("model", ""),
+        "seller_id": row.get("seller_id", ""), "image_urls": row.get("image_urls", []),
         "published_at": row.get("published_at") or row.get("publishedAt") or "",
         "observed_at": row.get("observed_at") or row.get("observedAt") or now,
         "listing_type": (row.get("listing_type") or "fixed").lower(),
         "ends_at": row.get("ends_at") or "",
         "status": "manual_unverified" if source == "manual" else "new",
-        "eligible_for_russia_feed": currency_ok,
+        "eligible_for_russia_feed": currency_ok and country_ok,
         "raw": row
     }
 
