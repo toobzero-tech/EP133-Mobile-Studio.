@@ -93,7 +93,7 @@ def main():
     rows = [normalize(r) for r in read_rows(Path(args.input))]
     unique = {}
     for row in rows:
-        if not row["title"] or row["price"] <= 0:
+        if not row["title"] or row["price"] <= 0 or not row["eligible_for_russia_feed"]:
             continue
         unique.setdefault(row["dedupe_key"], row)
     Path(args.output).write_text(json.dumps(list(unique.values()), ensure_ascii=False, indent=2), encoding="utf-8")
