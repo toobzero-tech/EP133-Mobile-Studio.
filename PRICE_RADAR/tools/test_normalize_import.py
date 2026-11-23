@@ -11,6 +11,25 @@ class NormalizeTests(unittest.TestCase):
         self.assertEqual(row["condition"], "used")
         self.assertEqual(row["source"], "мешок")
 
+    def test_russian_retail_source_aliases(self):
+        for label, expected in [("Яндекс Маркет", "yandex_market"), ("Ozon", "ozon"),
+                                ("Wildberries", "wildberries"), ("DNS", "dns"),
+                                ("М.Видео", "mvideo"), ("Ситилинк", "citilink")]:
+            row = normalize({"name": "Товар", "price": "1000", "marketplace": label})
+            self.assertEqual(row["source"], expected)
+            self.assertEqual(row["country"], "RU")
+            self.assertEqual(row["currency"], "RUB")
+            self.assertTrue(row["eligible_for_russia_feed"])
+
+    def test_non_ruble_source_is_not_feed_eligible(self):
+        row = normalize({"name": "Item", "price": "20", "currency": "EUR", "source": "manual"})
+        self.assertEqual(row["currency"], "UNSUPPORTED")
+        self.assertFalse(row["eligible_for_russia_feed"])
+
+    def test_condition_aliases_include_open_box(self):
+        row = normalize({"name": "Товар", "price": "100", "condition": "витринный образец"})
+        self.assertEqual(row["condition"], "open_box")
+
     def test_missing_url_and_id_has_stable_hash(self):
         a = normalize({"name":"Лот","price":"100","location":"Москва"})
         b = normalize({"name":"Лот","price":"100","location":"Москва"})
