@@ -1,0 +1,48 @@
+name: PRICE RADAR daily Russia scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_pages:
+        description: Maximum pages per Russian city (up to 50 listings per page)
+        required: false
+        default: "2"
+  schedule:
+    - cron: "17 3 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout PRICE RADAR
+        uses: actions/checkout@v4
+        with:
+          ref: price-radar-mvp
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Scan configured Russian cities
+        run: |
+          python PRICE_RADAR/tools/import_golova_market.py PRICE_RADAR/golova-cities.example.json --max-pages "${{ inputs.max_pages || '2' }}" --delay 1.1 -o PRICE_RADAR_Golova_Russia_Live.json
+          python - <<'PY'
+          import json
+          rows = json.load(open("PRICE_RADAR_Golova_Russia_Live.json", encoding="utf-8"))
+          assert isinstance(rows, list)
+          assert all(x.get("country") == "RU" and x.get("currency") == "RUB" for x in rows)
+          print("VALID_RU_RUB_SALE_RECORDS:", len(rows))
+          cities = sorted({x.get("location", "") for x in rows if x.get("location")})
+          print("CITIES_WITH_OFFERS:", len(cities))
+          print("CITY_LIST:", ", ".join(cities))
+          PY
+      - name: Upload Russia-wide offers
+        uses: actions/upload-artifact@v4
+        with:
+          name: PRICE_RADAR_Golova_Russia_Live
+          path: PRICE_RADAR_Golova_Russia_Live.json
+          if-no-files-found: error
+          retention-days: 14
