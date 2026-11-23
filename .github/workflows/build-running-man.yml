@@ -1,8 +1,5 @@
 name: Build Running Man APK
 on:
-  push:
-    branches: [running-man-prototype]
-    paths: ['RunningMan/**', '.github/workflows/build-running-man.yml']
   workflow_dispatch:
 permissions:
   contents: read
