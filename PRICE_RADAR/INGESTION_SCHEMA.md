@@ -4,7 +4,7 @@
 
 | Поле | Тип | Обязательное | Назначение |
 |---|---|---:|---|
-| source | string | да | avito / meshok / youla / manual / partner |
+| source | string | да | avito / meshok / youla / yandex_market / manual / partner |
 | source_id | string | нет | ID лота на площадке |
 | url | string | да | Каноническая ссылка |
 | title | string | да | Название |
