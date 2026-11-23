@@ -1,5 +1,5 @@
 import unittest
-from import_feeds import parse_feed, parse_date
+from import_feeds import parse_feed, parse_date, fetch_feed
 
 RSS = b"""<?xml version="1.0"?>
 <rss version="2.0"><channel><item>
@@ -46,6 +46,10 @@ class FeedImportTests(unittest.TestCase):
         self.assertEqual(rows[0]["title"], "Наушники")
         self.assertEqual(rows[0]["price"], "15990")
         self.assertEqual(rows[0]["currency"], "RUR")
+
+    def test_http_feed_url_is_rejected_before_network(self):
+        with self.assertRaises(ValueError):
+            fetch_feed("http://example.ru/feed.xml", "partner")
 
     def test_bad_date_is_empty(self):
         self.assertEqual(parse_date("not-a-date"), "")
