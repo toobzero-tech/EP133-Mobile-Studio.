@@ -12,6 +12,6 @@ python PRICE_RADAR/tools/import_feeds.py PRICE_RADAR/feeds.example.json -o offer
 3. Keep `source` as a canonical source name or `partner`; set the seller's Russian region in `location`.
 4. Run the importer. Only entries with a title, HTTPS link, positive parsed price, and RUB currency are emitted.
 
-The importer supports RSS 2.0 and Atom basics. It extracts price only from explicit `price`/`amount` XML fields or a clear ruble amount in the description. Entries without a reliably parsed price are discarded rather than guessed. Every emitted record is marked as newly observed by the normalizer; a feed response is not proof that an item remains available later.
+The importer supports RSS 2.0, Atom, and Yandex Market Language (YML) offers. YML items marked unavailable are skipped, and non-RUB currency is rejected by normalization. It extracts price only from explicit `price`/`amount` XML fields or a clear ruble amount in the description. Entries without a reliably parsed price are discarded rather than guessed. Every emitted record is marked as newly observed by the normalizer; a feed response is not proof that an item remains available later.
 
 No real marketplace feed is configured by default. Do not enable a source until its owner has confirmed permission and the feed format has been tested.
