@@ -1,0 +1,33 @@
+name: Build PRICE RADAR MVP
+on:
+  push:
+    branches:
+      - price-radar-mvp
+    paths:
+      - 'PRICE_RADAR/**'
+      - '.github/workflows/price-radar.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Prepare ZIP
+        run: |
+          test -f PRICE_RADAR/index.html
+          mkdir -p dist
+          cp PRICE_RADAR/index.html dist/index.html
+          cp PRICE_RADAR/README.md dist/README.md
+          cd dist
+          zip -r ../PRICE_RADAR_MVP.zip .
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PRICE_RADAR_MVP
+          path: PRICE_RADAR_MVP.zip
+          if-no-files-found: error
+          retention-days: 30
