@@ -11,8 +11,8 @@ def main():
     params = urllib.parse.urlencode({
         "city": "Москва",
         "price_currency": "RUB",
-        "per_page": "5",
-        "sort": "newest",
+        "per_page": "50",
+        "sort": "recommended",
     })
     url = BASE + "?" + params
     req = urllib.request.Request(
@@ -56,7 +56,10 @@ def main():
                     "type": item.get("type"),
                     "condition": item.get("condition"),
                 })
+        print("TYPE_COUNTS:", json.dumps({str(t): sum(1 for x in items if isinstance(x, dict) and x.get("type") == t) for t in sorted({x.get("type") for x in items if isinstance(x, dict)})}, ensure_ascii=False))
         print("SAMPLE_SUMMARIES:", json.dumps(summaries, ensure_ascii=False))
+        sale_samples = [x for x in items if isinstance(x, dict) and x.get("type") not in {"rent", "service"}][:3]
+        print("NON_RENT_SAMPLES:", json.dumps([{k:x.get(k) for k in ("slug","title","price","currency","city","type","condition","price_unit")} for x in sale_samples], ensure_ascii=False))
         sample = next((x for x in items if isinstance(x, dict) and x.get("slug")), None)
         if sample:
             detail_url = "https://golovamarket.ru/api/public/listings/" + urllib.parse.quote(str(sample["slug"]), safe="")
