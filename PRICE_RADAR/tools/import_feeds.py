@@ -91,11 +91,6 @@ def parse_feed(xml_bytes, source, location=""):
             "source": source, "title": title, "url": link,
             "description": description, "price": price,
             "currency": currency, "location": location,
-            "property_type": child_text(item, {"property_type", "property-type", "object_type", "object-type"}),
-            "city": child_text(item, {"city", "locality", "locality-name"}),
-            "district": child_text(item, {"district", "sub-locality-name", "neighborhood"}),
-            "area_m2": child_text(item, {"area_m2", "area", "total-area"}),
-            "rooms": child_text(item, {"rooms", "room_count", "room-count"}),
             "published_at": parse_date(published),
         }
         if is_offer and item.attrib.get("id"):
