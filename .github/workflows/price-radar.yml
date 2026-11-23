@@ -25,8 +25,10 @@ jobs:
           test -f PRICE_RADAR/index.html
           mkdir -p dist
           cp -R PRICE_RADAR/. dist/
+          find dist -type d -name __pycache__ -prune -exec rm -rf {} +
+          find dist -type f -name '*.pyc' -delete
           cd dist
-          zip -r ../PRICE_RADAR_MVP.zip . -x '*/__pycache__/*' '*.pyc'
+          zip -r ../PRICE_RADAR_MVP.zip .
       - name: Upload ZIP artifact
         uses: actions/upload-artifact@v4
         with:
