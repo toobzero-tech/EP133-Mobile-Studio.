@@ -41,14 +41,9 @@
         "condition": "condition",
         "description": "description",
         "published_at": "published_at",
-        "location": "location",
-        "property_type": "property_type",
-        "city": "city",
-        "district": "district",
-        "area_m2": "area_m2",
-        "rooms": "rooms"
+        "location": "location"
       },
-      "comment": "Шаблон JSON API для товаров или недвижимости. Для недвижимости дополнительно сопоставьте property_type, city, district, area_m2 и rooms. Настройте items_path и fields по документации поставщика."
+      "comment": "Шаблон JSON API для товарных объявлений. Настройте items_path и fields по документации поставщика."
     }
   ]
 }
