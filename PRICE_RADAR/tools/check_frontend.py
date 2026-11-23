@@ -66,7 +66,10 @@ assert.strictEqual(loss.roi<0,true);
 assert.strictEqual(loss.roiScore,0);
 const noInvestment=calc({...x,price:0,costs:0});
 assert.strictEqual(noInvestment.roi,0);
-console.log("ROI/profit/break-even calculator tests: OK");
+const zeroRisk=calc({...x,risk:0});
+const maxRisk=calc({...x,risk:100});
+assert(zeroRisk.dealScore>maxRisk.dealScore);
+console.log("ROI/profit/break-even/risk calculator tests: OK");
 """
 with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8", delete=False) as handle:
     handle.write(harness)
