@@ -4,6 +4,7 @@
       "source": "partner",
       "url": "https://REPLACE-WITH-APPROVED-RUSSIAN-PARTNER-FEED/rss.xml",
       "location": "Россия",
+      "country_confirmed": false,
       "enabled": false
     }
   ]
