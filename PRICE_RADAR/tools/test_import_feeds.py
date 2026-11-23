@@ -1,5 +1,5 @@
 import unittest
-from import_feeds import parse_feed, parse_date, fetch_feed
+from import_feeds import parse_feed, parse_date, fetch_feed, validate_feed_config
 
 RSS = """<?xml version="1.0"?>
 <rss version="2.0"><channel><item>
@@ -52,6 +52,11 @@ class FeedImportTests(unittest.TestCase):
         xml = ATOM.replace(b"<currency>RUB</currency>", b"")
         rows = parse_feed(xml, "partner")
         self.assertEqual(rows[0]["currency"], "")
+
+    def test_feed_requires_explicit_russia_confirmation(self):
+        with self.assertRaises(ValueError):
+            validate_feed_config({"source": "partner", "url": "https://partner.ru/feed.xml"})
+        self.assertTrue(validate_feed_config({"source": "partner", "url": "https://partner.ru/feed.xml", "country_confirmed": True}))
 
     def test_http_feed_url_is_rejected_before_network(self):
         with self.assertRaises(ValueError):
