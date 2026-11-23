@@ -1,28 +1,28 @@
 import unittest
 from import_feeds import parse_feed, parse_date, fetch_feed
 
-RSS = b"""<?xml version="1.0"?>
+RSS = """<?xml version="1.0"?>
 <rss version="2.0"><channel><item>
 <title>Фотоаппарат</title><link>https://shop.ru/camera</link>
 <description>Отличное состояние, цена 12 500 руб.</description>
 <pubDate>Mon, 23 Nov 2026 10:00:00 +0000</pubDate>
-</item></channel></rss>"""
+</item></channel></rss>""".encode("utf-8")
 
-YML = b"""<?xml version="1.0" encoding="UTF-8"?>
+YML = """<?xml version="1.0" encoding="UTF-8"?>
 <yml_catalog date="2026-11-23 10:00"><shop><offers>
 <offer id="sku-77" available="true"><url>https://partner.ru/p/77</url>
 <price>15990</price><currencyId>RUR</currencyId><name>Наушники</name>
 <description>Новая модель</description></offer>
 <offer id="sku-78" available="false"><url>https://partner.ru/p/78</url>
 <price>100</price><currencyId>RUR</currencyId><name>Нет в наличии</name></offer>
-</offers></shop></yml_catalog>"""
+</offers></shop></yml_catalog>""".encode("utf-8")
 
-ATOM = b"""<?xml version="1.0"?>
+ATOM = """<?xml version="1.0"?>
 <feed xmlns="http://www.w3.org/2005/Atom"><entry>
 <title>Объектив</title><link href="https://shop.ru/lens"/>
 <summary>Комплект</summary><updated>2026-11-23T10:00:00Z</updated>
 <price>8900</price>
-</entry></feed>"""
+</entry></feed>""".encode("utf-8")
 
 class FeedImportTests(unittest.TestCase):
     def test_rss_entry_and_ruble_price(self):
