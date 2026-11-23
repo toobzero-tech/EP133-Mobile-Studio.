@@ -16,7 +16,7 @@ permissions:
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout PRICE RADAR
         uses: actions/checkout@v4
@@ -26,23 +26,65 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Scan configured Russian cities
+      - name: Scan configured Russian cities on Golova.Market
         run: |
           python PRICE_RADAR/tools/import_golova_market.py PRICE_RADAR/golova-cities.example.json --max-pages "${{ inputs.max_pages || '2' }}" --delay 1.1 -o PRICE_RADAR_Golova_Russia_Live.json
+      - name: Prepare partner feed configurations
+        run: |
           python - <<'PY'
           import json
-          rows = json.load(open("PRICE_RADAR_Golova_Russia_Live.json", encoding="utf-8"))
-          assert isinstance(rows, list)
-          assert all(x.get("country") == "RU" and x.get("currency") == "RUB" for x in rows)
-          print("VALID_RU_RUB_SALE_RECORDS:", len(rows))
-          cities = sorted({x.get("location", "") for x in rows if x.get("location")})
-          print("CITIES_WITH_OFFERS:", len(cities))
-          print("CITY_LIST:", ", ".join(cities))
+          from pathlib import Path
+          cfg = json.loads(Path("PRICE_RADAR/partner-feeds.example.json").read_text(encoding="utf-8"))
+          rss_yml = {"feeds": cfg.get("rss_atom_feeds", []) + cfg.get("yml_feeds", [])}
+          json_feeds = {"feeds": cfg.get("json_feeds", [])}
+          Path("PRICE_RADAR_RSS_YML_Config.json").write_text(json.dumps(rss_yml, ensure_ascii=False), encoding="utf-8")
+          Path("PRICE_RADAR_JSON_Config.json").write_text(json.dumps(json_feeds, ensure_ascii=False), encoding="utf-8")
+          print("RSS_ATOM_YML_CONFIGURED:", sum(1 for x in rss_yml["feeds"] if x.get("enabled") and x.get("country_confirmed") is True))
+          print("JSON_CONFIGURED:", sum(1 for x in json_feeds["feeds"] if x.get("enabled") and x.get("country_confirmed") is True))
           PY
-      - name: Upload Russia-wide offers
+      - name: Import authorized RSS, Atom and YML partner feeds
+        run: |
+          python PRICE_RADAR/tools/import_feeds.py PRICE_RADAR_RSS_YML_Config.json --delay 2 -o PRICE_RADAR_RSS_YML_Live.json
+      - name: Import authorized JSON partner feeds
+        run: |
+          python PRICE_RADAR/tools/import_json_feeds.py PRICE_RADAR_JSON_Config.json --delay 2 -o PRICE_RADAR_JSON_Live.json
+      - name: Merge and validate Russian ruble offers
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          files = [
+              "PRICE_RADAR_Golova_Russia_Live.json",
+              "PRICE_RADAR_RSS_YML_Live.json",
+              "PRICE_RADAR_JSON_Live.json",
+          ]
+          merged = {}
+          counts = {}
+          for name in files:
+              rows = json.loads(Path(name).read_text(encoding="utf-8"))
+              if not isinstance(rows, list):
+                  raise SystemExit(f"Invalid JSON array: {name}")
+              counts[name] = len(rows)
+              for row in rows:
+                  if row.get("country") != "RU" or row.get("currency") != "RUB":
+                      continue
+                  if not row.get("title") or not row.get("url") or float(row.get("price") or 0) <= 0:
+                      continue
+                  merged.setdefault(row.get("dedupe_key") or row.get("url"), row)
+          result = list(merged.values())
+          Path("PRICE_RADAR_Russia_All_Feeds.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+          print("SOURCE_COUNTS:", json.dumps(counts, ensure_ascii=False))
+          print("VALID_RU_RUB_OFFERS:", len(result))
+          print("SOURCES_WITH_DATA:", sum(1 for count in counts.values() if count))
+          PY
+      - name: Upload Russia-wide source files
         uses: actions/upload-artifact@v4
         with:
-          name: PRICE_RADAR_Golova_Russia_Live
-          path: PRICE_RADAR_Golova_Russia_Live.json
+          name: PRICE_RADAR_Russia_Live_Feeds
+          path: |
+            PRICE_RADAR_Russia_All_Feeds.json
+            PRICE_RADAR_Golova_Russia_Live.json
+            PRICE_RADAR_RSS_YML_Live.json
+            PRICE_RADAR_JSON_Live.json
           if-no-files-found: error
           retention-days: 14
