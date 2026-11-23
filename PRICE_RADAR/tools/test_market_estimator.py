@@ -40,6 +40,11 @@ class MarketEstimatorTests(unittest.TestCase):
         result = estimate(self.listing, bad, self.now)[0]
         self.assertIsNone(result["market_estimate"])
 
+    def test_duplicate_sale_records_do_not_inflate_comparable_count(self):
+        duplicated = self.sales + [dict(self.sales[0]), dict(self.sales[1])]
+        result = estimate(self.listing, duplicated, self.now)[0]
+        self.assertEqual(result["comparable_count"], 5)
+
     def test_missing_country_or_currency_is_not_assumed_russian(self):
         incomplete = [dict(x, country=None, currency=None) for x in self.sales]
         result = estimate(self.listing, incomplete, self.now)[0]
