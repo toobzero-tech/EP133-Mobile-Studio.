@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Test import normalizer
+        run: python -m unittest discover -s PRICE_RADAR/tools -p 'test_*.py' -v
       - name: Prepare ZIP
         run: |
           test -f PRICE_RADAR/index.html
