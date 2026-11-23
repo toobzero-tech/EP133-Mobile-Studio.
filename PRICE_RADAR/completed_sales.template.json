@@ -1,0 +1,15 @@
+{
+  "completed_sales": [
+    {
+      "brand": "Canon",
+      "model": "EOS 80D",
+      "condition": "Б/У",
+      "status": "sold",
+      "sold_price": 35000,
+      "sold_at": "2026-11-20T14:30:00+03:00",
+      "country": "RU",
+      "currency": "RUB",
+      "url": "https://example.ru/confirmed-sale"
+    }
+  ]
+}
