@@ -48,7 +48,6 @@
 - Это один из наиболее перспективных кандидатов для ценового мониторинга, но интеграцию нельзя считать доступной до получения официального доступа, согласования условий и проверки фактической схемы API.
 - Документ Ozon: https://dev.ozon.ru/news/256-Novyi-API-dlia-polucheniia-dannykh-Statistics-API/.
 
-- Публичная документация ЦИАН API: https://public-api.cian.ru/docs/latest.
 
 ### Доступ к аналитическим API маркетплейсов
 - Ozon Statistics API предназначен для внешней аналитики ассортимента, цен, остатков, рейтингов и отзывов. Официальная публикация Ozon указывает, что API платный, доступ запрашивается по адресу request-data@ozon.ru, решение по заявке может занимать до пяти рабочих дней: https://dev.ozon.ru/start/258-Ozon-zapustil-Statistics-API-dlia-polucheniia-dannykh-o-prodazhakh-na-marketpleise.
