@@ -32,6 +32,16 @@ class NormalizeTests(unittest.TestCase):
         self.assertEqual(row["model"], "A7")
         self.assertEqual(row["seller_id"], "seller")
 
+    def test_real_estate_fields_are_preserved_for_property_feed(self):
+        row = normalize({"name": "2-комнатная квартира", "price": "12500000", "currency": "RUB", "country": "RU", "source": "agency_feed", "property_type": "flat", "city": "Москва", "district": "Хамовники", "area_m2": "54,6", "rooms": "2"})
+        self.assertEqual(row["property_type"], "flat")
+        self.assertEqual(row["city"], "Москва")
+        self.assertEqual(row["district"], "Хамовники")
+        self.assertEqual(row["area_m2"], 54.6)
+        self.assertEqual(row["rooms"], 2)
+        self.assertEqual(row["location"], "Москва")
+        self.assertTrue(row["eligible_for_russia_feed"])
+
     def test_missing_currency_is_not_assumed_ruble(self):
         row = normalize({"name": "Товар", "price": "100", "source": "manual"})
         self.assertEqual(row["currency"], "UNSUPPORTED")
