@@ -24,7 +24,7 @@ jobs:
       - name: Scan Russian cities
         run: |
           python PRICE_RADAR/tools/import_golova_market.py PRICE_RADAR/golova-cities.example.json --max-pages "${{ inputs.max_pages || '2' }}" --delay 1.1 -o golova_market_offers.json
-          python -c "import json; x=json.load(open('golova_market_offers.json', encoding='utf-8')); print('VALID_RU_RUB_SALE_RECORDS:', len(x)); assert all(z['country']=='RU' and z['currency']=='RUB' and z['raw']['type']=='sale' for z in x)"
+          python -c "import json; x=json.load(open('golova_market_offers.json', encoding='utf-8')); print('VALID_RU_RUB_SALE_RECORDS:', len(x)); assert all(z['country']=='RU' and z['currency']=='RUB' and z['raw']['raw']['type']=='sale' for z in x)"
       - name: Upload live offers
         uses: actions/upload-artifact@v4
         with:
