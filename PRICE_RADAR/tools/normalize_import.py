@@ -62,27 +62,15 @@ def normalize(row):
     country = str(row.get("country") or "").strip().upper()
     country_ok = country == "RU"
     source_id = str(row.get("source_id") or row.get("id") or "").strip()
-    city = str(row.get("city") or row.get("location_city") or "").strip()
-    district = str(row.get("district") or row.get("neighborhood") or "").strip()
-    property_type = str(row.get("property_type") or row.get("propertyType") or row.get("asset_type") or "").strip().lower()
-    try:
-        area_m2 = float(str(row.get("area_m2") or row.get("areaM2") or row.get("total_area") or "").replace(",", "."))
-    except (ValueError, TypeError):
-        area_m2 = 0.0
-    try:
-        rooms = int(float(str(row.get("rooms") or row.get("room_count") or "0").replace(",", ".")))
-    except (ValueError, TypeError):
-        rooms = 0
-    location = str(row.get("location") or city).strip()
+    location = str(row.get("location") or "").strip()
     key = f"{source}:{source_id}" if source_id else (url or hashlib.sha256(
-        f"{norm_title(title)}|{price}|{location}|{property_type}|{city}|{district}|{area_m2}|{rooms}".encode()).hexdigest())
+        f"{norm_title(title)}|{price}|{location}".encode()).hexdigest())
     return {
         "dedupe_key": key, "source": source, "source_id": source_id,
         "url": url, "title": title, "description": row.get("description", ""),
         "category": row.get("category", ""), "condition": condition,
         "price": price, "currency": "RUB" if currency_ok else "UNSUPPORTED",
         "country": "RU" if country_ok else "UNSUPPORTED", "location": location,
-        "property_type": property_type, "city": city, "district": district, "area_m2": area_m2, "rooms": rooms,
         "brand": row.get("brand", ""), "model": row.get("model", ""),
         "seller_id": row.get("seller_id", ""), "image_urls": row.get("image_urls", []),
         "published_at": row.get("published_at") or row.get("publishedAt") or "",
