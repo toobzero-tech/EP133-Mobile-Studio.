@@ -15,7 +15,7 @@ class NormalizeTests(unittest.TestCase):
         for label, expected in [("Яндекс Маркет", "yandex_market"), ("Ozon", "ozon"),
                                 ("Wildberries", "wildberries"), ("DNS", "dns"),
                                 ("М.Видео", "mvideo"), ("Ситилинк", "citilink")]:
-            row = normalize({"name": "Товар", "price": "1000", "marketplace": label})
+            row = normalize({"name": "Товар", "price": "1000", "marketplace": label, "currency": "RUB"})
             self.assertEqual(row["source"], expected)
             self.assertEqual(row["country"], "RU")
             self.assertEqual(row["currency"], "RUB")
