@@ -20,7 +20,9 @@
 | seller_id | string | нет | Псевдо-ID продавца, если разрешён |
 | image_urls | array | нет | Публичные URL изображений, если разрешено |
 | completeness | string | нет | Комплектность/дефекты |
-| raw | object | нет | Исходные поля для аудита |\n| listing_type | string | нет | fixed / auction; по умолчанию fixed |\n| ends_at | ISO-8601 | для аукциона | Время завершения аукциона |
+| raw | object | нет | Исходные поля для аудита |
+| listing_type | string | нет | fixed / auction; по умолчанию fixed |
+| ends_at | ISO-8601 | для аукциона | Время завершения аукциона |
 
 ## Российские источники
 Нормализатор приводит названия площадок к кодам: avito, meshok, youla, yandex_market, ozon, wildberries, dns, citilink, mvideo, eldorado, megamarket. Неизвестные источники сохраняют нормализованное имя. Валюта отличная от RUB помечается UNSUPPORTED и не должна включаться в выдачу.
