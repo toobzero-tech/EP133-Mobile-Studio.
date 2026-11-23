@@ -133,6 +133,8 @@ def main():
         try:
             validate_feed_config(feed)
             batch = fetch_feed(feed["url"], feed["source"], feed.get("location", ""))
+            for row in batch:
+                row["country"] = "RU"
             rows.extend(batch)
             print(f'{feed["source"]}: получено записей {len(batch)}')
         except (KeyError, ValueError, urllib.error.URLError, TimeoutError, ET.ParseError) as exc:
