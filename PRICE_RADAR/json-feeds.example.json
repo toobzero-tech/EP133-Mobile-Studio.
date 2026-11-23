@@ -1,0 +1,25 @@
+{
+  "feeds": [
+    {
+      "source": "partner",
+      "url": "https://REPLACE-WITH-APPROVED-RUSSIAN-PARTNER-API/items",
+      "enabled": false,
+      "country_confirmed": false,
+      "currency_confirmed": false,
+      "items_path": "data.items",
+      "location": "Россия",
+      "fields": {
+        "title": "title",
+        "url": "url",
+        "price": "price",
+        "currency": "currency",
+        "source_id": "id",
+        "description": "description",
+        "category": "category",
+        "condition": "condition",
+        "published_at": "published_at",
+        "location": "city"
+      }
+    }
+  ]
+}
