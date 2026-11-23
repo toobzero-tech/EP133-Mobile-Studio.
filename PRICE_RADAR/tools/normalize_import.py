@@ -57,7 +57,7 @@ def normalize(row):
         condition = "unknown"
     raw_source = (row.get("source") or row.get("marketplace") or "manual").strip().lower()
     source = SOURCE_ALIASES.get(raw_source, raw_source.replace(" ", "_"))
-    currency = str(row.get("currency") or "RUB").strip().upper()
+    currency = str(row.get("currency") or "").strip().upper()
     currency_ok = currency in ALLOWED_CURRENCIES
     source_id = str(row.get("source_id") or row.get("id") or "").strip()
     key = f"{source}:{source_id}" if source_id else (url or hashlib.sha256(
