@@ -22,6 +22,10 @@ contracts = {
     "completed-sale age limit": "Date.now()-date>365*86400000",
     "UTF-8 BOM handling": "replace(/^\\uFEFF/,'')",
     "sales import deduplication": "var merged=sales.concat(valid)",
+    "live offer JSON import": "$('#offersin').onchange",
+    "exact active listing benchmark": "function activeMarketInfo(x)",
+    "active benchmark warning label": "Активные объявления (ориентир, не цена продажи)",
+    "imported offer country and currency": "country:'RU',currency:'RUB'",
 }
 missing = [label for label, token in contracts.items() if token not in source]
 if missing:
