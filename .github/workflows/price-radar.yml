@@ -21,6 +21,9 @@ jobs:
       - name: Probe Golova public read API (non-blocking)
         continue-on-error: true
         run: python PRICE_RADAR/tools/probe_golova_api.py
+      - name: Import live Moscow sales sample from Golova API
+        run: |
+          python PRICE_RADAR/tools/import_golova_market.py PRICE_RADAR/golova-smoke.example.json --max-pages 1 --per-page 50 --delay 1.1 -o PRICE_RADAR/golova_market_live_sample.json || printf '[]\n' > PRICE_RADAR/golova_market_live_sample.json
       - name: Check frontend JavaScript syntax
         run: python PRICE_RADAR/tools/check_frontend.py
       - name: Prepare ZIP
