@@ -19,7 +19,7 @@
 <label class="wide">Заметка<input name="note" placeholder="Комплектация, дефекты, сомнения..."></label><div class="wide"><button>Добавить в ленту</button> <button type="button" class="secondary" id="sample">Добавить примеры</button></div>
 </form></section>
 <div class="toolbar"><input id="q" placeholder="Поиск по названию, категории, площадке"><select id="condition"><option value="all">Все состояния</option><option>Новый</option><option>Б/У</option></select><select id="sort"><option value="fresh">Сначала свежие</option><option value="profit">Прибыль выше</option><option value="discount">Дисконт выше</option><option value="score">Рейтинг выше</option></select><button class="secondary" id="csvout">Экспорт CSV</button><label class="secondary" style="padding:9px;border-radius:8px;cursor:pointer">Импорт CSV<input id="csvin" type="file" accept=".csv" hidden></label></div>
-<div class="items" id="items"></div>
+<p class="muted" style="font-size:12px;margin:8px 2px">Аукционы скрыты по умолчанию. Показываем только лоты, заканчивающиеся в течение 24 часов, с дисконтом от 20%, положительной расчётной прибылью и рейтингом сделки от 60/100. Без времени окончания аукцион не попадает в ленту.</p>\n<div class="items" id="items"></div>
 <footer>Данные хранятся локально в браузере на этом устройстве. Прибыль = рыночная оценка − цена объявления − дополнительные расходы. Рыночную оценку нужно подтверждать завершёнными продажами сопоставимых товаров. Автоматический сбор объявлений пока не подключён: он будет возможен только через разрешённые API, RSS, открытые выгрузки или партнёрские фиды. Демопримеры условные. *Прибыль предварительная, до налогов и непредвиденных расходов.</footer>
 </main>
 <script>
