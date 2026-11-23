@@ -26,6 +26,10 @@ contracts = {
     "exact active listing benchmark": "function activeMarketInfo(x)",
     "active benchmark warning label": "Активные объявления (ориентир, не цена продажи)",
     "imported offer country and currency": "country:'RU',currency:'RUB'",
+    "property comparable matcher": "function comparablePropertySales(x)",
+    "property price per square metre": "sold_price)/propertyArea(z)",
+    "property area tolerance": "Math.abs(za-area)/area<=.20",
+    "property sale currency restriction": "String(z.currency||'').toUpperCase())==='RUB'",
 }
 missing = [label for label, token in contracts.items() if token not in source]
 if missing:
@@ -78,5 +82,39 @@ try:
     subprocess.run([node, harness_path], check=True)
 finally:
     Path(harness_path).unlink(missing_ok=True)
+
+
+# Exercise the actual property-comparable estimator using a deterministic sample.
+property_match = re.search(r"(function propertyTypeKey\(x\)\{[\s\S]*?)function marketInfo\(x\)", source)
+if not property_match:
+    raise SystemExit("Could not isolate the property comparable estimator")
+property_source = property_match.group(1)
+property_harness = r"""
+function n(v){return Number(v)||0}
+function normKey(v){return String(v||'').toLowerCase().replace(/[^0-9a-zа-я]+/g,'')}
+var now=Date.now();
+var sales=[
+ {property_type:"flat",city:"Москва",district:"Хамовники",area_m2:50,rooms:2,sold_price:5000000,status:"sold",sold_at:new Date(now-10*86400000).toISOString(),country:"RU",currency:"RUB"},
+ {property_type:"flat",city:"Москва",district:"Хамовники",area_m2:60,rooms:2,sold_price:6600000,status:"completed",sold_at:new Date(now-20*86400000).toISOString(),country:"RU",currency:"RUB"},
+ {property_type:"flat",city:"Москва",district:"Хамовники",area_m2:80,rooms:2,sold_price:9600000,status:"sold",sold_at:new Date(now-10*86400000).toISOString(),country:"RU",currency:"RUB"},
+ {property_type:"flat",city:"Казань",district:"Центр",area_m2:55,rooms:2,sold_price:4000000,status:"sold",sold_at:new Date(now-10*86400000).toISOString(),country:"RU",currency:"RUB"}
+];
+""" + property_source + r"""
+const assert=require("assert");
+const result=propertyMarketInfo({propertyType:"flat",city:"Москва",district:"Хамовники",areaM2:55,rooms:2});
+assert.strictEqual(result.count,2);
+assert.strictEqual(result.market,6050000);
+assert(result.source.includes("₽/м²"));
+const none=propertyMarketInfo({propertyType:"flat",city:"Москва",areaM2:100,rooms:3});
+assert.strictEqual(none,null);
+console.log("Property comparable sales tests: OK");
+"""
+with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8", delete=False) as handle:
+    handle.write(property_harness)
+    property_path = handle.name
+try:
+    subprocess.run([node, property_path], check=True)
+finally:
+    Path(property_path).unlink(missing_ok=True)
 
 print("Frontend JavaScript syntax and business-rule smoke checks: OK")
