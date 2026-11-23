@@ -43,6 +43,7 @@ def parse_date(value):
 def estimate(listings, sales, now=None, max_age_days=365):
     now = now or datetime.now(timezone.utc)
     prepared = []
+    seen_sales = set()
     for sale in sales:
         status = str(sale.get("status", "")).lower()
         if status not in {"sold", "completed", "finished"}:
@@ -62,9 +63,16 @@ def estimate(listings, sales, now=None, max_age_days=365):
         if not sold_at or sold_at > now or (now - sold_at) > timedelta(days=max_age_days):
             continue
         brand_key, model_key = key(sale.get("brand")), key(sale.get("model"))
+        sale_condition = condition(sale.get("condition"))
         if not brand_key or not model_key:
             continue
-        prepared.append((brand_key, model_key, condition(sale.get("condition")), amount, sold_at, sale))
+        identity = str(sale.get("source_id") or sale.get("url") or "").strip()
+        if not identity:
+            identity = "|".join((brand_key, model_key, sale_condition, str(amount), sold_at.isoformat()))
+        if identity in seen_sales:
+            continue
+        seen_sales.add(identity)
+        prepared.append((brand_key, model_key, sale_condition, amount, sold_at, sale))
 
     output = []
     for listing in listings:
