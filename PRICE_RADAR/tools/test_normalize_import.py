@@ -6,7 +6,7 @@ class NormalizeTests(unittest.TestCase):
         self.assertEqual(clean_url("https://EXAMPLE.com/item/1?utm_source=x"), "https://example.com/item/1")
 
     def test_russian_condition_and_price(self):
-        row = normalize({"name":"Фотоаппарат","price":"12 500","condition":"Б/У","marketplace":"Мешок","url":"https://meshok.net/item/1","currency":"RUB"})
+        row = normalize({"name":"Фотоаппарат","price":"12 500","condition":"Б/У","marketplace":"Мешок","url":"https://meshok.net/item/1","currency":"RUB","country":"RU"})
         self.assertEqual(row["price"], 12500.0)
         self.assertEqual(row["condition"], "used")
         self.assertEqual(row["source"], "meshok")
@@ -15,11 +15,22 @@ class NormalizeTests(unittest.TestCase):
         for label, expected in [("Яндекс Маркет", "yandex_market"), ("Ozon", "ozon"),
                                 ("Wildberries", "wildberries"), ("DNS", "dns"),
                                 ("М.Видео", "mvideo"), ("Ситилинк", "citilink")]:
-            row = normalize({"name": "Товар", "price": "1000", "marketplace": label, "currency": "RUB"})
+            row = normalize({"name": "Товар", "price": "1000", "marketplace": label, "currency": "RUB", "country": "RU"})
             self.assertEqual(row["source"], expected)
             self.assertEqual(row["country"], "RU")
             self.assertEqual(row["currency"], "RUB")
             self.assertTrue(row["eligible_for_russia_feed"])
+
+    def test_missing_country_is_not_assumed_russian(self):
+        row = normalize({"name": "Товар", "price": "100", "currency": "RUB"})
+        self.assertEqual(row["country"], "UNSUPPORTED")
+        self.assertFalse(row["eligible_for_russia_feed"])
+
+    def test_brand_model_and_seller_are_preserved(self):
+        row = normalize({"name": "Товар", "price": "100", "currency": "RUB", "country": "RU", "brand": "Sony", "model": "A7", "seller_id": "seller"})
+        self.assertEqual(row["brand"], "Sony")
+        self.assertEqual(row["model"], "A7")
+        self.assertEqual(row["seller_id"], "seller")
 
     def test_missing_currency_is_not_assumed_ruble(self):
         row = normalize({"name": "Товар", "price": "100", "source": "manual"})
@@ -27,7 +38,7 @@ class NormalizeTests(unittest.TestCase):
         self.assertFalse(row["eligible_for_russia_feed"])
 
     def test_non_ruble_source_is_not_feed_eligible(self):
-        row = normalize({"name": "Item", "price": "20", "currency": "EUR", "source": "manual"})
+        row = normalize({"name": "Item", "price": "20", "currency": "EUR", "country": "RU", "source": "manual"})
         self.assertEqual(row["currency"], "UNSUPPORTED")
         self.assertFalse(row["eligible_for_russia_feed"])
 
