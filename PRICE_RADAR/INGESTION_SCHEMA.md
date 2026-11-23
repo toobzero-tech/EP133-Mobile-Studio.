@@ -12,14 +12,18 @@
 | category | string | нет | Категория |
 | condition | string | да | new / used / refurbished / open_box / unknown |
 | price | number | да | Цена в RUB |
-| currency | string | да | RUB |
-| location | string | нет | Регион/город |
+| currency | string | да | Только RUB; предложения в другой валюте не попадают в российскую ленту |
+| country | string | да | RU; проект ограничен Российской Федерацией |
+| location | string | нет | Регион/город в России |
 | published_at | ISO-8601 | нет | Время публикации, если источник его даёт |
 | observed_at | ISO-8601 | да | Когда PRICE RADAR увидел лот |
 | seller_id | string | нет | Псевдо-ID продавца, если разрешён |
 | image_urls | array | нет | Публичные URL изображений, если разрешено |
 | completeness | string | нет | Комплектность/дефекты |
 | raw | object | нет | Исходные поля для аудита |\n| listing_type | string | нет | fixed / auction; по умолчанию fixed |\n| ends_at | ISO-8601 | для аукциона | Время завершения аукциона |
+
+## Российские источники
+Нормализатор приводит названия площадок к кодам: avito, meshok, youla, yandex_market, ozon, wildberries, dns, citilink, mvideo, eldorado, megamarket. Неизвестные источники сохраняют нормализованное имя. Валюта отличная от RUB помечается UNSUPPORTED и не должна включаться в выдачу.
 
 ## Дедупликация
 1. Сначала source + source_id.
