@@ -68,10 +68,10 @@ def parse_feed(xml_bytes, source, location=""):
         description = child_text(item, {"description", "summary", "content", "encoded"})
         published = child_text(item, {"pubdate", "published", "updated", "date"})
         price = ""
-        currency = "RUB"
+        currency = ""
         if is_offer:
             price = child_text(item, {"price"})
-            currency = child_text(item, {"currencyid"}) or "RUB"
+            currency = child_text(item, {"currencyid"})
             if item.attrib.get("available", "true").lower() == "false":
                 continue
         else:
