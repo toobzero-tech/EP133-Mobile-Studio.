@@ -59,29 +59,39 @@ def entry_link(node):
 
 def parse_feed(xml_bytes, source, location=""):
     root = ET.fromstring(xml_bytes)
-    entries = [n for n in root.iter() if local_name(n.tag) in {"item", "entry"}]
+    entries = [n for n in root.iter() if local_name(n.tag) in {"item", "entry", "offer"}]
     rows = []
     for item in entries:
-        title = child_text(item, {"title"})
-        link = entry_link(item)
+        is_offer = local_name(item.tag) == "offer"
+        title = child_text(item, {"name", "title"}) if is_offer else child_text(item, {"title"})
+        link = child_text(item, {"url"}) if is_offer else entry_link(item)
         description = child_text(item, {"description", "summary", "content", "encoded"})
         published = child_text(item, {"pubdate", "published", "updated", "date"})
-        # RSS feeds sometimes expose price as a dedicated element.
         price = ""
-        for node in item.iter():
-            if local_name(node.tag) in {"price", "amount"} and node.text:
-                price = node.text.strip()
-                break
-        if not price:
-            match = re.search(r"(?<!\d)(\d[\d\s\u00a0]{1,12}(?:[,.]\d{1,2})?)\s*(?:₽|руб\.?|рублей)", description, re.I)
-            if match:
-                price = re.sub(r"[\s\u00a0]", "", match.group(1)).replace(",", ".")
-        rows.append({
+        currency = "RUB"
+        if is_offer:
+            price = child_text(item, {"price"})
+            currency = child_text(item, {"currencyid"}) or "RUB"
+            if item.attrib.get("available", "true").lower() == "false":
+                continue
+        else:
+            for node in item.iter():
+                if local_name(node.tag) in {"price", "amount"} and node.text:
+                    price = node.text.strip()
+                    break
+            if not price:
+                match = re.search(r"(?<!\d)(\d[\d\s\u00a0]{1,12}(?:[,.]\d{1,2})?)\s*(?:₽|руб\.?|рублей)", description, re.I)
+                if match:
+                    price = re.sub(r"[\s\u00a0]", "", match.group(1)).replace(",", ".")
+        row = {
             "source": source, "title": title, "url": link,
             "description": description, "price": price,
-            "currency": "RUB", "location": location,
+            "currency": currency, "location": location,
             "published_at": parse_date(published),
-        })
+        }
+        if is_offer and item.attrib.get("id"):
+            row["source_id"] = item.attrib["id"]
+        rows.append(row)
     return rows
 
 def fetch_feed(url, source, location=""):
