@@ -8,6 +8,15 @@ RSS = b"""<?xml version="1.0"?>
 <pubDate>Mon, 23 Nov 2026 10:00:00 +0000</pubDate>
 </item></channel></rss>"""
 
+YML = b"""<?xml version="1.0" encoding="UTF-8"?>
+<yml_catalog date="2026-11-23 10:00"><shop><offers>
+<offer id="sku-77" available="true"><url>https://partner.ru/p/77</url>
+<price>15990</price><currencyId>RUR</currencyId><name>Наушники</name>
+<description>Новая модель</description></offer>
+<offer id="sku-78" available="false"><url>https://partner.ru/p/78</url>
+<price>100</price><currencyId>RUR</currencyId><name>Нет в наличии</name></offer>
+</offers></shop></yml_catalog>"""
+
 ATOM = b"""<?xml version="1.0"?>
 <feed xmlns="http://www.w3.org/2005/Atom"><entry>
 <title>Объектив</title><link href="https://shop.ru/lens"/>
@@ -29,6 +38,14 @@ class FeedImportTests(unittest.TestCase):
         self.assertEqual(rows[0]["title"], "Объектив")
         self.assertEqual(rows[0]["url"], "https://shop.ru/lens")
         self.assertEqual(rows[0]["price"], "8900")
+
+    def test_yml_offers_and_unavailable_filter(self):
+        rows = parse_feed(YML, "partner", "Россия")
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["source_id"], "sku-77")
+        self.assertEqual(rows[0]["title"], "Наушники")
+        self.assertEqual(rows[0]["price"], "15990")
+        self.assertEqual(rows[0]["currency"], "RUR")
 
     def test_bad_date_is_empty(self):
         self.assertEqual(parse_date("not-a-date"), "")
