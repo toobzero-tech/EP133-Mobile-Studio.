@@ -1,11 +1,6 @@
 name: Deploy Price Radar to GitHub Pages
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "price-radar-mvp/PRICE_RADAR/**"
-      - ".github/workflows/deploy-price-radar-pages.yml"
   workflow_dispatch:
 
 permissions:
