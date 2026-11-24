@@ -3,7 +3,6 @@ on:
   push:
     paths:
       - 'price-radar-android/**'
-      - 'price-radar-mvp/PRICE_RADAR/index.html'
       - '.github/workflows/build-price-radar-android.yml'
   workflow_dispatch:
 jobs:
@@ -26,10 +25,6 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Bundle app interface
-        run: |
-          mkdir -p price-radar-android/app/src/main/assets
-          cp price-radar-mvp/PRICE_RADAR/index.html price-radar-android/app/src/main/assets/index.html
       - name: Build debug APK
         working-directory: price-radar-android
         run: gradle assembleDebug

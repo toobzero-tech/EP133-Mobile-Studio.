@@ -1,12 +1,40 @@
-# PRICE RADAR Android application
+# PRICE RADAR Android 1.1.0
 
-Installable Android application. The PRICE RADAR interface is bundled inside the APK and opens locally; GitHub Pages is not required.
+Нативный Android-интерфейс для сравнения цен по пяти российским магазинам:
 
-- Application ID: `com.toobzero.priceradar`
+- DNS
+- М.Видео
+- Ozon
+- Wildberries
+- Яндекс Маркет
+
+## Что работает в версии 1.1.0
+
+- поиск одного товара в выдаче каждого из пяти магазинов;
+- отдельная карточка магазина с кнопкой открытия поиска;
+- ручная фиксация фактической цены и ссылки на конкретный товар;
+- сравнение минимальной, максимальной и средней введённых цен;
+- расчёт разницы в рублях и процентах;
+- сохранение цен и ссылок для каждого поискового запроса;
+- история последних восьми запросов;
+- сохранение города (по умолчанию Санкт-Петербург);
+- интерфейс и логика выполнены на Android Views, без WebView.
+
+## Чего пока нет
+
+Автоматическая загрузка карточек и цен из DNS, М.Видео, Ozon, Wildberries и Яндекс Маркета пока не подключена. Эта версия не выдаёт поисковые ссылки за найденные предложения и не подставляет демонстрационные цены.
+
+По состоянию на 24.11.2026 для независимого поиска чужих предложений не подтверждены универсальные открытые API всех пяти площадок. Seller API обычно дают доступ к товарам конкретного продавца. Для Яндекс Маркета партнёрский API требует договора и ключа; для аналитического API Ozon требуется отдельный доступ. До получения разрешённых источников приложение использует официальные страницы поиска магазинов и позволяет записать проверенные цены вручную.
+
+## Сборка
+
+Проект собирается GitHub Actions workflow .github/workflows/build-price-radar-android.yml.
+
+- Application ID: com.toobzero.priceradar
 - Minimum Android: 9 / API 28
 - Target SDK: 35
-- Data is stored locally in WebView storage.
-- CSV and JSON import uses Android's system document picker.
-- Marketplace links open in the browser.
+- Java: 17
+- Android Gradle Plugin: 8.7.3
+- Kotlin plugin: 2.0.21
 
-The automated scanner is a separate GitHub Actions workflow. Its public feed contains active listings, not confirmed completed sales.
+Следующий этап автоматизации: получить официальные API/партнёрские фиды для каждой площадки, затем подключать их по одному с проверкой актуальности цены, региона, наличия и прямой ссылки на карточку.
