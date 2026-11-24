@@ -88,13 +88,13 @@ jobs:
           }
           Path("PRICE_RADAR_scan_report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
           Path("PRICE_RADAR_IMPORT_README.txt").write_text(
-              "PRICE RADAR: импорт ежедневной выгрузки\\n\\n"
-              "1. Распакуйте этот артефакт GitHub Actions.\\n"
-              "2. В приложении нажмите «Импорт объявлений JSON».\\n"
-              "3. Выберите PRICE_RADAR_Russia_All_Feeds.json.\\n\\n"
+              "PRICE RADAR: импорт ежедневной выгрузки\n\n"
+              "1. Распакуйте этот артефакт GitHub Actions.\n"
+              "2. В приложении нажмите «Импорт объявлений JSON».\n"
+              "3. Выберите PRICE_RADAR_Russia_All_Feeds.json.\n\n"
               "Файл содержит только активные объявления RU/RUB с названием, ценой и ссылкой. "
               "Он не содержит подтверждённых завершённых продаж и сам по себе не доказывает цену перепродажи. "
-              "В приложении цена рынка останется «Нет оценки», пока не загружена история завершённых продаж.\\n",
+              "В приложении цена рынка останется «Нет оценки», пока не загружена история завершённых продаж.\n",
               encoding="utf-8"
           )
           print("SOURCE_COUNTS:", json.dumps(counts, ensure_ascii=False))
