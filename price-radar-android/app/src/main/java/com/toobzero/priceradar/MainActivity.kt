@@ -7,6 +7,9 @@ import android.os.Bundle
 import android.webkit.*
 import android.graphics.Color
 import android.widget.Toast
+import android.util.Base64
+import java.net.HttpURLConnection
+import java.net.URL
 import java.io.OutputStream
 
 class MainActivity : Activity() {
@@ -17,6 +20,33 @@ class MainActivity : Activity() {
  private var pendingName: String = "price-radar.csv"
 
  inner class AndroidBridge {
+  @JavascriptInterface
+  fun fetchLiveFeed() {
+   Thread {
+    var connection: HttpURLConnection? = null
+    try {
+     val endpoint = URL("https://raw.githubusercontent.com/toobzero-tech/EP133-Mobile-Studio./main/price-radar-data/latest.json?ts=" + System.currentTimeMillis())
+     connection = (endpoint.openConnection() as HttpURLConnection).apply {
+      requestMethod = "GET"
+      connectTimeout = 15000
+      readTimeout = 20000
+      setRequestProperty("Accept", "application/json")
+      setRequestProperty("User-Agent", "PRICE-RADAR-Android/1.0")
+     }
+     val code = connection.responseCode
+     if (code !in 200..299) throw java.io.IOException("HTTP " + code)
+     val bytes = connection.inputStream.use { it.readBytes() }
+     val encoded = Base64.encodeToString(bytes, Base64.NO_WRAP)
+     runOnUiThread { web.evaluateJavascript("window.onNativeFeedBase64('" + encoded + "')", null) }
+    } catch (e: Exception) {
+     val message = Base64.encodeToString((e.message ?: "Network error").toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+     runOnUiThread { web.evaluateJavascript("window.onNativeFeedError('" + message + "')", null) }
+    } finally {
+     connection?.disconnect()
+    }
+   }.start()
+  }
+
   @JavascriptInterface
   fun saveTextFile(filename: String, mimeType: String, content: String) {
    runOnUiThread {
