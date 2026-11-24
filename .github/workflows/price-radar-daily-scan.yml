@@ -73,8 +73,33 @@ jobs:
                   merged.setdefault(row.get("dedupe_key") or row.get("url"), row)
           result = list(merged.values())
           Path("PRICE_RADAR_Russia_All_Feeds.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+          partner_cfg = json.loads(Path("PRICE_RADAR/partner-feeds.json").read_text(encoding="utf-8"))
+          configured = {
+              "rss_atom_yml": sum(1 for x in partner_cfg.get("rss_atom_feeds", []) + partner_cfg.get("yml_feeds", []) if x.get("enabled") and x.get("country_confirmed") is True),
+              "json": sum(1 for x in partner_cfg.get("json_feeds", []) if x.get("enabled") and x.get("country_confirmed") is True),
+          }
+          report = {
+              "generated_at_utc": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+              "total_valid_ru_rub_active_offers": len(result),
+              "source_counts": counts,
+              "partner_feeds_configured": configured,
+              "completed_sales_included": False,
+              "note": "Это активные объявления, не подтверждённые завершённые продажи. Для оценки перепродажи нужна отдельная история сделок."
+          }
+          Path("PRICE_RADAR_scan_report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+          Path("PRICE_RADAR_IMPORT_README.txt").write_text(
+              "PRICE RADAR: импорт ежедневной выгрузки\\n\\n"
+              "1. Распакуйте этот артефакт GitHub Actions.\\n"
+              "2. В приложении нажмите «Импорт объявлений JSON».\\n"
+              "3. Выберите PRICE_RADAR_Russia_All_Feeds.json.\\n\\n"
+              "Файл содержит только активные объявления RU/RUB с названием, ценой и ссылкой. "
+              "Он не содержит подтверждённых завершённых продаж и сам по себе не доказывает цену перепродажи. "
+              "В приложении цена рынка останется «Нет оценки», пока не загружена история завершённых продаж.\\n",
+              encoding="utf-8"
+          )
           print("SOURCE_COUNTS:", json.dumps(counts, ensure_ascii=False))
-          print("VALID_RU_RUB_OFFERS:", len(result))
+          print("PARTNER_FEEDS_CONFIGURED:", json.dumps(configured, ensure_ascii=False))
+          print("VALID_RU_RUB_ACTIVE_OFFERS:", len(result))
           print("SOURCES_WITH_DATA:", sum(1 for count in counts.values() if count))
           PY
       - name: Upload Russia-wide source files
@@ -86,5 +111,7 @@ jobs:
             PRICE_RADAR_Golova_Russia_Live.json
             PRICE_RADAR_RSS_YML_Live.json
             PRICE_RADAR_JSON_Live.json
+            PRICE_RADAR_scan_report.json
+            PRICE_RADAR_IMPORT_README.txt
           if-no-files-found: error
           retention-days: 14
