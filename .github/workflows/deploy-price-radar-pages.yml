@@ -26,6 +26,29 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Validate Price Radar HTML and JavaScript
+        run: |
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          import re
+
+          source = Path("price-radar-mvp/PRICE_RADAR/index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script\\b[^>]*>(.*?)</script>", source, flags=re.I | re.S)
+          if not scripts:
+              raise SystemExit("No inline JavaScript found")
+          Path("/tmp/price-radar-inline.js").write_text("\\n".join(scripts), encoding="utf-8")
+          required = ["importLiveJSON", "importSalesJSON", "localStorage", "function render"]
+          missing = [item for item in required if item not in source]
+          if missing:
+              raise SystemExit("Missing required app features: " + ", ".join(missing))
+          class Check(HTMLParser):
+              def error(self, message):
+                  raise ValueError(message)
+          Check().feed(source)
+          print("HTML parsed; inline scripts:", len(scripts), "; required features present")
+          PY
+          node --check /tmp/price-radar-inline.js
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:
