@@ -34,10 +34,10 @@ jobs:
           import re
 
           source = Path("price-radar-mvp/PRICE_RADAR/index.html").read_text(encoding="utf-8")
-          scripts = re.findall(r"<script\\b[^>]*>(.*?)</script>", source, flags=re.I | re.S)
+          scripts = re.findall(r"<script\b[^>]*>(.*?)</script>", source, flags=re.I | re.S)
           if not scripts:
               raise SystemExit("No inline JavaScript found")
-          Path("/tmp/price-radar-inline.js").write_text("\\n".join(scripts), encoding="utf-8")
+          Path("/tmp/price-radar-inline.js").write_text("\n".join(scripts), encoding="utf-8")
           required = ["importLiveJSON", "importSalesJSON", "localStorage", "function render"]
           missing = [item for item in required if item not in source]
           if missing:
