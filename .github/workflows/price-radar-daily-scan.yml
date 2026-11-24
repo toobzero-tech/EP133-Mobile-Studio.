@@ -34,7 +34,7 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-          cfg = json.loads(Path("PRICE_RADAR/partner-feeds.example.json").read_text(encoding="utf-8"))
+          cfg = json.loads(Path("PRICE_RADAR/partner-feeds.json").read_text(encoding="utf-8"))
           rss_yml = {"feeds": cfg.get("rss_atom_feeds", []) + cfg.get("yml_feeds", [])}
           json_feeds = {"feeds": cfg.get("json_feeds", [])}
           Path("PRICE_RADAR_RSS_YML_Config.json").write_text(json.dumps(rss_yml, ensure_ascii=False), encoding="utf-8")
