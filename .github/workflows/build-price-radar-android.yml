@@ -33,3 +33,10 @@ jobs:
           name: PRICE-RADAR-Android-APK
           path: price-radar-android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+      - name: Package source archive
+        run: zip -r PRICE_RADAR_ANDROID_SOURCE_v1.2.0.zip price-radar-android -x "*/build/*" "*/.gradle/*"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PRICE-RADAR-Android-Source
+          path: PRICE_RADAR_ANDROID_SOURCE_v1.2.0.zip
+          if-no-files-found: error
