@@ -1,35 +1,22 @@
-# PRICE RADAR Android 1.1.0
+# PRICE RADAR Android 1.2.0
 
-Нативный Android-интерфейс для сравнения цен по пяти российским магазинам:
+Native Android app for comparing search results from DNS, М.Видео, Ozon, Wildberries and Яндекс Маркет.
 
-- DNS
-- М.Видео
-- Ozon
-- Wildberries
-- Яндекс Маркет
+## 1.2.0 changes
+- Store searches open inside the app in a native WebView screen.
+- Added a "Считать карточки и цены" action that reads visible product-card text from the current page.
+- Parser searches for product-like links and ruble price text, rejects unrelated hostnames, deduplicates direct links, and excludes cards containing installment/monthly-payment signals.
+- User can choose a candidate; its detected price and direct product link are imported into the main comparison screen.
+- Scan timestamps are saved per store/query and shown as a preliminary source indicator.
+- Imported prices are explicitly marked as preliminary and are not guaranteed to represent the final price, availability, region, or discount conditions.
+- Added Internet permission, declared the WebView search activity, and bumped app version to 1.2.0.
 
-## Что работает в версии 1.1.0
+## Important limitations
+The parser reads the currently rendered public search page. It does not bypass CAPTCHA, bot protections, login walls, or access controls. Retailer pages are dynamic and may change their markup; scanning can return no results or misread a price. Every imported candidate must be checked on its product page before comparison or purchase.
 
-- поиск одного товара в выдаче каждого из пяти магазинов;
-- отдельная карточка магазина с кнопкой открытия поиска;
-- ручная фиксация фактической цены и ссылки на конкретный товар;
-- сравнение минимальной, максимальной и средней введённых цен;
-- расчёт разницы в рублях и процентах;
-- сохранение цен и ссылок для каждого поискового запроса;
-- история последних восьми запросов;
-- сохранение города (по умолчанию Санкт-Петербург);
-- интерфейс и логика выполнены на Android Views, без WebView.
+This is not a server-side feed and does not silently update prices in the background. The user opens a store search, taps "Считать карточки и цены", and selects a candidate. Official/partner APIs and a reliable cross-store feed remain a separate integration stage.
 
-## Чего пока нет
-
-Автоматическая загрузка карточек и цен из DNS, М.Видео, Ozon, Wildberries и Яндекс Маркета пока не подключена. Эта версия не выдаёт поисковые ссылки за найденные предложения и не подставляет демонстрационные цены.
-
-По состоянию на 24.11.2026 для независимого поиска чужих предложений не подтверждены универсальные открытые API всех пяти площадок. Seller API обычно дают доступ к товарам конкретного продавца. Для Яндекс Маркета партнёрский API требует договора и ключа; для аналитического API Ozon требуется отдельный доступ. До получения разрешённых источников приложение использует официальные страницы поиска магазинов и позволяет записать проверенные цены вручную.
-
-## Сборка
-
-Проект собирается GitHub Actions workflow .github/workflows/build-price-radar-android.yml.
-
+## App details
 - Application ID: com.toobzero.priceradar
 - Minimum Android: 9 / API 28
 - Target SDK: 35
@@ -37,4 +24,5 @@
 - Android Gradle Plugin: 8.7.3
 - Kotlin plugin: 2.0.21
 
-Следующий этап автоматизации: получить официальные API/партнёрские фиды для каждой площадки, затем подключать их по одному с проверкой актуальности цены, региона, наличия и прямой ссылки на карточку.
+## Build
+The main build is GitHub Actions: .github/workflows/build-price-radar-android.yml. The Colab notebook is an optional fallback. Parser smoke tests can be run with node tests_store_parser.js. They use synthetic DOM objects and verify parser behavior, not live store connectivity.

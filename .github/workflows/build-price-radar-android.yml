@@ -25,6 +25,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Test visible-page price parser
+        run: node price-radar-android/tests_store_parser.js
       - name: Build debug APK
         working-directory: price-radar-android
         run: gradle assembleDebug
