@@ -4,6 +4,10 @@ on:
     paths:
       - 'price-radar-android/**'
       - '.github/workflows/build-price-radar-android.yml'
+  pull_request:
+    paths:
+      - 'price-radar-android/**'
+      - '.github/workflows/build-price-radar-android.yml'
   workflow_dispatch:
 jobs:
   build:
