@@ -1,4 +1,4 @@
-# PRICE RADAR Android 1.1.0
+# PRICE RADAR Android 1.2.0
 
 Нативный Android-интерфейс для сравнения цен по пяти российским магазинам:
 
