@@ -4,6 +4,10 @@ on:
     paths:
       - 'price-radar-android/**'
       - '.github/workflows/build-price-radar-android.yml'
+  pull_request:
+    paths:
+      - 'price-radar-android/**'
+      - '.github/workflows/build-price-radar-android.yml'
   workflow_dispatch:
 jobs:
   build:
@@ -25,6 +29,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Test visible-page price parser
+        run: node price-radar-android/tests_store_parser.js
       - name: Build debug APK
         working-directory: price-radar-android
         run: gradle assembleDebug

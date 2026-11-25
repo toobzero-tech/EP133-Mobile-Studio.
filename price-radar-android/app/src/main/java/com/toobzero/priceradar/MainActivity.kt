@@ -22,6 +22,8 @@ import android.widget.Toast
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 class MainActivity : Activity() {
@@ -43,6 +45,8 @@ class MainActivity : Activity() {
     private val preferences by lazy { getSharedPreferences("price_radar_native", MODE_PRIVATE) }
     private val priceFields = linkedMapOf<String, EditText>()
     private val productLinkFields = linkedMapOf<String, EditText>()
+    private val scanTimes = linkedMapOf<String, Long>()
+    private val scanStatusViews = linkedMapOf<String, TextView>()
     private val searchHistory = mutableListOf<String>()
 
     private lateinit var queryField: EditText
@@ -197,6 +201,8 @@ class MainActivity : Activity() {
         cardsBlock.removeAllViews()
         priceFields.clear()
         productLinkFields.clear()
+        scanTimes.clear()
+        scanStatusViews.clear()
 
         val saved = try {
             JSONObject(preferences.getString("offers:" + query, "{}").orEmpty())
@@ -225,7 +231,7 @@ class MainActivity : Activity() {
             }, matchWrap())
 
             card.addView(button("ОТКРЫТЬ ПОИСК В " + store.name.uppercase(Locale("ru", "RU")), orange) {
-                openUrl(store.searchUrl + Uri.encode(query))
+                openStoreSearch(store, query)
             }, LinearLayout.LayoutParams(-1, -2).apply {
                 topMargin = dp(8)
                 bottomMargin = dp(8)
@@ -250,6 +256,17 @@ class MainActivity : Activity() {
             productLinkFields[store.id] = productLink
             card.addView(productLink, matchWrap())
             productLink.addTextChangedListener(watcher { persistCurrentState() })
+
+            val scanStatus = TextView(this).apply {
+                val scanned = saved.optLong("scan_time_" + store.id, 0L)
+                scanTimes[store.id] = scanned
+                text = if (scanned > 0L) "Предварительно считано: " + formatScanTime(scanned) + " · проверь карточку" else "Цена не считана автоматически"
+                textSize = 11f
+                setTextColor(muted)
+                setPadding(0, dp(4), 0, dp(2))
+            }
+            scanStatusViews[store.id] = scanStatus
+            card.addView(scanStatus, matchWrap())
 
             card.addView(button("ОТКРЫТЬ КАРТОЧКУ ТОВАРА", Color.rgb(92, 119, 91), Color.WHITE) {
                 val link = productLinkFields[store.id]?.text?.toString()?.trim().orEmpty()
@@ -311,12 +328,15 @@ class MainActivity : Activity() {
             result.append("Для расчёта экономии добавь цены ещё хотя бы в одном магазине.")
         }
         result.append("\nПроверено магазинов: ").append(compared).append(" из ").append(stores.size)
+        result.append("\nВсе считанные цены предварительные: проверяй товар, регион и наличие перед покупкой.")
         summary.text = result.toString()
         persistCurrentState()
     }
 
     private fun clearPrices() {
         priceFields.values.forEach { it.setText("") }
+        scanTimes.keys.toList().forEach { key -> scanTimes[key] = 0L }
+        scanStatusViews.values.forEach { it.text = "Цена не считана автоматически" }
         summary.text = "Цены очищены. Ссылки на карточки и поисковый запрос сохранены."
         persistCurrentState()
     }
@@ -327,6 +347,7 @@ class MainActivity : Activity() {
         stores.forEach { store ->
             state.put("price_" + store.id, priceFields[store.id]?.text?.toString().orEmpty())
             state.put("url_" + store.id, productLinkFields[store.id]?.text?.toString().orEmpty())
+            state.put("scan_time_" + store.id, scanTimes[store.id] ?: 0L)
         }
         preferences.edit().putString("offers:" + currentQuery, state.toString()).apply()
     }
@@ -373,6 +394,45 @@ class MainActivity : Activity() {
         }
         historyBlock.addView(horizontal, matchWrap())
     }
+
+    private fun openStoreSearch(store: Store, query: String) {
+        val intent = Intent(this, StoreSearchActivity::class.java).apply {
+            putExtra(StoreSearchActivity.EXTRA_STORE_ID, store.id)
+            putExtra(StoreSearchActivity.EXTRA_STORE_NAME, store.name)
+            putExtra(StoreSearchActivity.EXTRA_SEARCH_URL, store.searchUrl)
+            putExtra(StoreSearchActivity.EXTRA_QUERY, query)
+        }
+        startActivityForResult(intent, 1201)
+    }
+
+
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != 1201 || resultCode != RESULT_OK) return
+        val raw = data?.getStringExtra(StoreSearchActivity.EXTRA_SELECTED_OFFER) ?: return
+        try {
+            val offer = JSONObject(raw)
+            val storeId = offer.optString("store_id")
+            val price = offer.optDouble("price", 0.0)
+            val url = offer.optString("url")
+            if (price <= 0 || storeId.isBlank() || !isWebUrl(url)) {
+                toast("Выбранная карточка не содержит корректной цены или ссылки")
+                return
+            }
+            priceFields[storeId]?.setText(formatPrice(price).replace(" ", "").replace(" ", ""))
+            productLinkFields[storeId]?.setText(url)
+            val scannedAt = offer.optLong("scan_time", System.currentTimeMillis())
+            scanTimes[storeId] = scannedAt
+            scanStatusViews[storeId]?.text = "Предварительно считано: " + formatScanTime(scannedAt) + " · проверь карточку"
+            summary.text = "Добавлено предварительное предложение " + offer.optString("store_name") + ": " + formatPrice(price) + " ₽. Проверь цену, наличие и регион в карточке товара перед сравнением."
+            persistCurrentState()
+            toast("Предварительная цена добавлена. Проверь карточку товара.")
+        } catch (_: Exception) {
+            toast("Не удалось импортировать выбранное предложение")
+        }
+    }
+
 
     private fun openUrl(url: String) {
         if (!isWebUrl(url)) {
@@ -441,6 +501,10 @@ class MainActivity : Activity() {
     private fun formatPrice(value: Double): String {
         return NumberFormat.getIntegerInstance(Locale("ru", "RU")).format(value)
     }
+
+
+    private fun formatScanTime(value: Long): String =
+        SimpleDateFormat("dd.MM HH:mm", Locale("ru", "RU")).format(Date(value))
 
     private fun matchWrap() = LinearLayout.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT,
