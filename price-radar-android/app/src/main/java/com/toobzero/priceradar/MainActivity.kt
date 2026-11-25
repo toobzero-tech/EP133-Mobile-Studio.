@@ -449,7 +449,7 @@ class MainActivity : Activity() {
             toast("Ссылка не относится к поддерживаемым магазинам")
             return
         }
-        val sharedTitle = sharedText.replace(match.value, "").trim().trim('-', ':', '—', '\\n').take(120)
+        val sharedTitle = sharedText.replace(match.value, "").trim().trim('-', ':', '—').take(120)
         queryField.setText(sharedTitle.ifBlank { "Товар из ссылки" })
         performSearch()
         val linkField = productLinkFields[store.id]
