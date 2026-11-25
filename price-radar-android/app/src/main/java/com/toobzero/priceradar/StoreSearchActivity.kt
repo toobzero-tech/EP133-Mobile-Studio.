@@ -27,7 +27,7 @@ class StoreSearchActivity : Activity() {
         const val EXTRA_SELECTED_OFFER = "selected_offer"
     }
 
-    private val background = Color.rgb(18, 20, 24)
+    private val screenBackground = Color.rgb(18, 20, 24)
     private val orange = Color.rgb(255, 151, 54)
     private val muted = Color.rgb(183, 190, 199)
     private lateinit var webView: WebView
@@ -49,7 +49,7 @@ class StoreSearchActivity : Activity() {
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(background)
+            setBackgroundColor(screenBackground)
         }
         val top = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
