@@ -39,7 +39,7 @@ class MainActivity : Activity() {
         Store("mvideo", "М.Видео", "https://www.mvideo.ru/search?query=", "mvideo.ru"),
         Store("ozon", "Ozon", "https://www.ozon.ru/search/?text=", "ozon.ru"),
         Store("wb", "Wildberries", "https://www.wildberries.ru/catalog/0/search.aspx?search=", "wildberries.ru"),
-        Store("ym", "Яндекс Маркет", "https://market.yandex.ru/search?text=", "market.yandex.ru)
+        Store("ym", "Яндекс Маркет", "https://market.yandex.ru/search?text=", "market.yandex.ru")
     )
 
     private val preferences by lazy { getSharedPreferences("price_radar_native", MODE_PRIVATE) }
@@ -48,7 +48,7 @@ class MainActivity : Activity() {
     private val scanTimes = linkedMapOf<String, Long>()
     private val scanStatusViews = linkedMapOf<String, TextView>()
     private val verifiedTimes = linkedMapOf<String, Long>()
-    private val verificationStatusViews = linkedMapOf<String, TextView>
+    private val verificationStatusViews = linkedMapOf<String, TextView>()
     private val searchHistory = mutableListOf<String>()
 
     private lateinit var queryField: EditText
@@ -206,7 +206,7 @@ class MainActivity : Activity() {
         scanTimes.clear()
         scanStatusViews.clear()
         verifiedTimes.clear()
-        verificationStatusViews.clear
+        verificationStatusViews.clear()
 
         val saved = try {
             JSONObject(preferences.getString("offers:" + query, "{}").orEmpty())
@@ -481,7 +481,7 @@ class MainActivity : Activity() {
             val scannedAt = offer.optLong("scan_time", System.currentTimeMillis())
             scanTimes[storeId] = scannedAt
             verifiedTimes[storeId] = 0L
-            scanStatusViews[storeId]?.text = "Считано со страницы: " + formatScanTime(scannedAt) + " · предварительно
+            scanStatusViews[storeId]?.text = "Считано со страницы: " + formatScanTime(scannedAt) + " · предварительно"
             verificationStatusViews[storeId]?.text = "Не подтверждено вручную. Цена не участвует в расчёте""
             summary.text = "Добавлено предварительное предложение " + offer.optString("store_name") + ": " + formatPrice(price) + " ₽. Проверь цену, наличие и регион в карточке товара перед сравнением."
             persistCurrentState()

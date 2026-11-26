@@ -11,6 +11,7 @@ const importBlock = main.slice(main.indexOf('override fun onActivityResult'), ma
 
 const checks = [
   ['all five stores carry allowed product domains', ['dns-shop.ru','mvideo.ru','ozon.ru','wildberries.ru','market.yandex.ru'].every(d => main.includes(d))],
+  ['verification map is initialized and reset with method calls', main.includes('verificationStatusViews = linkedMapOf<String, TextView>()') && main.includes('verificationStatusViews.clear()') && main.includes('scanStatusViews.clear()')],
   ['comparison filters by confirmation timestamp', compare.includes('verifiedTimes[store.id]') && compare.includes('> 0L')],
   ['comparison validates store-specific HTTPS links', compare.includes('isStoreProductUrl(store, link)')],
   ['confirmation UI is present', main.includes('ПОДТВЕРДИТЬ ЦЕНУ И ССЫЛКУ')],
