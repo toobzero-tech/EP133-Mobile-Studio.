@@ -1,28 +1,33 @@
-# PRICE RADAR Android 1.2.0
+# PRICE RADAR Android 1.2.1
 
-Native Android app for comparing search results from DNS, М.Видео, Ozon, Wildberries and Яндекс Маркет.
+Native Android app for searching and comparing offers from DNS, М.Видео, Ozon, Wildberries and Яндекс Маркет.
 
-## 1.2.0 changes
-- Store searches open inside the app in a native WebView screen.
-- Added a "Считать карточки и цены" action that reads visible product-card text from the current page.
-- Parser searches for product-like links and ruble price text, rejects unrelated hostnames, deduplicates direct links, and excludes cards containing installment/monthly-payment signals.
-- User can choose a candidate; its detected price and direct product link are imported into the main comparison screen.
-- Scan timestamps are saved per store/query and shown as a preliminary source indicator.
-- Imported prices are explicitly marked as preliminary and are not guaranteed to represent the final price, availability, region, or discount conditions.
-- Added Internet permission, declared the WebView search activity, and bumped app version to 1.2.0.
+## 1.2.1 changes
+- Keeps in-app WebView searches and visible-card price parsing from 1.2.0.
+- Adds a per-store manual confirmation step for each imported or typed offer.
+- A price is counted only after the user confirms it and the offer URL is HTTPS on that store's domain.
+- Changing a confirmed price or link invalidates the confirmation; it must be confirmed again.
+- Comparison excludes preliminary, unconfirmed prices and reports how many were excluded.
+- Confirmation timestamps persist per search and store.
+- Clears price and confirmation states together.
 
-## Important limitations
-The parser reads the currently rendered public search page. It does not bypass CAPTCHA, bot protections, login walls, or access controls. Retailer pages are dynamic and may change their markup; scanning can return no results or misread a price. Every imported candidate must be checked on its product page before comparison or purchase.
+## Limits
+The visible-page parser is preliminary and can misread a dynamic retailer page, promotional text, or variant price. It does not bypass CAPTCHA, bot protection, login walls, or access controls. Confirmation means the user reviewed the price/link, not that the app independently guarantees stock, delivery, discount eligibility, or authenticity. Availability and shipping should still be checked on the product page.
 
-This is not a server-side feed and does not silently update prices in the background. The user opens a store search, taps "Считать карточки и цены", and selects a candidate. Official/partner APIs and a reliable cross-store feed remain a separate integration stage.
+Automatic cross-store price refresh is not implemented. It requires a reliable permitted data source/API for each retailer. The app does not fabricate prices.
 
-## App details
-- Application ID: com.toobzero.priceradar
-- Minimum Android: 9 / API 28
+## App
+- Package: `com.toobzero.priceradar`
+- Minimum Android: 9 (API 28)
 - Target SDK: 35
 - Java: 17
 - Android Gradle Plugin: 8.7.3
 - Kotlin plugin: 2.0.21
 
 ## Build
-The main build is GitHub Actions: .github/workflows/build-price-radar-android.yml. The Colab notebook is an optional fallback. Parser smoke tests can be run with node tests_store_parser.js. They use synthetic DOM objects and verify parser behavior, not live store connectivity.
+GitHub Actions workflow: `.github/workflows/build-price-radar-android.yml`.
+Node smoke tests:
+- `node tests_store_parser.js`
+- `node tests_offer_confirmation.js`
+
+The build workflow packages the source ZIP as a separate artifact.

@@ -27,5 +27,5 @@ if ! command -v gradle >/dev/null 2>&1 || ! gradle --version | grep -q 'Gradle 8
 fi
 node tests_store_parser.js
 gradle --no-daemon assembleDebug
-cp app/build/outputs/apk/debug/app-debug.apk "$ROOT/PRICE_RADAR_1.2.0_debug.apk"
-echo "APK: $ROOT/PRICE_RADAR_1.2.0_debug.apk"
+cp app/build/outputs/apk/debug/app-debug.apk "$ROOT/PRICE_RADAR_1.2.1_debug.apk"
+echo "APK: $ROOT/PRICE_RADAR_1.2.1_debug.apk"

@@ -29,11 +29,20 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Test visible-page price parser
-        run: node price-radar-android/tests_store_parser.js
+      - name: Test parser and offer-confirmation safeguards
+        run: |
+          node price-radar-android/tests_store_parser.js
+          node price-radar-android/tests_offer_confirmation.js
       - name: Build debug APK
         working-directory: price-radar-android
         run: gradle assembleDebug
+      - name: Package source archive
+        run: zip -r PRICE_RADAR_ANDROID_SOURCE_v1.2.1.zip price-radar-android -x 'price-radar-android/app/build/**' 'price-radar-android/.gradle/**'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PRICE-RADAR-Android-SOURCE-1.2.1
+          path: PRICE_RADAR_ANDROID_SOURCE_v1.2.1.zip
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
           name: PRICE-RADAR-Android-APK

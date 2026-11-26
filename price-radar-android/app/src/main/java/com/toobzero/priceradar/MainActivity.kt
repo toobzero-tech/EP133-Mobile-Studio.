@@ -32,14 +32,14 @@ class MainActivity : Activity() {
     private val orange = Color.rgb(255, 151, 54)
     private val muted = Color.rgb(183, 190, 199)
 
-    private data class Store(val id: String, val name: String, val searchUrl: String)
+    private data class Store(val id: String, val name: String, val searchUrl: String, val domain: String)
 
     private val stores = listOf(
-        Store("dns", "DNS", "https://www.dns-shop.ru/search/?q="),
-        Store("mvideo", "М.Видео", "https://www.mvideo.ru/search?query="),
-        Store("ozon", "Ozon", "https://www.ozon.ru/search/?text="),
-        Store("wb", "Wildberries", "https://www.wildberries.ru/catalog/0/search.aspx?search="),
-        Store("ym", "Яндекс Маркет", "https://market.yandex.ru/search?text=")
+        Store("dns", "DNS", "https://www.dns-shop.ru/search/?q=", "dns-shop.ru"),
+        Store("mvideo", "М.Видео", "https://www.mvideo.ru/search?query=", "mvideo.ru"),
+        Store("ozon", "Ozon", "https://www.ozon.ru/search/?text=", "ozon.ru"),
+        Store("wb", "Wildberries", "https://www.wildberries.ru/catalog/0/search.aspx?search=", "wildberries.ru"),
+        Store("ym", "Яндекс Маркет", "https://market.yandex.ru/search?text=", "market.yandex.ru)
     )
 
     private val preferences by lazy { getSharedPreferences("price_radar_native", MODE_PRIVATE) }
@@ -47,6 +47,8 @@ class MainActivity : Activity() {
     private val productLinkFields = linkedMapOf<String, EditText>()
     private val scanTimes = linkedMapOf<String, Long>()
     private val scanStatusViews = linkedMapOf<String, TextView>()
+    private val verifiedTimes = linkedMapOf<String, Long>()
+    private val verificationStatusViews = linkedMapOf<String, TextView>
     private val searchHistory = mutableListOf<String>()
 
     private lateinit var queryField: EditText
@@ -138,7 +140,7 @@ class MainActivity : Activity() {
         renderHistory()
 
         val notice = TextView(this).apply {
-            text = "Важно: приложение не подставляет придуманные цены. Открой поиск магазина, проверь карточку товара и наличие в указанном городе, затем внеси фактическую цену и ссылку. Автоматическое получение цен подключается только через разрешённые API или фиды."
+            text = "Важно: считанные цены предварительные. Перед сравнением открой карточку товара, проверь цену, наличие, регион и условия доставки, вставь прямую HTTPS-ссылку и нажми «Подтвердить». Неподтверждённые цены не участвуют в расчёте."
             textSize = 13f
             setTextColor(muted)
             setPadding(dp(12), dp(12), dp(12), dp(12))
@@ -203,6 +205,8 @@ class MainActivity : Activity() {
         productLinkFields.clear()
         scanTimes.clear()
         scanStatusViews.clear()
+        verifiedTimes.clear()
+        verificationStatusViews.clear
 
         val saved = try {
             JSONObject(preferences.getString("offers:" + query, "{}").orEmpty())
@@ -245,7 +249,10 @@ class MainActivity : Activity() {
             price.setText(saved.optString("price_" + store.id, ""))
             priceFields[store.id] = price
             card.addView(price, matchWrap())
-            price.addTextChangedListener(watcher { persistCurrentState() })
+            price.addTextChangedListener(watcher {
+                invalidateVerification(store.id)
+                persistCurrentState()
+            })
 
             card.addView(label("ССЫЛКА НА КОНКРЕТНЫЙ ТОВАР"))
             val productLink = editField(
@@ -255,12 +262,50 @@ class MainActivity : Activity() {
             productLink.setText(saved.optString("url_" + store.id, ""))
             productLinkFields[store.id] = productLink
             card.addView(productLink, matchWrap())
-            productLink.addTextChangedListener(watcher { persistCurrentState() })
+            productLink.addTextChangedListener(watcher {
+                invalidateVerification(store.id)
+                persistCurrentState()
+            })
+
+            val verifiedAt = saved.optLong("verified_time_" + store.id, 0L)
+            verifiedTimes[store.id] = verifiedAt
+            val verificationStatus = TextView(this).apply {
+                val storedPrice = parsePrice(price.text.toString())
+                val storedLink = productLink.text.toString().trim()
+                text = when {
+                    verifiedAt > 0L && storedPrice != null && isStoreProductUrl(store, storedLink) ->
+                        "Проверено вручную: " + formatScanTime(verifiedAt)
+                    verifiedAt > 0L -> "Проверка сохранена, но цена или ссылка некорректна. Подтверди заново."
+                    else -> "Не подтверждено вручную. Предварительная цена не учитывается."
+                }
+                textSize = 11f
+                setTextColor(muted)
+                setPadding(0, dp(4), 0, dp(2))
+            }
+            verificationStatusViews[store.id] = verificationStatus
+            card.addView(verificationStatus, matchWrap())
+
+            card.addView(button("ПОДТВЕРДИТЬ ЦЕНУ И ССЫЛКУ", Color.rgb(65, 105, 76), Color.WHITE) {
+                val enteredPrice = parsePrice(price.text.toString())
+                val enteredLink = productLink.text.toString().trim()
+                when {
+                    enteredPrice == null -> toast("Введи корректную положительную цену")
+                    !isStoreProductUrl(store, enteredLink) -> toast("Нужна HTTPS-ссылка на товар именно в " + store.domain)
+                    else -> {
+                        val confirmedAt = System.currentTimeMillis()
+                        verifiedTimes[store.id] = confirmedAt
+                        verificationStatus.text = "Проверено вручную: " + formatScanTime(confirmedAt)
+                        persistCurrentState()
+                        summary.text = "Предложение " + store.name + " подтверждено вручную. Оно будет участвовать в сравнении."
+                        toast("Цена и ссылка подтверждены")
+                    }
+                }
+            }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
 
             val scanStatus = TextView(this).apply {
                 val scanned = saved.optLong("scan_time_" + store.id, 0L)
                 scanTimes[store.id] = scanned
-                text = if (scanned > 0L) "Предварительно считано: " + formatScanTime(scanned) + " · проверь карточку" else "Цена не считана автоматически"
+                text = if (scanned > 0L) "Считано со страницы: " + formatScanTime(scanned) + " · предварительно" else "Автоматическое считывание не выполнено"
                 textSize = 11f
                 setTextColor(muted)
                 setPadding(0, dp(4), 0, dp(2))
@@ -272,10 +317,10 @@ class MainActivity : Activity() {
                 val link = productLinkFields[store.id]?.text?.toString()?.trim().orEmpty()
                 if (link.isBlank()) {
                     toast("Сначала вставь ссылку на товар")
-                } else if (isWebUrl(link)) {
+                } else if (isStoreProductUrl(store, link)) {
                     openUrl(link)
                 } else {
-                    toast("Ссылка должна начинаться с http:// или https://")
+                    toast("Вставь HTTPS-ссылку на товар именно в " + store.domain)
                 }
             }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
 
@@ -291,17 +336,23 @@ class MainActivity : Activity() {
             return
         }
 
+        val unverifiedCount = stores.count { store ->
+            parsePrice(priceFields[store.id]?.text?.toString().orEmpty()) != null &&
+                ((verifiedTimes[store.id] ?: 0L) <= 0L ||
+                    !isStoreProductUrl(store, productLinkFields[store.id]?.text?.toString().orEmpty()))
+        }
         val entries = stores.mapNotNull { store ->
-            val raw = priceFields[store.id]?.text?.toString().orEmpty()
-                .replace(" ", "")
-                .replace("\u00A0", "")
-                .replace(',', '.')
-            val value = raw.toDoubleOrNull()
-            if (value != null && value.isFinite() && value > 0) store to value else null
+            val value = parsePrice(priceFields[store.id]?.text?.toString().orEmpty())
+            val link = productLinkFields[store.id]?.text?.toString().orEmpty()
+            if (value != null && (verifiedTimes[store.id] ?: 0L) > 0L && isStoreProductUrl(store, link)) store to value else null
         }
 
         if (entries.isEmpty()) {
-            summary.text = "Нет цен для сравнения. Внеси хотя бы одну фактическую цену."
+            summary.text = if (unverifiedCount > 0) {
+                "Есть $unverifiedCount предварительных цен, но они не участвуют в расчёте. Открой товар, проверь цену и ссылку, затем нажми «Подтвердить цену и ссылку»."
+            } else {
+                "Нет подтверждённых цен для сравнения. Внеси цену и HTTPS-ссылку на товар, проверь их и нажми «Подтвердить»."
+            }
             return
         }
 
@@ -312,23 +363,24 @@ class MainActivity : Activity() {
 
         val result = StringBuilder()
         result.append("ТОВАР: ").append(currentQuery).append('\n')
-        result.append("Самая низкая цена: ").append(cheapest.first.name)
+        result.append("Самая низкая подтверждённая цена: ").append(cheapest.first.name)
             .append(" — ").append(formatPrice(cheapest.second)).append(" ₽\n")
         if (compared >= 2) {
             val saving = mostExpensive.second - cheapest.second
             val percent = if (mostExpensive.second > 0) saving / mostExpensive.second * 100.0 else 0.0
-            result.append("Самая высокая: ").append(mostExpensive.first.name)
+            result.append("Самая высокая подтверждённая: ").append(mostExpensive.first.name)
                 .append(" — ").append(formatPrice(mostExpensive.second)).append(" ₽\n")
-            result.append("Разница между предложениями: ").append(formatPrice(saving))
+            result.append("Разница между подтверждёнными предложениями: ").append(formatPrice(saving))
                 .append(" ₽ (").append(String.format(Locale("ru", "RU"), "%.1f", percent)).append("%)\n")
-            result.append("Средняя введённая цена: ").append(formatPrice(average)).append(" ₽\n")
-            result.append("Экономия при выборе минимальной цены относительно максимальной: ")
+            result.append("Средняя подтверждённая цена: ").append(formatPrice(average)).append(" ₽\n")
+            result.append("Экономия относительно самой дорогой подтверждённой цены: ")
                 .append(formatPrice(saving)).append(" ₽")
         } else {
-            result.append("Для расчёта экономии добавь цены ещё хотя бы в одном магазине.")
+            result.append("Для расчёта экономии нужно минимум два подтверждённых предложения.")
         }
-        result.append("\nПроверено магазинов: ").append(compared).append(" из ").append(stores.size)
-        result.append("\nВсе считанные цены предварительные: проверяй товар, регион и наличие перед покупкой.")
+        result.append("\nПодтверждено вручную: ").append(compared).append(" из ").append(stores.size)
+        if (unverifiedCount > 0) result.append("\nНе подтверждённые цены исключены: ").append(unverifiedCount)
+        result.append("\nПроверь наличие, регион, доставку и условия скидки перед покупкой.")
         summary.text = result.toString()
         persistCurrentState()
     }
@@ -336,8 +388,10 @@ class MainActivity : Activity() {
     private fun clearPrices() {
         priceFields.values.forEach { it.setText("") }
         scanTimes.keys.toList().forEach { key -> scanTimes[key] = 0L }
-        scanStatusViews.values.forEach { it.text = "Цена не считана автоматически" }
-        summary.text = "Цены очищены. Ссылки на карточки и поисковый запрос сохранены."
+        verifiedTimes.keys.toList().forEach { key -> verifiedTimes[key] = 0L }
+        scanStatusViews.values.forEach { it.text = "Автоматическое считывание не выполнено" }
+        verificationStatusViews.values.forEach { it.text = "Не подтверждено вручную. Цена не участвует в расчёте." }
+        summary.text = "Цены и подтверждения очищены. Ссылки на карточки и поисковый запрос сохранены."
         persistCurrentState()
     }
 
@@ -348,6 +402,7 @@ class MainActivity : Activity() {
             state.put("price_" + store.id, priceFields[store.id]?.text?.toString().orEmpty())
             state.put("url_" + store.id, productLinkFields[store.id]?.text?.toString().orEmpty())
             state.put("scan_time_" + store.id, scanTimes[store.id] ?: 0L)
+            state.put("verified_time_" + store.id, verifiedTimes[store.id] ?: 0L)
         }
         preferences.edit().putString("offers:" + currentQuery, state.toString()).apply()
     }
@@ -416,15 +471,18 @@ class MainActivity : Activity() {
             val storeId = offer.optString("store_id")
             val price = offer.optDouble("price", 0.0)
             val url = offer.optString("url")
-            if (price <= 0 || storeId.isBlank() || !isWebUrl(url)) {
-                toast("Выбранная карточка не содержит корректной цены или ссылки")
+            val store = stores.firstOrNull { it.id == storeId }
+            if (price <= 0 || store == null || !isStoreProductUrl(store, url)) {
+                toast("Выбранная карточка не содержит корректной цены или HTTPS-ссылки на магазин")
                 return
             }
             priceFields[storeId]?.setText(formatPrice(price).replace(" ", "").replace(" ", ""))
             productLinkFields[storeId]?.setText(url)
             val scannedAt = offer.optLong("scan_time", System.currentTimeMillis())
             scanTimes[storeId] = scannedAt
-            scanStatusViews[storeId]?.text = "Предварительно считано: " + formatScanTime(scannedAt) + " · проверь карточку"
+            verifiedTimes[storeId] = 0L
+            scanStatusViews[storeId]?.text = "Считано со страницы: " + formatScanTime(scannedAt) + " · предварительно
+            verificationStatusViews[storeId]?.text = "Не подтверждено вручную. Цена не участвует в расчёте""
             summary.text = "Добавлено предварительное предложение " + offer.optString("store_name") + ": " + formatPrice(price) + " ₽. Проверь цену, наличие и регион в карточке товара перед сравнением."
             persistCurrentState()
             toast("Предварительная цена добавлена. Проверь карточку товара.")
@@ -444,6 +502,25 @@ class MainActivity : Activity() {
         } catch (_: Exception) {
             toast("Не удалось открыть ссылку. Проверь браузер.")
         }
+    }
+
+    private fun parsePrice(raw: String): Double? {
+        val normalized = raw.replace(" ", "").replace("\u00A0", "").replace(",", ".")
+        val value = normalized.toDoubleOrNull()
+        return value?.takeIf { it.isFinite() && it > 0.0 }
+    }
+
+    private fun invalidateVerification(storeId: String) {
+        if ((verifiedTimes[storeId] ?: 0L) > 0L) {
+            verifiedTimes[storeId] = 0L
+            verificationStatusViews[storeId]?.text = "Цена или ссылка изменена. Подтверди заново."
+        }
+    }
+
+    private fun isStoreProductUrl(store: Store, value: String): Boolean {
+        val uri = try { Uri.parse(value) } catch (_: Exception) { return false }
+        val host = uri.host?.lowercase(Locale.ROOT) ?: return false
+        return uri.scheme == "https" && (host == store.domain || host.endsWith("." + store.domain))
     }
 
     private fun isWebUrl(value: String): Boolean {
@@ -504,7 +581,7 @@ class MainActivity : Activity() {
 
 
     private fun formatScanTime(value: Long): String =
-        SimpleDateFormat("dd.MM HH:mm", Locale("ru", "RU")).format(Date(value))
+        SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("ru", "RU")).format(Date(value))
 
     private fun matchWrap() = LinearLayout.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT,
