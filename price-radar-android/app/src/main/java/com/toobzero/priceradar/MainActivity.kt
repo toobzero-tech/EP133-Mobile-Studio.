@@ -482,7 +482,7 @@ class MainActivity : Activity() {
             scanTimes[storeId] = scannedAt
             verifiedTimes[storeId] = 0L
             scanStatusViews[storeId]?.text = "Считано со страницы: " + formatScanTime(scannedAt) + " · предварительно"
-            verificationStatusViews[storeId]?.text = "Не подтверждено вручную. Цена не участвует в расчёте""
+            verificationStatusViews[storeId]?.text = "Не подтверждено вручную. Цена не участвует в расчёте"
             summary.text = "Добавлено предварительное предложение " + offer.optString("store_name") + ": " + formatPrice(price) + " ₽. Проверь цену, наличие и регион в карточке товара перед сравнением."
             persistCurrentState()
             toast("Предварительная цена добавлена. Проверь карточку товара.")

@@ -19,6 +19,7 @@ const checks = [
   ['confirmation timestamp is persisted', persist.includes('verified_time_')],
   ['clear button resets confirmation state', clear.includes('verifiedTimes') && clear.includes('verificationStatusViews')],
   ['scanner import remains unconfirmed', importBlock.includes('verifiedTimes[storeId] = 0L') && importBlock.includes('Не подтверждено вручную')],
+  ['import status string is syntactically closed', !main.includes('расчёте""')],
   ['store URL check requires HTTPS and exact host/subdomain', main.includes('uri.scheme == "https"') && main.includes('host == store.domain || host.endsWith("." + store.domain)')]
 ];
 let failures = 0;
