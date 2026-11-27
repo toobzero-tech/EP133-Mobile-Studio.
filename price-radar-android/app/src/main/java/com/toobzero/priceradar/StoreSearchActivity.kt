@@ -131,6 +131,13 @@ class StoreSearchActivity : Activity() {
                 const priceLineRx = /(?:₽|руб(?:\.|ля|лей)?|р\.?)/i;
                 const domainRules = {dns:'dns-shop.ru', mvideo:'mvideo.ru', ozon:'ozon.ru', wb:'wildberries.ru', ym:'market.yandex.ru'};
                 const rootDomain = domainRules["$storeId"];
+                const productPathRules = {
+                    dns: p => { const s=p.split('/').filter(Boolean); return s.length>=2 && s[0]==='product'; },
+                    mvideo: p => { const s=p.split('/').filter(Boolean); return s.length>=2 && (s[0]==='products' || s[0]==='product'); },
+                    ozon: p => { const s=p.split('/').filter(Boolean); return s.length>=2 && s[0]==='product'; },
+                    wb: p => { const s=p.split('/').filter(Boolean); return s.length>=2 && s[0]==='catalog' && /^\\d+$/.test(s[1]) && s[1]!=='0' && (s.length===2 || (s.length===3 && s[2].toLowerCase()==='detail.aspx')); },
+                    ym: p => { const s=p.split('/').filter(Boolean); return s.length>=2 && (s[0].startsWith('product--') || s[0]==='card' || s[0]==='product'); }
+                };
                 const results = [];
                 const seen = new Set();
                 const anchors = Array.from(document.querySelectorAll('a[href]'));
@@ -138,7 +145,8 @@ class StoreSearchActivity : Activity() {
                     if (a.getClientRects && !a.getClientRects().length) continue;
                     let u;
                     try { u = new URL(a.href, location.href); } catch (e) { continue; }
-                    if (!u.protocol.startsWith('http') || !(u.hostname === rootDomain || u.hostname.endsWith('.' + rootDomain)) ||
+                    if (u.protocol !== 'https:' || !(u.hostname === rootDomain || u.hostname.endsWith('.' + rootDomain)) ||
+                        !productPathRules["$storeId"](u.pathname) ||
                         /search|catalog\/0|cart|account|login|help|compare|favorite|promotion/i.test(u.pathname + u.search)) continue;
                     let node = a, cardText = '', card = null;
                     for (let depth = 0; node && depth < 7; depth++, node = node.parentElement) {
