@@ -135,7 +135,7 @@ class StoreSearchActivity : Activity() {
                     dns: p => { const s=p.split('/').filter(Boolean); return s.length>=2 && s[0]==='product'; },
                     mvideo: p => { const s=p.split('/').filter(Boolean); return s.length>=2 && (s[0]==='products' || s[0]==='product'); },
                     ozon: p => { const s=p.split('/').filter(Boolean); return s.length>=2 && s[0]==='product'; },
-                    wb: p => { const s=p.split('/').filter(Boolean); return s.length>=2 && s[0]==='catalog' && /^\\d+$/.test(s[1]) && s[1]!=='0' && (s.length===2 || (s.length===3 && s[2].toLowerCase()==='detail.aspx')); },
+                    wb: p => { const s=p.split('/').filter(Boolean); return s.length>=2 && s[0]==='catalog' && s[1].length>0 && s[1].split('').every(c=>c>='0' && c<='9') && s[1]!=='0' && (s.length===2 || (s.length===3 && s[2].toLowerCase()==='detail.aspx')); },
                     ym: p => { const s=p.split('/').filter(Boolean); return s.length>=2 && (s[0].startsWith('product--') || s[0]==='card' || s[0]==='product'); }
                 };
                 const results = [];
