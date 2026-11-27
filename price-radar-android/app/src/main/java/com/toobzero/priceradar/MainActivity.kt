@@ -505,7 +505,8 @@ class MainActivity : Activity() {
     }
 
     private fun parsePrice(raw: String): Double? {
-        val normalized = raw.replace(" ", "").replace("\u00A0", "").replace(",", ".")
+        // Russian sites often use a narrow no-break space (U+202F) as a thousands separator.
+        val normalized = raw.replace(Regex("[\\s\\u00A0\\u202F]"), "").replace(",", ".")
         val value = normalized.toDoubleOrNull()
         return value?.takeIf { it.isFinite() && it > 0.0 }
     }
@@ -520,7 +521,18 @@ class MainActivity : Activity() {
     private fun isStoreProductUrl(store: Store, value: String): Boolean {
         val uri = try { Uri.parse(value) } catch (_: Exception) { return false }
         val host = uri.host?.lowercase(Locale.ROOT) ?: return false
-        return uri.scheme == "https" && (host == store.domain || host.endsWith("." + store.domain))
+        if (uri.scheme != "https" || !(host == store.domain || host.endsWith("." + store.domain))) return false
+        val parts = uri.path.orEmpty().split('/').filter { it.isNotBlank() }
+        if (parts.size < 2) return false
+        return when (store.id) {
+            "dns" -> parts[0] == "product"
+            "mvideo" -> parts[0] == "products" || parts[0] == "product"
+            "ozon" -> parts[0] == "product"
+            "wb" -> parts[0] == "catalog" && parts[1].toLongOrNull() != null && parts[1] != "0" &&
+                (parts.size == 2 || (parts.size == 3 && parts[2].equals("detail.aspx", ignoreCase = true)))
+            "ym" -> parts[0].startsWith("product--") || parts[0] == "card" || parts[0] == "product"
+            else -> false
+        }
     }
 
     private fun isWebUrl(value: String): Boolean {
