@@ -40,7 +40,7 @@ function allowed(store, href) {
       case 'dns': return parts[0] === 'product';
       case 'mvideo': return parts[0] === 'products' || parts[0] === 'product';
       case 'ozon': return parts[0] === 'product';
-      case 'wb': return parts[0] === 'catalog' && /^\\d+$/.test(parts[1]) && parts[1] !== '0' &&
+      case 'wb': return parts[0] === 'catalog' && parts[1].length>0 && parts[1].split('').every(c=>c>='0' && c<='9') && parts[1] !== '0' &&
         (parts.length === 2 || (parts.length === 3 && parts[2].toLowerCase() === 'detail.aspx'));
       case 'ym': return parts[0].startsWith('product--') || parts[0] === 'card' || parts[0] === 'product';
       default: return false;
