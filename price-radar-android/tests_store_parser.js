@@ -46,6 +46,18 @@ for (const [store, host, url, text, title, expectedPrice] of fixtures) {
   console.log((pass ? 'PASS' : 'FAIL') + ' parser: ' + store);
   if (!pass) { console.error(found); failed++; }
 }
+const httpProduct = runScan('dns', 'dns-shop.ru', [anchor('dns-shop.ru', 'http://www.dns-shop.ru/product/http/', 'Product name long enough\n12 345 ₽', 'HTTP product')]);
+const passHttp = httpProduct.length === 0;
+console.log((passHttp ? 'PASS' : 'FAIL') + ' parser rejects non-HTTPS product links');
+if (!passHttp) { console.error(httpProduct); failed++; }
+const rootPage = runScan('dns', 'dns-shop.ru', [anchor('dns-shop.ru', 'https://www.dns-shop.ru/', 'Product name long enough\n12 345 ₽', 'Root page')]);
+const passRoot = rootPage.length === 0;
+console.log((passRoot ? 'PASS' : 'FAIL') + ' parser rejects store home page');
+if (!passRoot) { console.error(rootPage); failed++; }
+const searchPage = runScan('dns', 'dns-shop.ru', [anchor('dns-shop.ru', 'https://www.dns-shop.ru/search/?q=tv', 'Product name long enough\n12 345 ₽', 'Search page')]);
+const passSearch = searchPage.length === 0;
+console.log((passSearch ? 'PASS' : 'FAIL') + ' parser rejects search/list pages');
+if (!passSearch) { console.error(searchPage); failed++; }
 const monthly = runScan('dns', 'dns-shop.ru', [anchor('dns-shop.ru', 'https://www.dns-shop.ru/product/monthly/', 'TV\n999 ₽/мес\n42 990 ₽', 'Monthly TV')]);
 const passMonthly = monthly.length === 0;
 console.log((passMonthly ? 'PASS' : 'FAIL') + ' monthly/installment price filter');
