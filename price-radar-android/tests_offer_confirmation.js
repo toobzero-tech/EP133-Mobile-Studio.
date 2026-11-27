@@ -73,7 +73,7 @@ for (const [store,url,expected] of urlFixtures) {
   if(!pass)failures++;
 }
 const priceFixtures=[['42990',42990],['42 990',42990],['42 990',42990],['42 990',42990],['42,50',42.5],['0',null],['-10',null],['abc',null]];
-function parsePrice(s){const n=s.replace(/[\\s\\u00A0\\u202F]/g,'').replace(',','.');const v=Number(n);return Number.isFinite(v)&&v>0?v:null;}
+function parsePrice(s){const n=s.replace(/[\s\u00A0\u202F]/g,'').replace(',','.');const v=Number(n);return Number.isFinite(v)&&v>0?v:null;}
 for (const [raw,expected] of priceFixtures) {
   const pass=parsePrice(raw)===expected;
   console.log((pass?'PASS':'FAIL')+' price fixture: '+JSON.stringify(raw));
