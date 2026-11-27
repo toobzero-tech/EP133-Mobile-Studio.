@@ -37,10 +37,10 @@ jobs:
         working-directory: price-radar-android
         run: gradle assembleDebug
       - name: Package source archive
-        run: zip -r PRICE_RADAR_ANDROID_SOURCE_v1.2.1.zip price-radar-android -x 'price-radar-android/app/build/**' 'price-radar-android/.gradle/**'
+        run: zip -r PRICE_RADAR_ANDROID_SOURCE_v1.2.2.zip price-radar-android -x 'price-radar-android/app/build/**' 'price-radar-android/.gradle/**'
       - uses: actions/upload-artifact@v4
         with:
-          name: PRICE-RADAR-Android-SOURCE-1.2.1
+          name: PRICE-RADAR-Android-SOURCE-1.2.2
           path: PRICE_RADAR_ANDROID_SOURCE_v1.2.1.zip
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
