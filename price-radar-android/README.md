@@ -1,8 +1,8 @@
-# PRICE RADAR Android 1.2.1
+# PRICE RADAR Android 1.2.2
 
 Native Android app for searching and comparing offers from DNS, М.Видео, Ozon, Wildberries and Яндекс Маркет.
 
-## 1.2.1 changes
+## 1.2.2 changes
 - Keeps in-app WebView searches and visible-card price parsing from 1.2.0.
 - Adds a per-store manual confirmation step for each imported or typed offer.
 - A price is counted only after the user confirms it and the offer URL is HTTPS on that store's domain.
@@ -10,6 +10,9 @@ Native Android app for searching and comparing offers from DNS, М.Видео, O
 - Comparison excludes preliminary, unconfirmed prices and reports how many were excluded.
 - Confirmation timestamps persist per search and store.
 - Clears price and confirmation states together.
+- Scanned and manually entered links must match a store-specific product URL path; home/search pages are rejected.
+- The page scanner accepts only HTTPS product links.
+- Price parsing handles narrow no-break spaces (U+202F) used in Russian number formatting.
 
 ## Limits
 The visible-page parser is preliminary and can misread a dynamic retailer page, promotional text, or variant price. It does not bypass CAPTCHA, bot protection, login walls, or access controls. Confirmation means the user reviewed the price/link, not that the app independently guarantees stock, delivery, discount eligibility, or authenticity. Availability and shipping should still be checked on the product page.
