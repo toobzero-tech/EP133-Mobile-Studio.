@@ -12,6 +12,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pathlib import Path
+from pydantic import BaseModel, Field
 
 API_URL = "https://api.api.sh/avito/v1/search"
 API_TIMEOUT = 35
@@ -21,6 +22,10 @@ _usage_lock = threading.Lock()
 _usage_day = ""
 _usage_count = 0
 _last_call = 0.0
+_analysis_day = ""
+_analysis_count = 0
+ANALYSIS_DAILY_LIMIT = max(1, int(os.getenv("GEMINI_DAILY_ANALYSIS_LIMIT", "10")))
+
 
 app = FastAPI(title="PRICE RADAR API", version="0.1.0")
 
@@ -144,6 +149,42 @@ def health() -> dict[str, Any]:
         "daily_search_limit": API_DAILY_LIMIT,
     }
 
+
+
+
+class ListingAnalysisRequest(BaseModel):
+    id: str = Field(default="", max_length=100)
+    url: str = Field(max_length=1000)
+    title: str = Field(min_length=1, max_length=300)
+    description: str = Field(default="", max_length=5000)
+    params: str = Field(default="", max_length=2000)
+    price: float = Field(gt=0)
+    location: str = Field(default="", max_length=200)
+    images: list[str] = Field(default_factory=list, max_length=4)
+
+
+@app.post("/api/analyze")
+def analyze_avito_listing(request: ListingAnalysisRequest) -> dict[str, Any]:
+    global _analysis_day, _analysis_count
+    if not _allowed_avito_url(request.url):
+        raise HTTPException(status_code=422, detail="Разрешены только HTTPS-ссылки avito.ru.")
+    if not os.getenv("GEMINI_API_KEY", "").strip():
+        raise HTTPException(status_code=503, detail="Gemini не настроен: добавьте GEMINI_API_KEY в переменные окружения сервера.")
+
+    with _usage_lock:
+        today = datetime.now(timezone.utc).date().isoformat()
+        if _analysis_day != today:
+            _analysis_day, _analysis_count = today, 0
+        if _analysis_count >= ANALYSIS_DAILY_LIMIT:
+            raise HTTPException(status_code=429, detail="Достигнут дневной лимит AI-анализов PRICE RADAR.")
+        _analysis_count += 1
+
+    from gemini_analysis import analyze_listing
+    try:
+        result = analyze_listing(request.model_dump())
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return {"source": "gemini", "listing_id": request.id, "analysis": result}
 
 @app.get("/api/search")
 def search_avito(
