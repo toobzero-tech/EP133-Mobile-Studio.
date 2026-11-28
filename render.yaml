@@ -2,9 +2,9 @@ services:
   - type: web
     name: price-radar-api
     runtime: python
-    rootDir: PRICE_RADAR/backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    rootDir: PRICE_RADAR
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: APP_ACCESS_TOKEN
