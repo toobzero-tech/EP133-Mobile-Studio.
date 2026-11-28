@@ -200,7 +200,10 @@ def analyze_avito_listing(request: ListingAnalysisRequest, x_price_radar_token: 
             raise HTTPException(status_code=429, detail="Достигнут дневной лимит AI-анализов PRICE RADAR.")
         _analysis_count += 1
 
-    try:\n        from .gemini_analysis import analyze_listing, compare_listing\n    except ImportError:\n        from gemini_analysis import analyze_listing, compare_listing
+    try:
+        from .gemini_analysis import analyze_listing, compare_listing
+    except ImportError:
+        from gemini_analysis import analyze_listing, compare_listing
     try:
         result = analyze_listing(request.model_dump())
     except RuntimeError as exc:
