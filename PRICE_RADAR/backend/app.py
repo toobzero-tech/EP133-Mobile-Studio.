@@ -181,12 +181,93 @@ def analyze_avito_listing(request: ListingAnalysisRequest) -> dict[str, Any]:
             raise HTTPException(status_code=429, detail="Достигнут дневной лимит AI-анализов PRICE RADAR.")
         _analysis_count += 1
 
-    from gemini_analysis import analyze_listing
+    from gemini_analysis import analyze_listing, compare_listing
     try:
         result = analyze_listing(request.model_dump())
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
-    return {"source": "gemini", "listing_id": request.id, "analysis": result}
+
+    comparison: dict[str, Any] = {
+        "status": "not_started",
+        "search_query": "",
+        "count": 0,
+        "confidence": 0,
+        "market_value_min": None,
+        "market_value_median": None,
+        "market_value_max": None,
+        "asking_price_difference": None,
+        "comparables": [],
+        "credits_used": 0,
+    }
+    search_query = " ".join(str(result.get("search_query") or "").split())[:100]
+    comparison["search_query"] = search_query
+    if search_query:
+        try:
+            raw = call_apish({
+                "q": search_query,
+                "location": request.region,
+                "sort": "price_asc",
+                "page": "1",
+                "with_photos": "true",
+            })
+            rows = raw.get("listings") if isinstance(raw.get("listings"), list) else []
+            candidates = [_normalise_listing(x) for x in rows if isinstance(x, dict)]
+            candidates = [x for x in candidates if x and x["title"] and x["id"] != request.id]
+            comparison["credits_used"] = int(raw.get("credits_used") or 5)
+            if candidates:
+                try:
+                    matched = compare_listing(request.model_dump(), result, candidates[:15])
+                    matched_ids = set(matched.get("comparable_ids") or [])
+                    selected = [x for x in candidates if x["id"] in matched_ids]
+                    selected = selected[:10]
+                    prices = sorted(int(x["price"]) for x in selected if x.get("price"))
+                    comparison.update({
+                        "status": "matched" if selected else "no_matches",
+                        "count": len(selected),
+                        "confidence": matched.get("confidence", 0),
+                        "reason": str(matched.get("reason") or "")[:700],
+                        "caveats": matched.get("caveats") if isinstance(matched.get("caveats"), list) else [],
+                        "comparables": [{
+                            "id": x["id"],
+                            "title": x["title"],
+                            "price": x["price"],
+                            "url": x["url"],
+                            "published_at": x["published_at"],
+                            "location": x["location"],
+                            "images": x["images"][:1],
+                        } for x in selected],
+                    })
+                    if len(prices) >= 3:
+                        n = len(prices)
+                        median = int(__import__("statistics").median(prices))
+                        low = prices[int((n - 1) * 0.25)]
+                        high = prices[int((n - 1) * 0.75 + 0.999)]
+                        difference = median - int(request.price)
+                        comparison.update({
+                            "market_value_min": low,
+                            "market_value_median": median,
+                            "market_value_max": high,
+                            "asking_price_difference": difference,
+                            "asking_price_difference_percent": round((difference / median) * 100, 1) if median else None,
+                            "valuation_note": "Ориентир по медиане выбранных объявлений, не подтверждённая цена сделки; состояние, торг, доставка и ремонт могут изменить итог.",
+                        })
+                    else:
+                        comparison["valuation_note"] = "Найдено меньше трёх подтверждённых аналогов. Рыночный диапазон не рассчитывается."
+                except RuntimeError as exc:
+                    comparison.update({"status": "comparison_ai_error", "error": str(exc)})
+            else:
+                comparison.update({"status": "no_candidates", "valuation_note": "API.SH не вернул подходящих кандидатов для сравнения."})
+        except HTTPException as exc:
+            comparison.update({"status": "search_error", "error": str(exc.detail)})
+    else:
+        comparison.update({"status": "no_search_query", "valuation_note": "ИИ не смог надёжно сформировать поисковый запрос для аналогов."})
+
+    return {
+        "source": "gemini",
+        "listing_id": request.id,
+        "analysis": result,
+        "comparison": comparison,
+    }
 
 @app.get("/api/search")
 def search_avito(
