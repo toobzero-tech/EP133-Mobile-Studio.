@@ -192,6 +192,6 @@ def compare_listing(listing: dict[str, Any], analysis: dict[str, Any], comparabl
     ids = result.get("comparable_ids")
     valid_ids = {x["id"] for x in candidates if x["id"]}
     result["comparable_ids"] = [str(x) for x in ids if str(x) in valid_ids] if isinstance(ids, list) else []
-    result["confidence"] = max(0, min(100, int(result.get("confidence") or 0)))
+    try:\n        confidence = int(result.get("confidence") or 0)\n    except (TypeError, ValueError):\n        confidence = 0\n    result["confidence"] = max(0, min(100, confidence))
     result["model"] = model
     return result
