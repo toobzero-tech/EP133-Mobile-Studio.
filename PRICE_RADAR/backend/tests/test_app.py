@@ -138,6 +138,12 @@ class PriceRadarApiTests(unittest.TestCase):
         self.assertEqual(result["condition"], "Б/у, исправен")
         self.assertEqual(result["images"], item["images"])
 
+    def test_render_blueprint_deploys_frontend_and_backend_together(self):
+        blueprint = (__import__("pathlib").Path(__file__).resolve().parents[3] / "render.yaml").read_text(encoding="utf-8")
+        self.assertIn("rootDir: PRICE_RADAR", blueprint)
+        self.assertIn("buildCommand: pip install -r backend/requirements.txt", blueprint)
+        self.assertIn("startCommand: uvicorn backend.app:app", blueprint)
+
     def test_index_route_serves_existing_frontend(self):
         response = app.index()
         self.assertTrue(str(response.path).endswith("PRICE_RADAR/index.html"))
