@@ -68,8 +68,7 @@ def _extract_output_text(payload: dict[str, Any]) -> str:
                     if isinstance(part, dict) and isinstance(part.get("text"), str):
                         chunks.append(part["text"])
     if chunks:
-        return "
-".join(chunks).strip()
+        return "\n".join(chunks).strip()
     raise RuntimeError("Gemini вернул ответ без текстового результата.")
 
 
@@ -144,10 +143,7 @@ def analyze_listing(listing: dict[str, Any]) -> dict[str, Any]:
         "Не указывай рыночную стоимость: аналоги ещё не проверены. Язык ответа: русский.
 
 "
-        f"Заголовок: {title}
-Описание: {description}
-Параметры: {params}
-"
+        f"Заголовок: {title}\nОписание: {description}\nПараметры: {params}\n"
         f"Цена объявления: {listing.get('price')} RUB
 Местоположение: {str(listing.get('location') or '')[:200]}"
     )
@@ -194,8 +190,7 @@ def compare_listing(listing: dict[str, Any], analysis: dict[str, Any], comparabl
         "reason (string), caveats (array of strings). Не рассчитывай стоимость самостоятельно.
 
 "
-        f"Исходный лот: {json.dumps({'title': listing.get('title'), 'price': listing.get('price'), 'description': listing.get('description'), 'params': listing.get('params'), 'ai_identification': analysis.get('identification'), 'brand_model': analysis.get('likely_brand_model'), 'variant': analysis.get('material_or_variant')}, ensure_ascii=False)}
-"
+        f"Исходный лот: {json.dumps({'title': listing.get('title'), 'price': listing.get('price'), 'description': listing.get('description'), 'params': listing.get('params'), 'ai_identification': analysis.get('identification'), 'brand_model': analysis.get('likely_brand_model'), 'variant': analysis.get('material_or_variant')}, ensure_ascii=False)}\n"
         f"Кандидаты Avito: {json.dumps(candidates, ensure_ascii=False)}"
     )
     result = _call_interactions([{"type": "text", "text": prompt}], model, key, max_output_tokens=900)
