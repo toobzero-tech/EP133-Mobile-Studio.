@@ -24,6 +24,30 @@ class PriceRadarApiTests(unittest.TestCase):
         foreign_link = dict(base, url="https://example.com/item_1")
         self.assertIsNone(app._normalise_listing(foreign_link))
 
+    def test_real_search_category_and_publication_fields_are_normalised(self):
+        item = {
+            "id": 123,
+            "url": "https://www.avito.ru/moskva/item_123",
+            "title": "Film camera",
+            "price": 2500,
+            "currency": "RUB",
+            "published": "2026-11-28T08:00:00.000Z",
+            "category": {"id": 4, "name": "Фототехника", "slug": "fototehnika"},
+            "params": "Б/у, исправен",
+            "images": ["https://img.avito.st/photo.jpg"],
+            "seller": {"name": "Продавец"},
+        }
+        result = app._normalise_listing(item)
+        self.assertEqual(result["category"], "Фототехника")
+        self.assertEqual(result["published_at"], item["published"])
+        self.assertEqual(result["condition"], "Б/у, исправен")
+        self.assertEqual(result["images"], item["images"])
+
+    def test_index_route_serves_existing_frontend(self):
+        response = app.index()
+        self.assertTrue(response.path.endswith("PRICE_RADAR/index.html"))
+        self.assertTrue(__import__("pathlib").Path(response.path).is_file())
+
     def test_missing_key_fails_closed(self):
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(HTTPException) as ctx:
