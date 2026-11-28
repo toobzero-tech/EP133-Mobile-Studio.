@@ -24,6 +24,11 @@ h2{font-size:17px;line-height:1.35;margin:0 0 7px}.price{font-size:21px;font-wei
 .desc{font-size:13px;color:#d4d9e1;line-height:1.45;white-space:pre-line;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
 a{color:#ffb36d;text-decoration:none;font-weight:700}.tag{font-size:11px;padding:4px 8px;border-radius:30px;background:#303947;color:#dfe5ed}
+.ai-button{padding:8px 11px;background:#303947;color:#fff;border:1px solid var(--line);font-size:12px}
+.analysis-result{margin-top:10px;padding:10px;border:1px solid #465365;border-radius:9px;background:#141922;font-size:13px;line-height:1.5}
+.analysis-result h3{margin:0 0 7px;font-size:14px}
+.analysis-result ul{margin:4px 0 8px;padding-left:18px}
+.analysis-result .caution{color:#ffca85}
 #more{display:block;margin:14px auto 0;background:#303947;color:#fff;border:1px solid var(--line)}
 .empty{text-align:center;padding:35px 12px;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
 footer{font-size:11px;color:var(--muted);line-height:1.5;margin-top:18px}
@@ -57,10 +62,14 @@ footer{font-size:11px;color:var(--muted);line-height:1.5;margin-top:18px}
 <script>
 (function(){
 const $=id=>document.getElementById(id);
-let page=1,nextPage=null,lastQuery="",busy=false,seen=new Set();
+let page=1,nextPage=null,lastQuery="",busy=false,seen=new Set(),listingData=new Map();
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function money(v){return Number(v||0).toLocaleString("ru-RU")+" ₽";}
 function date(v){if(!v)return "Дата публикации не указана";const d=new Date(v);return Number.isNaN(d.getTime())?"Дата публикации не указана":d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
+function renderAnalysis(a){
+ const arr=v=>Array.isArray(v)?v.map(x=>"<li>"+esc(x)+"</li>").join(""):"";
+ return "<h3>"+esc(a.identification||"Предварительная идентификация")+"</h3><p><b>Марка / модель:</b> "+esc(a.likely_brand_model||"Не установлено")+"</p><p><b>Материал / вариант:</b> "+esc(a.material_or_variant||"Не установлено")+"</p><p><b>Потенциал перепродажи:</b> "+esc(a.resale_potential||"Неизвестен")+"</p><p>"+esc(a.resale_reason||"")+"</p><b>Признаки</b><ul>"+arr(a.clues)+"</ul><b>Неопределённости</b><ul>"+arr(a.uncertainty)+"</ul><b>Риски</b><ul>"+arr(a.risk_flags)+"</ul><b>Что проверить</b><ul>"+arr(a.next_checks)+"</ul><p class="caution">Рыночная стоимость не рассчитана: сначала нужны реальные сопоставимые объявления. Фото проанализировано: "+esc(a.images_analyzed||0)+".</p>";
+}
 function card(x){
  const img=Array.isArray(x.images)&&x.images.length?x.images[0]:"";
  const seller=x.seller&&x.seller.name?x.seller.name:"Продавец не указан";
@@ -69,7 +78,7 @@ function card(x){
  '<div><h2>'+esc(x.title)+'</h2><div class="price">'+money(x.price)+'</div><div class="meta"><span>'+esc(x.location||"Россия")+'</span><span>'+esc(date(x.published_at))+'</span></div>'+
  '<div class="meta"><span class="tag">'+esc(category||"Avito")+'</span><span class="tag">'+esc(seller)+'</span></div>'+
  '<div class="desc">'+esc(x.description||x.params||"Описание отсутствует")+'</div>'+
- '<div class="actions"><a href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">Открыть объявление на Avito ↗</a></div></div></article>';
+ '<div class="actions"><a href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">Открыть объявление на Avito ↗</a><button class="ai-button" type="button" data-analyze-key="'+esc(listingKey)+'">Анализ ИИ</button></div><div class="analysis-result" hidden></div></div></article>';
 }
 async function search(append){
  if(busy)return;
@@ -93,7 +102,19 @@ async function search(append){
  }catch(e){$("status").textContent="Не удалось выполнить поиск: "+e.message;if(!$("feed").children.length)$("feed").innerHTML='<div class="empty">Проверьте подключение сервера и ключ API.SH.</div>';}
  finally{busy=false;$("refresh").disabled=false;$("more").disabled=false;}
 }
-$("refresh").addEventListener("click",()=>search(false));
+$("feed").addEventListener("click",async e=>{
+ const button=e.target.closest("[data-analyze-key]");if(!button)return;
+ const key=button.getAttribute("data-analyze-key"),listing=listingData.get(key);if(!listing)return;
+ const article=button.closest(".listing"),result=article.querySelector(".analysis-result");
+ button.disabled=true;button.textContent="Анализирую…";result.hidden=false;result.textContent="Gemini проверяет описание и фотографии. Это может занять до минуты.";
+ try{
+  const response=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({id:String(listing.id||""),url:listing.url,title:listing.title,description:listing.description||"",params:typeof listing.params==="string"?listing.params:"",price:listing.price,location:listing.location||"",images:Array.isArray(listing.images)?listing.images.slice(0,3):[]})});
+  const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.detail||"Ошибка анализа");
+  result.innerHTML=renderAnalysis(data.analysis||{});
+ }catch(err){result.textContent="Анализ не выполнен: "+err.message;}
+ finally{button.disabled=false;button.textContent="Повторить анализ";}
+});
+\n$("refresh").addEventListener("click",()=>search(false));
 $("more").addEventListener("click",()=>search(true));
 $("query").addEventListener("keydown",e=>{if(e.key==="Enter")search(false);});
 })();
