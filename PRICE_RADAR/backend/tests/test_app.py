@@ -45,7 +45,7 @@ class PriceRadarApiTests(unittest.TestCase):
 
     def test_index_route_serves_existing_frontend(self):
         response = app.index()
-        self.assertTrue(response.path.endswith("PRICE_RADAR/index.html"))
+        self.assertTrue(str(response.path).endswith("PRICE_RADAR/index.html"))
         self.assertTrue(__import__("pathlib").Path(response.path).is_file())
 
     def test_missing_key_fails_closed(self):
