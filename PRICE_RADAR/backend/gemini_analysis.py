@@ -53,7 +53,7 @@ def analyze_listing(listing: dict[str, Any]) -> dict[str, Any]:
     if not key:
         raise RuntimeError("Gemini не настроен: добавьте GEMINI_API_KEY в переменные окружения сервера.")
 
-    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
+    model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash").strip()
     title = str(listing.get("title") or "")[:300]
     description = str(listing.get("description") or "")[:5000]
     params = str(listing.get("params") or "")[:2000]
