@@ -36,7 +36,7 @@ def _normalise_listing(item: dict[str, Any]) -> dict[str, Any] | None:
     if not isinstance(url, str) or not _allowed_avito_url(url):
         return None
 
-    currency = str(item.get("currency") or "RUB").upper()
+    currency = str(item.get("currency") or "").upper()
     if currency != "RUB":
         return None
 
