@@ -54,6 +54,19 @@ class PriceRadarApiTests(unittest.TestCase):
         self.assertEqual(result["comparable_ids"], ["123", "456"])
         self.assertEqual(result["confidence"], 100)
 
+    def test_comparison_confidence_handles_non_numeric_model_output(self):
+        payload = {"output": [{"type": "text", "text": json.dumps({"comparable_ids": ["123"], "confidence": "uncertain"})}]}
+        response = MagicMock()
+        response.__enter__.return_value.read.return_value = json.dumps(payload).encode()
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}):
+            with patch("gemini_analysis.urllib.request.urlopen", return_value=response):
+                result = gemini_analysis.compare_listing(
+                    {"title": "Camera"}, {"identification": "Camera"},
+                    [{"id": "123", "title": "Camera", "price": 100}]
+                )
+        self.assertEqual(result["comparable_ids"], ["123"])
+        self.assertEqual(result["confidence"], 0)
+
     def test_analysis_uses_avito_candidates_and_computes_range_only_with_three_matches(self):
         from datetime import datetime, timezone
         request = app.ListingAnalysisRequest(
