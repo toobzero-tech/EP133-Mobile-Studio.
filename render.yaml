@@ -9,5 +9,11 @@ services:
     envVars:
       - key: APISH_API_KEY
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_DAILY_ANALYSIS_LIMIT
+        value: "10"
       - key: CORS_ORIGINS
         value: "*"
