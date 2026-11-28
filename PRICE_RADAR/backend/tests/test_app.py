@@ -79,19 +79,30 @@ class PriceRadarApiTests(unittest.TestCase):
             for i, price in enumerate([8000, 9000, 11000, 13000], start=1)
         ]
         raw = {"listings": candidates, "credits_used": 5}
-        with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}):
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key", "APP_ACCESS_TOKEN": "app-token"}):
             with patch.object(app, "ANALYSIS_DAILY_LIMIT", 10):
                 app._analysis_day = datetime.now(timezone.utc).date().isoformat()
                 app._analysis_count = 0
                 with patch("gemini_analysis.analyze_listing", return_value={"identification": "Camera", "search_query": "Camera model"}):
                     with patch("gemini_analysis.compare_listing", return_value={"comparable_ids": ["1", "2", "3", "4"], "confidence": 90, "reason": "same model", "caveats": []}):
                         with patch.object(app, "call_apish", return_value=raw) as search:
-                            result = app.analyze_avito_listing(request)
+                            result = app.analyze_avito_listing(request, x_price_radar_token="app-token")
         self.assertEqual(search.call_args.args[0]["q"], "Camera model")
         self.assertEqual(search.call_args.args[0]["location"], "moskva")
         self.assertEqual(result["comparison"]["count"], 4)
         self.assertEqual(result["comparison"]["market_value_median"], 10000)
         self.assertEqual(result["comparison"]["credits_used"], 5)
+
+    def test_paid_api_access_token_is_required_and_compared_safely(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with self.assertRaises(HTTPException) as missing:
+                app._require_app_access(None)
+        self.assertEqual(missing.exception.status_code, 503)
+        with patch.dict(os.environ, {"APP_ACCESS_TOKEN": "private-token"}):
+            with self.assertRaises(HTTPException) as wrong:
+                app._require_app_access("wrong-token")
+            self.assertEqual(wrong.exception.status_code, 401)
+            app._require_app_access("private-token")
 
     def test_only_https_avito_urls_are_allowed(self):
         self.assertTrue(app._allowed_avito_url("https://www.avito.ru/moskva/telefony/item_123"))
