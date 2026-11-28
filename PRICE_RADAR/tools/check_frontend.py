@@ -36,6 +36,17 @@ for forbidden in ("Wildberries", "Ozon", "Яндекс Маркет", "М.Вид
     if forbidden.lower() in source.lower():
         raise SystemExit("Non-Avito source still present in frontend: " + forbidden)
 
+
+render_config = (root.parent.parent / "render.yaml").read_text(encoding="utf-8")
+render_contracts = {
+    "Render root includes frontend": "rootDir: PRICE_RADAR",
+    "Render installs backend requirements": "buildCommand: pip install -r backend/requirements.txt",
+    "Render starts backend package": "startCommand: uvicorn backend.app:app",
+}
+missing_render = [label for label, token in render_contracts.items() if token not in render_config]
+if missing_render:
+    raise SystemExit("Render deployment checks failed: " + ", ".join(missing_render))
+
 node = shutil.which("node")
 if not node:
     raise SystemExit("Node.js is required for frontend syntax validation")
