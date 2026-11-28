@@ -39,7 +39,14 @@ footer{font-size:11px;color:var(--muted);line-height:1.5;margin-top:18px}
 <body>
 <header><h1>PRICE RADAR</h1><p>Поиск недооценённых объявлений · только Avito</p></header>
 <main>
-<section class="panel">
+<section class="panel access-panel" id="accessPanel">
+  <h2>Доступ к PRICE RADAR</h2>
+  <p class="access-note">Введите код, который задан в защищённых настройках Render. Код хранится только до закрытия вкладки.</p>
+  <input id="accessCode" type="password" autocomplete="current-password" maxlength="256" placeholder="Код доступа">
+  <button id="connectAccess" type="button">Подключиться</button>
+  <p class="access-note" id="accessMessage" role="status"></p>
+</section>
+<section class="panel" id="searchPanel" hidden>
   <div class="search">
     <input id="query" type="search" maxlength="180" placeholder="Что ищем? Например: фотоаппарат плёночный">
     <select id="location" aria-label="Регион">
@@ -63,7 +70,9 @@ footer{font-size:11px;color:var(--muted);line-height:1.5;margin-top:18px}
 <script>
 (function(){
 const $=id=>document.getElementById(id);
-let page=1,nextPage=null,lastQuery="",busy=false,seen=new Set(),listingData=new Map(),apiToken=sessionStorage.getItem("priceRadarToken")||"";\nfunction showApp(){ $("accessPanel").hidden=true;$("searchPanel").hidden=false;$("status").hidden=false;$("feed").hidden=false; }\nfunction authHeaders(extra){return Object.assign({"X-Price-Radar-Token":apiToken},extra||{}); }
+let page=1,nextPage=null,lastQuery="",busy=false,seen=new Set(),listingData=new Map(),apiToken=sessionStorage.getItem("priceRadarToken")||"";
+function showApp(){ $("accessPanel").hidden=true;$("searchPanel").hidden=false;$("status").hidden=false;$("feed").hidden=false; }
+function authHeaders(extra){return Object.assign({"X-Price-Radar-Token":apiToken},extra||{}); }
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function money(v){return Number(v||0).toLocaleString("ru-RU")+" ₽";}
 function date(v){if(!v)return "Дата публикации не указана";const d=new Date(v);return Number.isNaN(d.getTime())?"Дата публикации не указана":d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
@@ -146,7 +155,8 @@ async function restoreAccess(){
  }catch(_){}
  sessionStorage.removeItem("priceRadarToken");apiToken="";
 }
-\n$("feed").addEventListener("click",async e=>{
+
+$("feed").addEventListener("click",async e=>{
  const button=e.target.closest("[data-analyze-key]");if(!button)return;
  const key=button.getAttribute("data-analyze-key"),listing=listingData.get(key);if(!listing)return;
  const article=button.closest(".listing"),result=article.querySelector(".analysis-result");
@@ -162,6 +172,7 @@ async function restoreAccess(){
 $("refresh").addEventListener("click",()=>search(false));
 $("more").addEventListener("click",()=>search(true));
 $("query").addEventListener("keydown",e=>{if(e.key==="Enter")search(false);});
-restoreAccess();\n})();
+restoreAccess();
+})();
 </script>
 </body></html>
