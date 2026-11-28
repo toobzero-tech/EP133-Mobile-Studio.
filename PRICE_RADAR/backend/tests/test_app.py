@@ -54,6 +54,22 @@ class PriceRadarApiTests(unittest.TestCase):
                 app.call_apish({"q": "camera"})
         self.assertEqual(ctx.exception.status_code, 503)
 
+    def test_daily_credit_limit_blocks_extra_calls(self):
+        from datetime import datetime, timezone
+        with patch.dict(os.environ, {"APISH_API_KEY": "test-key"}):
+            with patch.object(app, "API_DAILY_LIMIT", 1), patch.object(app, "API_MIN_INTERVAL", 0):
+                app._usage_day = datetime.now(timezone.utc).date().isoformat()
+                app._usage_count = 0
+                app._last_call = 0.0
+                with patch("app.urllib.request.urlopen", side_effect=Exception("should not be called")):
+                    try:
+                        app.call_apish({"q": "camera"})
+                    except Exception:
+                        pass
+                with self.assertRaises(HTTPException) as ctx:
+                    app.call_apish({"q": "camera"})
+                self.assertEqual(ctx.exception.status_code, 429)
+
     def test_apish_request_uses_header_and_parses_response(self):
         payload = {"total": 1, "page": 1, "count": 1, "next_page": None, "credits_used": 5, "listings": []}
         response = MagicMock()
