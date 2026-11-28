@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: price-radar-api
+    runtime: python
+    rootDir: PRICE_RADAR/backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: APISH_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: "*"
