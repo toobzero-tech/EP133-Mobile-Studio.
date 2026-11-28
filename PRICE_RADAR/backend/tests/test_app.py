@@ -138,6 +138,18 @@ class PriceRadarApiTests(unittest.TestCase):
         self.assertEqual(result["condition"], "Б/у, исправен")
         self.assertEqual(result["images"], item["images"])
 
+    def test_render_package_import_resolves_frontend_and_gemini_module(self):
+        import importlib
+        import sys
+        from pathlib import Path
+        project_root = str(Path(__file__).resolve().parents[2])
+        if project_root not in sys.path:
+            sys.path.insert(0, project_root)
+        packaged_app = importlib.import_module("backend.app")
+        gemini_module = importlib.import_module("backend.gemini_analysis")
+        self.assertTrue(Path(packaged_app.index().path).is_file())
+        self.assertTrue(callable(gemini_module.analyze_listing))
+
     def test_render_blueprint_deploys_frontend_and_backend_together(self):
         blueprint = (__import__("pathlib").Path(__file__).resolve().parents[3] / "render.yaml").read_text(encoding="utf-8")
         self.assertIn("rootDir: PRICE_RADAR", blueprint)
