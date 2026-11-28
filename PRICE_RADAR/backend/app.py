@@ -145,7 +145,7 @@ def health() -> dict[str, Any]:
     return {
         "status": "ok",
         "service": "price-radar-api",
-        "apish_configured": bool(os.getenv("APISH_API_KEY", "").strip()),
+        "apish_configured": bool(os.getenv("APISH_API_KEY", "").strip()),\n        "gemini_configured": bool(os.getenv("GEMINI_API_KEY", "").strip()),\n        "daily_ai_analysis_limit": ANALYSIS_DAILY_LIMIT,
         "daily_search_limit": API_DAILY_LIMIT,
     }
 
