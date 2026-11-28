@@ -12,6 +12,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pathlib import Path
+from statistics import median, quantiles
 from pydantic import BaseModel, Field
 
 API_URL = "https://api.api.sh/avito/v1/search"
@@ -240,16 +241,17 @@ def analyze_avito_listing(request: ListingAnalysisRequest) -> dict[str, Any]:
                     })
                     if len(prices) >= 3:
                         n = len(prices)
-                        median = int(__import__("statistics").median(prices))
-                        low = prices[int((n - 1) * 0.25)]
-                        high = prices[int((n - 1) * 0.75 + 0.999)]
+                        median_price = int(median(prices))
+                        quartiles = quantiles(prices, n=4, method="inclusive")
+                        low = int(quartiles[0])
+                        high = int(quartiles[2])
                         difference = median - int(request.price)
                         comparison.update({
                             "market_value_min": low,
-                            "market_value_median": median,
+                            "market_value_median": median_price,
                             "market_value_max": high,
                             "asking_price_difference": difference,
-                            "asking_price_difference_percent": round((difference / median) * 100, 1) if median else None,
+                            "asking_price_difference_percent": round((difference / median_price) * 100, 1) if median_price else None,
                             "valuation_note": "Ориентир по медиане выбранных объявлений, не подтверждённая цена сделки; состояние, торг, доставка и ремонт могут изменить итог.",
                         })
                     else:
