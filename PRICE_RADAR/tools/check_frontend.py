@@ -37,7 +37,7 @@ for forbidden in ("Wildberries", "Ozon", "Яндекс Маркет", "М.Вид
         raise SystemExit("Non-Avito source still present in frontend: " + forbidden)
 
 
-render_config = (root.parent.parent / "render.yaml").read_text(encoding="utf-8")
+render_config = (root.parent / "render.yaml").read_text(encoding="utf-8")
 render_contracts = {
     "Render root includes frontend": "rootDir: PRICE_RADAR",
     "Render installs backend requirements": "buildCommand: pip install -r backend/requirements.txt",
