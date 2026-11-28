@@ -208,7 +208,7 @@ def analyze_avito_listing(request: ListingAnalysisRequest) -> dict[str, Any]:
             raw = call_apish({
                 "q": search_query,
                 "location": request.region,
-                "sort": "price_asc",
+                "sort": "default",
                 "page": "1",
                 "with_photos": "true",
             })
@@ -239,7 +239,7 @@ def analyze_avito_listing(request: ListingAnalysisRequest) -> dict[str, Any]:
                             "images": x["images"][:1],
                         } for x in selected],
                     })
-                    if len(prices) >= 3:
+                    if len(prices) >= 3 and int(comparison.get("confidence") or 0) >= 60:
                         n = len(prices)
                         median_price = int(median(prices))
                         quartiles = quantiles(prices, n=4, method="inclusive")
@@ -255,7 +255,7 @@ def analyze_avito_listing(request: ListingAnalysisRequest) -> dict[str, Any]:
                             "valuation_note": "Ориентир по медиане выбранных объявлений, не подтверждённая цена сделки; состояние, торг, доставка и ремонт могут изменить итог.",
                         })
                     else:
-                        comparison["valuation_note"] = "Найдено меньше трёх подтверждённых аналогов. Рыночный диапазон не рассчитывается."
+                        comparison["valuation_note"] = "Недостаточно надёжных аналогов: нужно минимум три совпадения и уверенность отбора не ниже 60%. Рыночный диапазон не рассчитывается."
                 except RuntimeError as exc:
                     comparison.update({"status": "comparison_ai_error", "error": str(exc)})
             else:
