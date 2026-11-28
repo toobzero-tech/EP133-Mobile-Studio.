@@ -24,6 +24,9 @@ contracts = {
     "no fake profit claims": "не подтверждённые сделки",
     "Gemini analysis action": "Анализ ИИ",
     "Avito comparable analysis": "renderComparison",
+    "private access login": 'id="accessPanel"',
+    "server token header": "X-Price-Radar-Token",
+    "session-only access token": "sessionStorage.setItem",
 }
 missing = [label for label, token in contracts.items() if token not in source]
 if missing:
