@@ -41,7 +41,7 @@ class PriceRadarApiTests(unittest.TestCase):
 
     def test_interactions_output_text_extracts_multiple_text_parts(self):
         payload = {"output": [{"type": "text", "text": "first"}, {"content": [{"type": "text", "text": "second"}]}]}
-        self.assertEqual(gemini_analysis._extract_output_text(payload), "first\\nsecond")
+        self.assertEqual(gemini_analysis._extract_output_text(payload), "first\nsecond")
 
     def test_comparison_rejects_ids_not_in_avito_candidates(self):
         payload = {"output": [{"type": "text", "text": json.dumps({"comparable_ids": ["123", "attacker-id", "456"], "confidence": 150, "reason": "same model"})}]}
@@ -53,6 +53,32 @@ class PriceRadarApiTests(unittest.TestCase):
                 result = gemini_analysis.compare_listing({"title": "A"}, {"identification": "A"}, candidates)
         self.assertEqual(result["comparable_ids"], ["123", "456"])
         self.assertEqual(result["confidence"], 100)
+
+    def test_analysis_uses_avito_candidates_and_computes_range_only_with_three_matches(self):
+        from datetime import datetime, timezone
+        request = app.ListingAnalysisRequest(
+            id="source", url="https://www.avito.ru/moskva/item_source", title="Camera", price=10000,
+            location="Москва", region="moskva", images=[]
+        )
+        candidates = [
+            {"id": str(i), "url": f"https://www.avito.ru/moskva/item_{i}", "title": f"Camera model {i}",
+             "price": price, "currency": "RUB", "description": "Same model", "params": "Used"}
+            for i, price in enumerate([8000, 9000, 11000, 13000], start=1)
+        ]
+        raw = {"listings": candidates, "credits_used": 5}
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}):
+            with patch.object(app, "ANALYSIS_DAILY_LIMIT", 10):
+                app._analysis_day = datetime.now(timezone.utc).date().isoformat()
+                app._analysis_count = 0
+                with patch("gemini_analysis.analyze_listing", return_value={"identification": "Camera", "search_query": "Camera model"}):
+                    with patch("gemini_analysis.compare_listing", return_value={"comparable_ids": ["1", "2", "3", "4"], "confidence": 90, "reason": "same model", "caveats": []}):
+                        with patch.object(app, "call_apish", return_value=raw) as search:
+                            result = app.analyze_avito_listing(request)
+        self.assertEqual(search.call_args.args[0]["q"], "Camera model")
+        self.assertEqual(search.call_args.args[0]["location"], "moskva")
+        self.assertEqual(result["comparison"]["count"], 4)
+        self.assertEqual(result["comparison"]["market_value_median"], 10000)
+        self.assertEqual(result["comparison"]["credits_used"], 5)
 
     def test_only_https_avito_urls_are_allowed(self):
         self.assertTrue(app._allowed_avito_url("https://www.avito.ru/moskva/telefony/item_123"))
