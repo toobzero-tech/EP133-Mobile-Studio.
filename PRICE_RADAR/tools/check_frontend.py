@@ -7,9 +7,8 @@ import tempfile
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
-html = root / "index.html"
-source = html.read_text(encoding="utf-8")
-scripts = re.findall(r"<script\\b[^>]*>(.*?)</script>", source, flags=re.I | re.S)
+source = (root / "index.html").read_text(encoding="utf-8")
+scripts = re.findall(r"<script[^>]*>(.*?)</script>", source, flags=re.I | re.S)
 if not scripts:
     raise SystemExit("No inline JavaScript block found")
 
@@ -37,7 +36,7 @@ if not node:
     raise SystemExit("Node.js is required for frontend syntax validation")
 
 with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8", delete=False) as handle:
-    handle.write("\\n".join(scripts))
+    handle.write(chr(10).join(scripts))
     temp_path = handle.name
 try:
     subprocess.run([node, "--check", temp_path], check=True)
