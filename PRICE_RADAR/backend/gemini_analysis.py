@@ -140,12 +140,9 @@ def analyze_listing(listing: dict[str, Any]) -> dict[str, Any]:
         "risk_flags (array of strings), completeness_questions (array of strings), "
         "resale_potential (low|medium|high|unknown), resale_reason (string), "
         "search_query (string), next_checks (array of strings). "
-        "Не указывай рыночную стоимость: аналоги ещё не проверены. Язык ответа: русский.
-
-"
-        f"Заголовок: {title}\nОписание: {description}\nПараметры: {params}\n"
-        f"Цена объявления: {listing.get('price')} RUB
-Местоположение: {str(listing.get('location') or '')[:200]}"
+        "Не указывай рыночную стоимость: аналоги ещё не проверены. Язык ответа: русский.\\n\\n"
+        f"Заголовок: {title}\\nОписание: {description}\\nПараметры: {params}\\n"
+        f"Цена объявления: {listing.get('price')} RUB\\nМестоположение: {str(listing.get('location') or '')[:200]}"
     )
     parts: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
     images = listing.get("images") if isinstance(listing.get("images"), list) else []
@@ -190,10 +187,9 @@ def compare_listing(listing: dict[str, Any], analysis: dict[str, Any], comparabl
         "reason (string), caveats (array of strings). Не рассчитывай стоимость самостоятельно.
 
 "
-        f"Исходный лот: {json.dumps({'title': listing.get('title'), 'price': listing.get('price'), 'description': listing.get('description'), 'params': listing.get('params'), 'ai_identification': analysis.get('identification'), 'brand_model': analysis.get('likely_brand_model'), 'variant': analysis.get('material_or_variant')}, ensure_ascii=False)}\n"
+        "reason (string), caveats (array of strings). Не рассчитывай стоимость самостоятельно.\\n\\n"
+        f"Исходный лот: {json.dumps({'title': listing.get('title'), 'price': listing.get('price'), 'description': listing.get('description'), 'params': listing.get('params'), 'ai_identification': analysis.get('identification'), 'brand_model': analysis.get('likely_brand_model'), 'variant': analysis.get('material_or_variant')}, ensure_ascii=False)}\\n"
         f"Кандидаты Avito: {json.dumps(candidates, ensure_ascii=False)}"
-    )
-    result = _call_interactions([{"type": "text", "text": prompt}], model, key, max_output_tokens=900)
     ids = result.get("comparable_ids")
     valid_ids = {x["id"] for x in candidates if x["id"]}
     result["comparable_ids"] = [str(x) for x in ids if str(x) in valid_ids] if isinstance(ids, list) else []
