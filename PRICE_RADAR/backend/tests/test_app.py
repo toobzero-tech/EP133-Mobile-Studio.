@@ -10,7 +10,29 @@ import gemini_analysis
 
 
 class PriceRadarApiTests(unittest.TestCase):
-    def test_gemini_image_url_allowlist_rejects_external_hosts(self):\n        self.assertTrue(gemini_analysis._safe_image_url("https://10.img.avito.st/photo.jpg"))\n        self.assertFalse(gemini_analysis._safe_image_url("https://example.com/photo.jpg"))\n        self.assertFalse(gemini_analysis._safe_image_url("http://10.img.avito.st/photo.jpg"))\n\n    def test_gemini_analysis_requires_server_key(self):\n        with patch.dict(os.environ, {}, clear=True):\n            with self.assertRaises(RuntimeError):\n                gemini_analysis.analyze_listing({"title": "Camera"})\n\n    def test_gemini_analysis_parses_json_and_suppresses_unverified_price(self):\n        payload = {"candidates": [{"content": {"parts": [{"text": json.dumps({"identification": "Фотоаппарат", "market_value_min": 1000, "market_value_max": 5000})}]}}]}\n        response = MagicMock()\n        response.__enter__.return_value.read.return_value = json.dumps(payload).encode()\n        with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}):\n            with patch("gemini_analysis.urllib.request.urlopen", return_value=response):\n                result = gemini_analysis.analyze_listing({"title": "Camera", "images": []})\n        self.assertEqual(result["identification"], "Фотоаппарат")\n        self.assertIsNone(result["market_value_min"])\n        self.assertIsNone(result["market_value_max"])\n        self.assertEqual(result["images_analyzed"], 0)\n\n    def test_only_https_avito_urls_are_allowed(self):
+    def test_gemini_image_url_allowlist_rejects_external_hosts(self):
+        self.assertTrue(gemini_analysis._safe_image_url("https://10.img.avito.st/photo.jpg"))
+        self.assertFalse(gemini_analysis._safe_image_url("https://example.com/photo.jpg"))
+        self.assertFalse(gemini_analysis._safe_image_url("http://10.img.avito.st/photo.jpg"))
+
+    def test_gemini_analysis_requires_server_key(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with self.assertRaises(RuntimeError):
+                gemini_analysis.analyze_listing({"title": "Camera"})
+
+    def test_gemini_analysis_parses_json_and_suppresses_unverified_price(self):
+        payload = {"candidates": [{"content": {"parts": [{"text": json.dumps({"identification": "Фотоаппарат", "market_value_min": 1000, "market_value_max": 5000})}]}}]}
+        response = MagicMock()
+        response.__enter__.return_value.read.return_value = json.dumps(payload).encode()
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}):
+            with patch("gemini_analysis.urllib.request.urlopen", return_value=response):
+                result = gemini_analysis.analyze_listing({"title": "Camera", "images": []})
+        self.assertEqual(result["identification"], "Фотоаппарат")
+        self.assertIsNone(result["market_value_min"])
+        self.assertIsNone(result["market_value_max"])
+        self.assertEqual(result["images_analyzed"], 0)
+
+    def test_only_https_avito_urls_are_allowed(self):
         self.assertTrue(app._allowed_avito_url("https://www.avito.ru/moskva/telefony/item_123"))
         self.assertTrue(app._allowed_avito_url("https://avito.ru/item_123"))
         self.assertFalse(app._allowed_avito_url("http://www.avito.ru/item_123"))
