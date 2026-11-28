@@ -207,3 +207,41 @@ Render deployment и проверка ключа API.SH. Нужен ключ п�
 3. Проверить `/health`; не раскрывать ключи в логах.
 4. После проверки квот выполнить один поисковый запрос Avito, затем один анализ лота Gemini.
 5. Сохранить обезличенный пример ответа и добавить поиск сопоставимых объявлений, прежде чем показывать оценку перепродажи.
+
+
+## КТ-07 — проверка развёртывания, закрытый доступ и чистый Avito-пакет
+Дата: 2026-11-28
+
+### Найденная проблема и исправление
+- При повторной проверке Render Blueprint обнаружено, что прежний `rootDir: PRICE_RADAR/backend` исключал `PRICE_RADAR/index.html` из build context. Backend мог стартовать, но главная страница не попадала в развертывание.
+- Исправлен `render.yaml`: `rootDir: PRICE_RADAR`, установка `backend/requirements.txt`, запуск `uvicorn backend.app:app`.
+- Добавлен совместимый импорт Gemini-модуля для запуска как Python package (`backend.app`) и в режиме unit tests (`app`).
+- Добавлены регрессионные тесты, проверяющие Render root/start configuration и фактическую доступность frontend path при package import.
+- Frontend smoke checker теперь проверяет Render Blueprint, а не только JavaScript.
+- Защищённые маршруты поиска и AI-анализа требуют `APP_ACCESS_TOKEN`; сравнение токена выполняется через constant-time `hmac.compare_digest`. В браузере токен хранится только в sessionStorage.
+- Удалены старые не-Avito workflow и импорты Golova из сборочного пути; актуальный workflow пакует только Avito веб-приложение с backend.
+- Сверена структура Gemini Interactions API с официальным REST-примером Google: массив text/image parts, base64 image data, `x-goog-api-key`, `Api-Revision: 2026-05-20`, `store: false`.
+
+### Проверки
+- API unit tests run `46131383252`: success на HEAD `9ee73648a3ae2f9af70a947b65140358b45f37dc`.
+- Build run `46131383257`: success на том же HEAD; проверка frontend/Render contract, сборка ZIP и загрузка artifact прошли.
+- Artifact: `PRICE_RADAR_AVITO_MVP`, ID `15257626532`, размер 29,636 bytes, SHA-256 `cd0c1ef8fdfaa7f85f1d17f14189efe1ff49524a1d82ce1ede7e65fbb591d78e`.
+- Предыдущий API test run `46131370126`: success; package-import fix отдельно проверен.
+- Предыдущий build run `46131370123`: success.
+- Ошибочные промежуточные CI-запуски были устранены; текущие API и build проверки на HEAD прошли.
+
+### Что всё ещё не подтверждено
+- Нет фактического Render deployment; `APP_ACCESS_TOKEN`, `APISH_API_KEY`, `GEMINI_API_KEY` должны быть добавлены пользователем в Render Environment.
+- Не проверен внешний `/health` и не выполнен живой поиск Avito.
+- Не выполнен живой Gemini-анализ и не проверена реальная цена/квота модели в пользовательском Google AI Studio.
+- Рынок сравнивается по объявлениям, а не по закрытым сделкам; ориентир цен не равен цене продажи или гарантированной прибыли.
+- Лимиты запросов и AI-анализов хранятся в памяти процесса; при нескольких инстансах/перезапуске не являются глобальными квотами.
+- Пока нет автоматического сканирования категорий, фоновый поиск выгодных лотов не работает сам по себе; текущий поиск требует фразу пользователя.
+
+### Следующий этап — КТ-08
+1. Развернуть свежий Blueprint из ветки `price-radar-mvp`; при уже созданном Render service выполнить Manual Deploy latest commit.
+2. Установить три секрета `APP_ACCESS_TOKEN`, `APISH_API_KEY`, `GEMINI_API_KEY` в Render Environment. Не пересылать их в чат.
+3. Проверить `/health`: все три флага configured должны быть true.
+4. Войти в веб-приложение с APP_ACCESS_TOKEN, выполнить один тестовый Avito search (5 кредитов), затем один Gemini analysis (ещё до 5 кредитов на аналоги).
+5. Зафиксировать реальные статусы, число найденных объявлений, число подходящих аналогов и обезличенный пример анализа.
+6. После подтверждения реального цикла перейти к автоматическим поисковым категориям и ранжированию потенциальных сделок.
