@@ -21,7 +21,9 @@ contracts = {
     "real listing publication date": "published_at",
     "real source credit reporting": "credits_used",
     "pagination": "next_page",
-    "no fake profit claims": "не подтверждённые сделки",\n    "Gemini analysis action": "Анализ ИИ",\n    "Avito comparable analysis": "renderComparison",
+    "no fake profit claims": "не подтверждённые сделки",
+    "Gemini analysis action": "Анализ ИИ",
+    "Avito comparable analysis": "renderComparison",
 }
 missing = [label for label, token in contracts.items() if token not in source]
 if missing:
