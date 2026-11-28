@@ -3,6 +3,9 @@ import os
 import urllib.error
 import urllib.parse
 import urllib.request
+import threading
+import time
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
@@ -12,6 +15,12 @@ from pathlib import Path
 
 API_URL = "https://api.api.sh/avito/v1/search"
 API_TIMEOUT = 35
+API_DAILY_LIMIT = max(1, int(os.getenv("APISH_DAILY_CALL_LIMIT", "30")))
+API_MIN_INTERVAL = max(0.0, float(os.getenv("APISH_MIN_INTERVAL_SECONDS", "2")))
+_usage_lock = threading.Lock()
+_usage_day = ""
+_usage_count = 0
+_last_call = 0.0
 
 app = FastAPI(title="PRICE RADAR API", version="0.1.0")
 
@@ -74,12 +83,25 @@ def _normalise_listing(item: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def call_apish(params: dict[str, str]) -> dict[str, Any]:
+    global _usage_day, _usage_count, _last_call
     key = os.getenv("APISH_API_KEY", "").strip()
     if not key:
         raise HTTPException(
             status_code=503,
             detail="API.SH не настроен: добавьте APISH_API_KEY в переменные окружения сервера.",
         )
+
+    with _usage_lock:
+        today = datetime.now(timezone.utc).date().isoformat()
+        if _usage_day != today:
+            _usage_day, _usage_count = today, 0
+        if _usage_count >= API_DAILY_LIMIT:
+            raise HTTPException(status_code=429, detail="Достигнут дневной лимит поисковых запросов PRICE RADAR.")
+        wait = API_MIN_INTERVAL - (time.monotonic() - _last_call)
+        if wait > 0:
+            raise HTTPException(status_code=429, detail="Слишком частые запросы. Подождите несколько секунд.")
+        _usage_count += 1
+        _last_call = time.monotonic()
 
     query = urllib.parse.urlencode(params)
     request = urllib.request.Request(
@@ -119,6 +141,7 @@ def health() -> dict[str, Any]:
         "status": "ok",
         "service": "price-radar-api",
         "apish_configured": bool(os.getenv("APISH_API_KEY", "").strip()),
+        "daily_search_limit": API_DAILY_LIMIT,
     }
 
 
