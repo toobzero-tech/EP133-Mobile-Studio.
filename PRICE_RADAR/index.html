@@ -52,7 +52,7 @@ footer{font-size:11px;color:var(--muted);line-height:1.5;margin-top:18px}
     </select>
     <button id="refresh">Обновить</button>
   </div>
-  <p class="hint">Поиск выполняется по реальным объявлениям Avito. Новые публикации показываются первыми. Каждый запрос API.SH стоит 5 кредитов. Анализ выгодности и проверка аналогов будут добавлены отдельным этапом, поэтому пока не рисуем выдуманную прибыль.</p>
+  <p class="hint">Поиск выполняется по реальным объявлениям Avito. Новые публикации показываются первыми. Каждый запрос API.SH стоит 5 кредитов. ИИ проверяет предмет по фото и ищет сопоставимые объявления Avito. Оценка строится только при наличии минимум трёх выбранных аналогов.</p>
 </section>
 <div class="status" id="status" role="status">Введите название товара и нажмите «Обновить».</div>
 <section class="feed" id="feed"><div class="empty">Здесь появятся реальные объявления Avito.</div></section>
@@ -69,6 +69,29 @@ function date(v){if(!v)return "Дата публикации не указана
 function renderAnalysis(a){
  const arr=v=>Array.isArray(v)?v.map(x=>"<li>"+esc(x)+"</li>").join(""):"";
  return "<h3>"+esc(a.identification||"Предварительная идентификация")+"</h3><p><b>Марка / модель:</b> "+esc(a.likely_brand_model||"Не установлено")+"</p><p><b>Материал / вариант:</b> "+esc(a.material_or_variant||"Не установлено")+"</p><p><b>Потенциал перепродажи:</b> "+esc(a.resale_potential||"Неизвестен")+"</p><p>"+esc(a.resale_reason||"")+"</p><b>Признаки</b><ul>"+arr(a.clues)+"</ul><b>Неопределённости</b><ul>"+arr(a.uncertainty)+"</ul><b>Риски</b><ul>"+arr(a.risk_flags)+"</ul><b>Что проверить</b><ul>"+arr(a.next_checks)+"</ul><p class='caution'>Рыночная стоимость не рассчитана: сначала нужны реальные сопоставимые объявления. Фото проанализировано: "+esc(a.images_analyzed||0)+".</p>";
+}
+function renderComparison(c){
+ if(!c)return "";
+ const moneyOrDash=v=>v==null?"не рассчитано":money(v);
+ const comps=Array.isArray(c.comparables)?c.comparables:[];
+ let html="<div class='analysis-result'><h3>Сравнение с объявлениями Avito</h3>";
+ html+="<p><b>Поисковый запрос:</b> "+esc(c.search_query||"не сформирован")+"</p>";
+ html+="<p><b>Подходящих аналогов:</b> "+esc(c.count||0)+" · <b>уверенность отбора:</b> "+esc(c.confidence||0)+"%</p>";
+ if(c.market_value_median!=null){
+  html+="<p><b>Ориентировочный диапазон:</b> "+moneyOrDash(c.market_value_min)+" – "+moneyOrDash(c.market_value_max)+"</p>";
+  html+="<p><b>Медиана аналогов:</b> "+moneyOrDash(c.market_value_median)+"</p>";
+  if(c.asking_price_difference!=null)html+="<p><b>Разница с ценой продавца:</b> "+moneyOrDash(c.asking_price_difference)+" ("+esc(c.asking_price_difference_percent||0)+"% от медианы)</p>";
+ }else{
+  html+="<p class='caution'>"+esc(c.valuation_note||"Недостаточно проверенных аналогов для оценки.")+"</p>";
+ }
+ if(c.reason)html+="<p>"+esc(c.reason)+"</p>";
+ if(c.error)html+="<p class='caution'>Сравнение завершилось не полностью: "+esc(c.error)+"</p>";
+ if(comps.length){
+  html+="<b>Отобранные аналоги</b><ul>"+comps.map(x=>"<li><a href='"+esc(x.url)+"' target='_blank' rel='noopener noreferrer'>"+esc(x.title)+"</a> · <b>"+money(x.price)+"</b></li>").join("")+"</ul>";
+ }
+ if(Array.isArray(c.caveats)&&c.caveats.length)html+="<b>Оговорки</b><ul>"+c.caveats.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>";
+ html+="<p class='caution'>Списано за поиск аналогов: "+esc(c.credits_used||0)+" кредитов API.SH. Это цены объявлений, а не подтверждённые сделки. Комиссии, ремонт, торг и доставка не учтены.</p></div>";
+ return html;
 }
 function card(x){
  const listingKey=String(x.id||x.url);listingData.set(listingKey,x);
@@ -109,9 +132,9 @@ $("feed").addEventListener("click",async e=>{
  const article=button.closest(".listing"),result=article.querySelector(".analysis-result");
  button.disabled=true;button.textContent="Анализирую…";result.hidden=false;result.textContent="Gemini проверяет описание и фотографии. Это может занять до минуты.";
  try{
-  const response=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({id:String(listing.id||""),url:listing.url,title:listing.title,description:listing.description||"",params:typeof listing.params==="string"?listing.params:"",price:listing.price,location:listing.location||"",images:Array.isArray(listing.images)?listing.images.slice(0,3):[]})});
+  const response=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({id:String(listing.id||""),url:listing.url,title:listing.title,description:listing.description||"",params:typeof listing.params==="string"?listing.params:"",price:listing.price,location:listing.location||"",region:$("location").value,images:Array.isArray(listing.images)?listing.images.slice(0,3):[]})});
   const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.detail||"Ошибка анализа");
-  result.innerHTML=renderAnalysis(data.analysis||{});
+  result.innerHTML=renderAnalysis(data.analysis||{})+renderComparison(data.comparison);
  }catch(err){result.textContent="Анализ не выполнен: "+err.message;}
  finally{button.disabled=false;button.textContent="Повторить анализ";}
 });
