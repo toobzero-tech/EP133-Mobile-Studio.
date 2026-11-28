@@ -20,17 +20,39 @@ class PriceRadarApiTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 gemini_analysis.analyze_listing({"title": "Camera"})
 
-    def test_gemini_analysis_parses_json_and_suppresses_unverified_price(self):
-        payload = {"candidates": [{"content": {"parts": [{"text": json.dumps({"identification": "Фотоаппарат", "market_value_min": 1000, "market_value_max": 5000})}]}}]}
+    def test_gemini_uses_stateless_interactions_api_and_suppresses_unverified_price(self):
+        payload = {"output": [{"type": "text", "text": json.dumps({"identification": "Фотоаппарат", "search_query": "Зенит TTL", "market_value_min": 1000, "market_value_max": 5000})}]}
         response = MagicMock()
         response.__enter__.return_value.read.return_value = json.dumps(payload).encode()
         with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}):
-            with patch("gemini_analysis.urllib.request.urlopen", return_value=response):
+            with patch("gemini_analysis.urllib.request.urlopen", return_value=response) as mocked:
                 result = gemini_analysis.analyze_listing({"title": "Camera", "images": []})
         self.assertEqual(result["identification"], "Фотоаппарат")
+        self.assertEqual(result["search_query"], "Зенит TTL")
         self.assertIsNone(result["market_value_min"])
         self.assertIsNone(result["market_value_max"])
         self.assertEqual(result["images_analyzed"], 0)
+        request = mocked.call_args.args[0]
+        self.assertEqual(request.full_url, gemini_analysis.INTERACTIONS_URL)
+        body = json.loads(request.data.decode())
+        self.assertFalse(body["store"])
+        self.assertEqual(body["model"], "gemini-3.8-flash")
+        self.assertEqual(body["input"][0]["type"], "text")
+
+    def test_interactions_output_text_extracts_multiple_text_parts(self):
+        payload = {"output": [{"type": "text", "text": "first"}, {"content": [{"type": "text", "text": "second"}]}]}
+        self.assertEqual(gemini_analysis._extract_output_text(payload), "first\\nsecond")
+
+    def test_comparison_rejects_ids_not_in_avito_candidates(self):
+        payload = {"output": [{"type": "text", "text": json.dumps({"comparable_ids": ["123", "attacker-id", "456"], "confidence": 150, "reason": "same model"})}]}
+        response = MagicMock()
+        response.__enter__.return_value.read.return_value = json.dumps(payload).encode()
+        candidates = [{"id": "123", "title": "A", "price": 100}, {"id": "456", "title": "B", "price": 200}]
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}):
+            with patch("gemini_analysis.urllib.request.urlopen", return_value=response):
+                result = gemini_analysis.compare_listing({"title": "A"}, {"identification": "A"}, candidates)
+        self.assertEqual(result["comparable_ids"], ["123", "456"])
+        self.assertEqual(result["confidence"], 100)
 
     def test_only_https_avito_urls_are_allowed(self):
         self.assertTrue(app._allowed_avito_url("https://www.avito.ru/moskva/telefony/item_123"))
