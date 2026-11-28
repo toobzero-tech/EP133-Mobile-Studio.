@@ -5,7 +5,8 @@ from unittest.mock import patch, MagicMock
 
 from fastapi import HTTPException
 
-import app\nimport gemini_analysis
+import app
+import gemini_analysis
 
 
 class PriceRadarApiTests(unittest.TestCase):
