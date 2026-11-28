@@ -7,6 +7,8 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from pathlib import Path
 
 API_URL = "https://api.api.sh/avito/v1/search"
 API_TIMEOUT = 35
@@ -48,6 +50,9 @@ def _normalise_listing(item: dict[str, Any]) -> dict[str, Any] | None:
         return None
 
     images = item.get("images") or []
+    category = item.get("category")
+    if isinstance(category, dict):
+        category = category.get("name") or category.get("slug")
     return {
         "id": str(item.get("id") or ""),
         "source": "avito",
@@ -58,11 +63,11 @@ def _normalise_listing(item: dict[str, Any]) -> dict[str, Any] | None:
         "currency": "RUB",
         "published_at": item.get("published") or item.get("published_at"),
         "location": item.get("location") or item.get("address"),
-        "category": item.get("category"),
+        "category": category,
         "params": item.get("params"),
         "images": [x for x in images if isinstance(x, str) and x.startswith("https://")],
         "seller": item.get("seller") if isinstance(item.get("seller"), dict) else {},
-        "condition": item.get("condition"),
+        "condition": item.get("condition") or item.get("params"),
         "delivery": item.get("delivery"),
         "reserved": item.get("reserved"),
     }
@@ -102,6 +107,12 @@ def call_apish(params: dict[str, str]) -> dict[str, Any]:
     return payload
 
 
+@app.get("/")
+def index() -> FileResponse:
+    page = Path(__file__).resolve().parents[1] / "index.html"
+    return FileResponse(page)
+
+
 @app.get("/health")
 def health() -> dict[str, Any]:
     return {
@@ -120,6 +131,7 @@ def search_avito(
     price_min: int | None = Query(default=None, ge=0),
     price_max: int | None = Query(default=None, ge=1),
     condition: str | None = Query(default=None, pattern="^(new|used)$"),
+    with_photos: bool = Query(default=True),
     seller_type: str | None = Query(default=None, pattern="^(private|company|all)$"),
     sort: str = Query(default="newest", pattern="^(default|price_asc|price_desc|newest|discount)$"),
     page: int = Query(default=1, ge=1, le=100),
@@ -143,6 +155,8 @@ def search_avito(
         params["price_max"] = str(price_max)
     if condition:
         params["condition"] = condition
+    if with_photos:
+        params["with_photos"] = "true"
     if seller_type:
         params["seller_type"] = seller_type
 
