@@ -1,4 +1,4 @@
-name: Build PRICE RADAR MVP
+name: Build PRICE RADAR Avito MVP
 on:
   push:
     branches:
@@ -16,29 +16,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Test import normalizer
-        run: python -m unittest discover -s PRICE_RADAR/tools -p 'test_*.py' -v
-      - name: Probe Golova public read API (non-blocking)
-        continue-on-error: true
-        run: python PRICE_RADAR/tools/probe_golova_api.py
-      - name: Import live Moscow sales sample from Golova API
-        run: |
-          python PRICE_RADAR/tools/import_golova_market.py PRICE_RADAR/golova-smoke.example.json --max-pages 1 --per-page 50 --delay 1.1 -o PRICE_RADAR/golova_market_live_sample.json || printf '[]\n' > PRICE_RADAR/golova_market_live_sample.json
       - name: Check frontend JavaScript syntax
         run: python PRICE_RADAR/tools/check_frontend.py
-      - name: Prepare ZIP
+      - name: Prepare Avito-only ZIP
         run: |
           test -f PRICE_RADAR/index.html
-          mkdir -p dist
-          cp -R PRICE_RADAR/. dist/
+          test -f PRICE_RADAR/backend/app.py
+          mkdir -p dist/backend dist/tools
+          cp PRICE_RADAR/index.html dist/
+          cp -R PRICE_RADAR/backend/. dist/backend/
+          cp PRICE_RADAR/DEPLOY.md PRICE_RADAR/CONTROL_POINTS.md dist/
+          cp PRICE_RADAR/tools/check_frontend.py dist/tools/
           find dist -type d -name __pycache__ -prune -exec rm -rf {} +
           find dist -type f -name '*.pyc' -delete
           cd dist
-          zip -r ../PRICE_RADAR_MVP.zip .
+          zip -r ../PRICE_RADAR_AVITO_MVP.zip .
       - name: Upload ZIP artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PRICE_RADAR_MVP
-          path: PRICE_RADAR_MVP.zip
+          name: PRICE_RADAR_AVITO_MVP
+          path: PRICE_RADAR_AVITO_MVP.zip
           if-no-files-found: error
           retention-days: 30
