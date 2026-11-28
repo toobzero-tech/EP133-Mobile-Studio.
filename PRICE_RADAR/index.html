@@ -33,6 +33,7 @@ a{color:#ffb36d;text-decoration:none;font-weight:700}.tag{font-size:11px;padding
 .empty{text-align:center;padding:35px 12px;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
 footer{font-size:11px;color:var(--muted);line-height:1.5;margin-top:18px}
 @media(max-width:620px){.search{grid-template-columns:1fr 1fr}.search input{grid-column:1/-1}.search button{grid-column:1/-1}.listing{grid-template-columns:92px 1fr;gap:10px}.photo{width:92px;height:92px}.price{font-size:18px}h2{font-size:15px}}
+.access-panel{max-width:520px;margin:18px auto}.access-panel input{width:100%;margin:8px 0;padding:12px;background:#111720;border:1px solid var(--line);border-radius:8px;color:var(--text)}.access-panel button{width:100%;background:#c96c24;color:#fff}.access-note{font-size:12px;color:var(--muted);line-height:1.5}
 </style>
 </head>
 <body>
@@ -54,15 +55,15 @@ footer{font-size:11px;color:var(--muted);line-height:1.5;margin-top:18px}
   </div>
   <p class="hint">Поиск выполняется по реальным объявлениям Avito. Новые публикации показываются первыми. Обычный поиск API.SH стоит 5 кредитов. Нажатие «Анализ ИИ» дополнительно запускает поиск аналогов и списывает ещё 5 кредитов API.SH. ИИ проверяет предмет по фото и ищет сопоставимые объявления Avito. Оценка строится только при наличии минимум трёх выбранных аналогов.</p>
 </section>
-<div class="status" id="status" role="status">Введите название товара и нажмите «Обновить».</div>
-<section class="feed" id="feed"><div class="empty">Здесь появятся реальные объявления Avito.</div></section>
+<div class="status" id="status" hidden role="status">Введите название товара и нажмите «Обновить».</div>
+<section class="feed" id="feed" hidden><div class="empty">Здесь появятся реальные объявления Avito.</div></section>
 <button id="more" hidden>Загрузить ещё</button>
 <footer>Источник данных: API.SH / Avito. Цена и описание принадлежат продавцам Avito. Перед покупкой проверяйте состояние, комплектность и продавца. Сервис не оформляет сделки и не гарантирует достоверность объявления.</footer>
 </main>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
-let page=1,nextPage=null,lastQuery="",busy=false,seen=new Set(),listingData=new Map();
+let page=1,nextPage=null,lastQuery="",busy=false,seen=new Set(),listingData=new Map(),apiToken=sessionStorage.getItem("priceRadarToken")||"";\nfunction showApp(){ $("accessPanel").hidden=true;$("searchPanel").hidden=false;$("status").hidden=false;$("feed").hidden=false; }\nfunction authHeaders(extra){return Object.assign({"X-Price-Radar-Token":apiToken},extra||{}); }
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function money(v){return Number(v||0).toLocaleString("ru-RU")+" ₽";}
 function date(v){if(!v)return "Дата публикации не указана";const d=new Date(v);return Number.isNaN(d.getTime())?"Дата публикации не указана":d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
@@ -113,7 +114,7 @@ async function search(append){
  $("status").textContent=append?"Загружаем следующую страницу…":"Ищем объявления на Avito…";
  try{
   const p=new URLSearchParams({q:q,location:$("location").value,sort:"newest",page:String(append?(nextPage||page+1):1),with_photos:"true"});
-  const res=await fetch("/api/search?"+p.toString(),{headers:{"Accept":"application/json"}});
+  const res=await fetch("/api/search?"+p.toString(),{headers:authHeaders({"Accept":"application/json"})});
   const data=await res.json().catch(()=>({}));
   if(!res.ok)throw new Error(data.detail||"Ошибка сервера: HTTP "+res.status);
   const items=Array.isArray(data.listings)?data.listings:[];
@@ -126,13 +127,32 @@ async function search(append){
  }catch(e){$("status").textContent="Не удалось выполнить поиск: "+e.message;if(!$("feed").children.length)$("feed").innerHTML='<div class="empty">Проверьте подключение сервера и ключ API.SH.</div>';}
  finally{busy=false;$("refresh").disabled=false;$("more").disabled=false;}
 }
-$("feed").addEventListener("click",async e=>{
+$("connectAccess").addEventListener("click",async()=>{
+ const token=$("accessCode").value.trim();if(!token){$("accessMessage").textContent="Введите код доступа.";return;}
+ const button=$("connectAccess");button.disabled=true;$("accessMessage").textContent="Проверяем код…";
+ try{
+  const response=await fetch("/api/auth/check",{method:"POST",headers:{"X-Price-Radar-Token":token}});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||!data.authenticated)throw new Error(data.detail||"Код не принят.");
+  apiToken=token;sessionStorage.setItem("priceRadarToken",token);showApp();$("accessMessage").textContent="";
+ }catch(err){$("accessMessage").textContent=err.message;sessionStorage.removeItem("priceRadarToken");}
+ finally{button.disabled=false;}
+});
+async function restoreAccess(){
+ if(!apiToken)return;
+ try{
+  const response=await fetch("/api/auth/check",{method:"POST",headers:{"X-Price-Radar-Token":apiToken}});
+  if(response.ok){showApp();return;}
+ }catch(_){}
+ sessionStorage.removeItem("priceRadarToken");apiToken="";
+}
+\n$("feed").addEventListener("click",async e=>{
  const button=e.target.closest("[data-analyze-key]");if(!button)return;
  const key=button.getAttribute("data-analyze-key"),listing=listingData.get(key);if(!listing)return;
  const article=button.closest(".listing"),result=article.querySelector(".analysis-result");
  button.disabled=true;button.textContent="Анализирую…";result.hidden=false;result.textContent="Gemini проверяет описание и фотографии. Это может занять до минуты.";
  try{
-  const response=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({id:String(listing.id||""),url:listing.url,title:listing.title,description:listing.description||"",params:typeof listing.params==="string"?listing.params:"",price:listing.price,location:listing.location||"",region:$("location").value,images:Array.isArray(listing.images)?listing.images.slice(0,3):[]})});
+  const response=await fetch("/api/analyze",{method:"POST",headers:authHeaders({"Content-Type":"application/json","Accept":"application/json"}),body:JSON.stringify({id:String(listing.id||""),url:listing.url,title:listing.title,description:listing.description||"",params:typeof listing.params==="string"?listing.params:"",price:listing.price,location:listing.location||"",region:$("location").value,images:Array.isArray(listing.images)?listing.images.slice(0,3):[]})});
   const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.detail||"Ошибка анализа");
   result.innerHTML=renderAnalysis(data.analysis||{})+renderComparison(data.comparison);
  }catch(err){result.textContent="Анализ не выполнен: "+err.message;}
@@ -142,6 +162,6 @@ $("feed").addEventListener("click",async e=>{
 $("refresh").addEventListener("click",()=>search(false));
 $("more").addEventListener("click",()=>search(true));
 $("query").addEventListener("keydown",e=>{if(e.key==="Enter")search(false);});
-})();
+restoreAccess();\n})();
 </script>
 </body></html>
