@@ -115,7 +115,8 @@ $("feed").addEventListener("click",async e=>{
  }catch(err){result.textContent="Анализ не выполнен: "+err.message;}
  finally{button.disabled=false;button.textContent="Повторить анализ";}
 });
-\n$("refresh").addEventListener("click",()=>search(false));
+
+$("refresh").addEventListener("click",()=>search(false));
 $("more").addEventListener("click",()=>search(true));
 $("query").addEventListener("keydown",e=>{if(e.key==="Enter")search(false);});
 })();
