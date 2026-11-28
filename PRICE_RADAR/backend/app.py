@@ -245,7 +245,7 @@ def analyze_avito_listing(request: ListingAnalysisRequest) -> dict[str, Any]:
                         quartiles = quantiles(prices, n=4, method="inclusive")
                         low = int(quartiles[0])
                         high = int(quartiles[2])
-                        difference = median - int(request.price)
+                        difference = median_price - int(request.price)
                         comparison.update({
                             "market_value_min": low,
                             "market_value_median": median_price,
