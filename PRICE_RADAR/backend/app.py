@@ -1,5 +1,6 @@
 import json
 import os
+import hmac
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -8,7 +9,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pathlib import Path
@@ -35,9 +36,17 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins or ["*"],
     allow_credentials=False,
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+
+def _require_app_access(token: str | None) -> None:
+    expected = os.getenv("APP_ACCESS_TOKEN", "").strip()
+    if not expected:
+        raise HTTPException(status_code=503, detail="Сервис закрыт: задайте APP_ACCESS_TOKEN в Render Environment.")
+    if not token or not hmac.compare_digest(token, expected):
+        raise HTTPException(status_code=401, detail="Неверный код доступа PRICE RADAR.")
 
 
 def _allowed_avito_url(value: str) -> bool:
@@ -148,6 +157,7 @@ def health() -> dict[str, Any]:
         "service": "price-radar-api",
         "apish_configured": bool(os.getenv("APISH_API_KEY", "").strip()),
         "gemini_configured": bool(os.getenv("GEMINI_API_KEY", "").strip()),
+        "access_configured": bool(os.getenv("APP_ACCESS_TOKEN", "").strip()),
         "daily_ai_analysis_limit": ANALYSIS_DAILY_LIMIT,
         "daily_search_limit": API_DAILY_LIMIT,
     }
@@ -167,8 +177,15 @@ class ListingAnalysisRequest(BaseModel):
     images: list[str] = Field(default_factory=list, max_length=4)
 
 
+@app.post("/api/auth/check")
+def check_app_access(x_price_radar_token: str | None = Header(default=None)) -> dict[str, bool]:
+    _require_app_access(x_price_radar_token)
+    return {"authenticated": True}
+
+
 @app.post("/api/analyze")
-def analyze_avito_listing(request: ListingAnalysisRequest) -> dict[str, Any]:
+def analyze_avito_listing(request: ListingAnalysisRequest, x_price_radar_token: str | None = Header(default=None)) -> dict[str, Any]:
+    _require_app_access(x_price_radar_token)
     global _analysis_day, _analysis_count
     if not _allowed_avito_url(request.url):
         raise HTTPException(status_code=422, detail="Разрешены только HTTPS-ссылки avito.ru.")
@@ -285,7 +302,9 @@ def search_avito(
     seller_type: str | None = Query(default=None, pattern="^(private|company|all)$"),
     sort: str = Query(default="newest", pattern="^(default|price_asc|price_desc|newest|discount)$"),
     page: int = Query(default=1, ge=1, le=100),
+    x_price_radar_token: str | None = Header(default=None),
 ) -> dict[str, Any]:
+    _require_app_access(x_price_radar_token)
     if not any((q and q.strip(), category and category.strip(), url and url.strip())):
         raise HTTPException(status_code=422, detail="Укажите q, category или ссылку url на поиск Avito.")
     if url and not _allowed_avito_url(url):
