@@ -162,6 +162,7 @@ class ListingAnalysisRequest(BaseModel):
     params: str = Field(default="", max_length=2000)
     price: float = Field(gt=0)
     location: str = Field(default="", max_length=200)
+    region: str = Field(default="rossiya", pattern="^(rossiya|moskva|sankt-peterburg|moskovskaya_oblast|ekaterinburg|kazan|novosibirsk)$")
     images: list[str] = Field(default_factory=list, max_length=4)
 
 
